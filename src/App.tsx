@@ -1,72 +1,95 @@
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom'
-import { AuthProvider, useAuth } from './lib/auth'
-import Navbar from './components/Navbar'
-import Footer from './components/Footer'
-import Home from './pages/Home'
-import SearchPage from './pages/Search'
-import PhotographerProfile from './pages/PhotographerProfile'
-import { Login, Register, Join } from './pages/Auth'
-import { CustomerDash, NotificationBell } from './dashboard/CustomerDash'
-import { PhotographerDash } from './dashboard/PhotographerDash'
-import { AdminDash } from './dashboard/AdminDash'
-import { EmptyState } from './components/States'
-import { useLocation } from 'react-router-dom'
+import React, { useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, useLocation, Link } from 'react-router-dom';
+import { AuthProvider } from './lib/auth';
+import Navbar from './components/Navbar';
+import Footer from './components/Footer';
 
-function RouteGuard({ allow, children }: { allow: ('customer' | 'photographer' | 'admin')[]; children: React.ReactNode }) {
-  const { session, profile, loading } = useAuth()
-  if (loading) return <div className="py-24" />
-  if (!session) return <Link to="/login" className="btn-primary">লগইন করুন</Link>
-  if (!profile || !allow.includes(profile.role))
-    return <div className="py-16"><EmptyState icon="🔒" title="প্রবেশাধিকার নেই" sub="এই পেজের জন্য আপনার অনুমতি নেই" /></div>
-  return <>{children}</>
+// Pages
+import Home from './pages/Home';
+import Search from './pages/Search';
+import PhotographerProfile from './pages/PhotographerProfile';
+import Finder from './pages/Finder';
+import Community from './pages/Community';
+import Blog from './pages/Blog';
+import BlogPost from './pages/BlogPost';
+import Auth from './pages/Auth';
+import CustomerDash from './pages/CustomerDash';
+import StudioDash from './pages/StudioDash';
+import AdminDash from './pages/AdminDash';
+import ChatPage from './pages/ChatPage';
+
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+  return null;
 }
 
-function Shell() {
-  const { profile } = useAuth()
-  const loc = useLocation()
-  const hideNav = loc.pathname.startsWith('/dashboard')
+function NotFound() {
   return (
-    <div className="min-h-screen flex flex-col">
-      {!hideNav && <Navbar />}
-      {hideNav && (
-        <header className="sticky top-0 z-50 bg-ink text-white">
-          <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
-            <Link to="/" className="flex items-center gap-2">
-              <span className="w-8 h-8 rounded-full bg-gold text-ink flex items-center justify-center font-heading font-bold">P</span>
-              <span className="font-heading font-bold">PicLagbe <span className="text-gold text-xs font-normal">Dashboard</span></span>
-            </Link>
-            <div className="flex items-center gap-3">
-              {profile && <NotificationBell />}
-              <Link to="/" className="text-sm text-gray-300 hover:text-gold transition">← সাইটে ফিরুন</Link>
-            </div>
-          </div>
-        </header>
-      )}
-      <main className="flex-1">
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/photographers" element={<SearchPage />} />
-          <Route path="/photographer/:slug" element={<PhotographerProfile />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/join" element={<Join />} />
-          <Route path="/dashboard/customer" element={<RouteGuard allow={['customer', 'admin']}><CustomerDash /></RouteGuard>} />
-          <Route path="/dashboard/photographer" element={<RouteGuard allow={['photographer', 'admin']}><PhotographerDash /></RouteGuard>} />
-          <Route path="/dashboard/admin" element={<RouteGuard allow={['admin']}><AdminDash /></RouteGuard>} />
-          <Route path="*" element={<div className="py-20"><EmptyState icon="🚧" title="পেজটি খুঁজে পাওয়া যায়নি (404)" sub="ঠিকানা একবার দেখে নিন" /></div>} />
-        </Routes>
-      </main>
-      <Footer />
+    <div className="max-w-md mx-auto px-6 pt-40 pb-24 text-center">
+      <div className="glass-card p-12 rounded-xl3 space-y-4">
+        <h2 className="text-4xl font-extrabold grad-text">৪০৪</h2>
+        <h3 className="text-xl font-bold text-white">পৃষ্ঠা পাওয়া যায়নি</h3>
+        <p className="text-sm text-white/60 mb-6">আপনি যে পৃষ্ঠায় প্রবেশ করতে চেয়েছেন তা বিদ্যমান নয়।</p>
+        <Link to="/" className="btn-primary">
+          হোমে ফিরে যান
+        </Link>
+      </div>
     </div>
-  )
+  );
 }
 
 export default function App() {
   return (
-    <AuthProvider>
-      <Router basename={import.meta.env.VITE_BASE || '/'}>
-        <Shell />
-      </Router>
-    </AuthProvider>
-  )
+    <Router>
+      <AuthProvider>
+        <ScrollToTop />
+        <div className="min-h-screen flex flex-col relative">
+          {/* Aurora Background with 4 floating blobs */}
+          <div className="aurora" aria-hidden="true">
+            <span
+              className="absolute rounded-full blur-[110px] opacity-20"
+              style={{ width: '500px', height: '500px', top: '-10%', left: '-10%', background: '#f97316' }}
+            />
+            <span
+              className="absolute rounded-full blur-[110px] opacity-20"
+              style={{ width: '480px', height: '480px', top: '10%', right: '-10%', background: '#fbbf24' }}
+            />
+            <span
+              className="absolute rounded-full blur-[110px] opacity-20"
+              style={{ width: '520px', height: '520px', bottom: '-10%', left: '10%', background: '#4FD1C5' }}
+            />
+            <span
+              className="absolute rounded-full blur-[110px] opacity-20"
+              style={{ width: '540px', height: '540px', bottom: '-10%', right: '10%', background: '#9333ea' }}
+            />
+          </div>
+
+          <Navbar />
+
+          <main className="flex-1">
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/photographers" element={<Search />} />
+              <Route path="/photographer/:id" element={<PhotographerProfile />} />
+              <Route path="/finder" element={<Finder />} />
+              <Route path="/community" element={<Community />} />
+              <Route path="/blog" element={<Blog />} />
+              <Route path="/blog/:slug" element={<BlogPost />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/dashboard" element={<CustomerDash />} />
+              <Route path="/chat" element={<ChatPage />} />
+              <Route path="/studio" element={<StudioDash />} />
+              <Route path="/admin" element={<AdminDash />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </main>
+
+          <Footer />
+        </div>
+      </AuthProvider>
+    </Router>
+  );
 }
