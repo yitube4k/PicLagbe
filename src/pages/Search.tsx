@@ -278,7 +278,7 @@ export default function Search() {
 
               {/* অপশন মেনু — সব ফিল্টার এক জায়গায় */}
               {filtersOpen && (
-                <div className="absolute right-0 top-[52px] z-30 glass-strong !rounded-[18px] shadow-glass-lg p-4 w-[300px] max-h-[70vh] overflow-y-auto">
+                <div className="absolute right-0 top-[52px] z-[60] glass-strong !rounded-[18px] shadow-glass-lg p-4 w-[300px] max-h-[70vh] overflow-y-auto">
                   <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-white/45 px-1 pb-3">
                     ফিল্টার অপশন
                   </p>

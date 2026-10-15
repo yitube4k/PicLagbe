@@ -137,7 +137,7 @@ export default function SearchPanel({ variant = 'hero', initial, autoFocus: auto
           {/* ── ফিল্টার অপশন মেনু ── */}
           {filtersOpen && (
             <div
-              className={`absolute z-30 glass-strong !rounded-[16px] shadow-glass-lg p-3.5 w-72 ${
+              className={`absolute z-[60] glass-strong !rounded-[16px] shadow-glass-lg p-3.5 w-72 ${
                 isHero ? 'right-0 top-[52px]' : variant === 'dropdown' ? 'left-0 top-[50px]' : 'right-0 top-[50px]'
               }`}
             >
