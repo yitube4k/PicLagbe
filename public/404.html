@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="bn">
+  <head>
+    <meta charset="UTF-8" />
+    <title>ফটোলাগবে — রিডাইরেক্ট</title>
+    <script>
+      // GitHub Pages SPA fallback: remember the deep link, land on base, app restores it
+      (function () {
+        var base = '/PicLagbe/';
+        var l = window.location;
+        var path = l.pathname.startsWith(base) ? l.pathname.slice(base.length) : l.pathname.replace(/^\//, '');
+        try {
+          sessionStorage.setItem('spa-redirect', path + l.search + l.hash);
+        } catch (e) {}
+        window.location.replace(l.origin + base);
+      })();
+    </script>
+  </head>
+  <body></body>
+</html>
