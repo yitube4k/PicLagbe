@@ -10,6 +10,7 @@ import { SPOT_PHOTOS } from '../lib/spotPhotos';
 import { cldUrl } from '../lib/cloudinary';
 import { distKm, openDirections } from './Finder';
 import PhotographerCard from '../components/PhotographerCard';
+import SpotGuideSection from '../components/SpotGuideSection';
 
 const SPOT_KIND_EMOJI: Record<string, string> = {
   beach: '🏖️',
@@ -228,8 +229,11 @@ export default function SpotPage() {
         </div>
       </div>
 
+      {/* ═══ সম্পূর্ণ গাইড — ভাড়া+টিকিট+খাওয়া+ঢাকা রুট+ফটো পয়েন্ট ═══ */}
+      <SpotGuideSection spotKey={key || ''} />
+
       {/* ═══ AVAILABLE ফটোগ্রাফার ═══ */}
-      <section className="max-w-6xl mx-auto px-4 lg:px-6 mt-10">
+      <section className="max-w-6xl mx-auto px-4 lg:px-6 mt-12">
         <div className="flex items-end justify-between gap-4 mb-6">
           <div>
             <h2 className="section-head !mb-0">

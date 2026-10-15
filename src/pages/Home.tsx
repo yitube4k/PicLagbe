@@ -1,9 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Photographer, Review } from '../lib/types';
 import { toBn } from '../lib/utils';
-import { COX_SPOTS } from '../lib/constants';
+import { COX_SPOTS, SPOT_BY_KEY, SPOT_KIND_BN } from '../lib/constants';
+import { SPOT_PHOTOS, HERO_SLIDE_KEYS } from '../lib/spotPhotos';
+import { SPOT_GUIDES, spotCostSummary } from '../lib/spotGuides';
+import { cldUrl } from '../lib/cloudinary';
 import Reveal from '../components/Reveal';
 import SearchPanel from '../components/SearchPanel';
 import PhotographerCard from '../components/PhotographerCard';
@@ -16,6 +19,9 @@ const SPOT_KIND_EMOJI: Record<string, string> = {
   park: '🌲',
   drive: '🛣️',
 };
+
+/* হোমের গাইড সেকশনে দেখানো হাইলাইট স্পট (প্রথম ভিউতে) */
+const HOME_GUIDE_KEYS = ['inani', 'saintmartin', 'himchari', 'marine', 'laboni', 'maheshkhali'];
 
 const HOW_IT_WORKS_STEPS = [
   {
@@ -79,9 +85,84 @@ type EnrichedReview = Review & {
   } | null;
 };
 
-export default function Home() {
-  const [heroImgError, setHeroImgError] = useState(false);
+const SLIDE_MS = 5500;
 
+/* ═══ HERO AUTO-SLIDER — ২-লেয়ার ক্রসফেড (১৯ ছবি একসাথে লোড হয় না; প্রতি স্লাইডে ২টা) ═══ */
+function HeroSlider() {
+  const slides = HERO_SLIDE_KEYS.map((k) => ({
+    key: k,
+    img: SPOT_PHOTOS[k],
+    name: SPOT_BY_KEY(k)?.nameBn || k,
+  })).filter((s) => s.img);
+
+  const [idx, setIdx] = useState(0);
+  const [layerA, setLayerA] = useState(0); // কোন লেয়ার সামনে
+  const [reduced, setReduced] = useState(false);
+  const preloaded = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    setReduced(mq.matches);
+  }, []);
+
+  // পরের স্লাইডের ছবি আগে থেকে লোড
+  useEffect(() => {
+    const next = slides[(idx + 1) % slides.length];
+    if (next && !preloaded.current.has(next.img)) {
+      const im = new Image();
+      im.src = cldUrl(next.img, { w: 1200, c: 'fill' });
+      preloaded.current.add(next.img);
+    }
+  }, [idx, slides]);
+
+  useEffect(() => {
+    if (reduced) return;
+    const id = setInterval(() => {
+      if (document.hidden) return; // ট্যাব লুকালে পাওয়ার বাঁচাও
+      setIdx((i) => (i + 1) % slides.length);
+      setLayerA((l) => (l === 0 ? 1 : 0));
+    }, SLIDE_MS);
+    return () => clearInterval(id);
+  }, [reduced, slides.length]);
+
+  const cur = slides[idx];
+  const nxt = slides[(idx + 1) % slides.length];
+  const srcFor = (s: typeof cur) => (s ? cldUrl(s.img, { w: 1200, c: 'fill' }) : '');
+
+  return (
+    <>
+      {/* Layer A */}
+      <img
+        src={srcFor(layerA === 0 ? cur : nxt)}
+        alt=""
+        aria-hidden="true"
+        fetchPriority="high"
+        className="absolute inset-0 w-full h-full object-cover transition-opacity duration-[1200ms] ease-in-out"
+        style={{ opacity: layerA === 0 ? 0.6 : 0 }}
+      />
+      {/* Layer B */}
+      <img
+        src={srcFor(layerA === 1 ? cur : nxt)}
+        alt=""
+        aria-hidden="true"
+        className="absolute inset-0 w-full h-full object-cover transition-opacity duration-[1200ms] ease-in-out"
+        style={{ opacity: layerA === 1 ? 0.6 : 0 }}
+      />
+
+      {/* স্লাইড ক্যাপশন + কাউন্টার */}
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-3 z-10">
+        <span className="chip !py-1 !text-[11px] bg-black/40 backdrop-blur-sm">
+          📍 {cur?.name} · {SPOT_KIND_BN[SPOT_BY_KEY(cur?.key || '')?.kind || 'beach'] || ''}
+        </span>
+        <span className="text-[11px] text-white/60 font-medium tabular-nums">
+          {toBn(idx + 1)}/{toBn(slides.length)}
+        </span>
+      </div>
+    </>
+  );
+}
+
+export default function Home() {
   const [featured, setFeatured] = useState<Photographer[]>([]);
   const [loadingFeatured, setLoadingFeatured] = useState(true);
 
@@ -139,20 +220,17 @@ export default function Home() {
     };
   }, []);
 
+  const onImgErr = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
+    e.currentTarget.style.opacity = '0';
+  }, []);
+
   return (
     <div className="min-h-screen">
-      {/* ═══ HERO SECTION ═══ */}
+      {/* ═══ HERO SECTION — সব ট্যুর পয়েন্টের সুন্দর ছবিতে অটো-স্লাইড ═══ */}
       <section className="relative min-h-[92vh] flex items-center overflow-hidden pt-24 pb-16">
-        {/* Background Layer */}
+        {/* Background — auto-sliding tour point photos */}
         <div className="absolute inset-0 bg-sunset-soft">
-          {!heroImgError && (
-            <img
-              src="/img/hero.jpg"
-              alt="কক্সবাজার সূর্যাস্ত"
-              onError={() => setHeroImgError(true)}
-              className="w-full h-full object-cover opacity-60"
-            />
-          )}
+          <HeroSlider />
         </div>
 
         {/* Gradient & Radial Glow Overlays */}
@@ -198,7 +276,7 @@ export default function Home() {
                 <div className="stat-label">গড় রেটিং</div>
               </div>
               <div className="stat-card">
-                <div className="stat-num">{toBn('19')}</div>
+                <div className="stat-num">{toBn(COX_SPOTS.length)}</div>
                 <div className="stat-label">কক্সবাজার স্পট</div>
               </div>
             </div>
@@ -206,7 +284,82 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ═══ SPOT MARQUEE SECTION ═══ */}
+      {/* ═══ ট্যুর পয়েন্ট গাইড — ব্লগ-স্টাইল প্রিমিয়াম কার্ড ═══ */}
+      <section className="max-w-7xl mx-auto px-6 py-20">
+        <Reveal className="text-center mb-12">
+          <h2 className="section-head">🧭 ট্যুর পয়েন্ট গাইড</h2>
+          <p className="section-sub mt-2">
+            প্রতিটি স্পটের আসল ছবি, ভাড়া, টিকিট, খাওয়া আর ঢাকা থেকে যাওয়ার পুরো রুট
+          </p>
+        </Reveal>
+
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {HOME_GUIDE_KEYS.map((key, i) => {
+            const spot = SPOT_BY_KEY(key);
+            const photo = SPOT_PHOTOS[key];
+            const guide = SPOT_GUIDES[key];
+            const cost = spotCostSummary(key);
+            if (!spot) return null;
+
+            return (
+              <Reveal key={key} delay={i * 60}>
+                <Link
+                  to={`/spot/${key}`}
+                  className="glass-card overflow-hidden flex flex-col rounded-xl3 group h-full"
+                >
+                  <div className="relative h-48 w-full bg-twilight-800 overflow-hidden">
+                    {photo ? (
+                      <img
+                        src={cldUrl(photo, { w: 640, c: 'fill' })}
+                        srcSet={[480, 640].map((w) => `${cldUrl(photo, { w, c: 'fill' })} ${w}w`).join(', ')}
+                        sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                        alt={`${spot.nameBn} — ${spot.nameEn}`}
+                        loading={i < 2 ? 'eager' : 'lazy'}
+                        onError={onImgErr}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-sunset-soft flex items-center justify-center text-4xl">
+                        {SPOT_KIND_EMOJI[spot.kind] || '📍'}
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent pointer-events-none" />
+                    <span className="absolute top-3 left-3 chip !text-[10px] !py-0.5 !px-2 bg-black/40">
+                      {SPOT_KIND_EMOJI[spot.kind]} {SPOT_KIND_BN[spot.kind] || spot.kind}
+                    </span>
+                  </div>
+
+                  <div className="p-5 flex-1 flex flex-col justify-between">
+                    <div>
+                      <h3 className="font-bold text-white text-lg group-hover:text-sunset-gold transition leading-snug">
+                        {spot.nameBn}
+                      </h3>
+                      <p className="text-[11px] text-white/45 mt-0.5">{spot.nameEn}</p>
+                      <p className="text-sm text-white/60 line-clamp-2 mt-2 leading-relaxed">
+                        {guide ? guide.intro : spot.descBn}
+                      </p>
+                    </div>
+
+                    <div className="pt-4 mt-4 border-t border-white/[0.08] flex items-center justify-between gap-2 text-[11px]">
+                      <span className="text-white/55 truncate">🛺 {cost.vara}</span>
+                      <span className="text-white/55 truncate">🎟️ {cost.ticket}</span>
+                      <span className="text-sunset-gold font-bold whitespace-nowrap">গাইড →</span>
+                    </div>
+                  </div>
+                </Link>
+              </Reveal>
+            );
+          })}
+        </div>
+
+        <div className="mt-10 text-center">
+          <Link to="/blog" className="btn-ghost">
+            সব ১৯টি স্পটের গাইড দেখুন →
+          </Link>
+        </div>
+      </section>
+
+      {/* ═══ সব পয়েন্টের নাম ═══ */}
       <section className="py-8 border-y border-white/[0.08] bg-white/[0.02]">
         <p className="text-xs sm:text-sm text-center text-white/50 mb-5 font-medium tracking-wide">
           কক্সবাজারের সব শুটিং পয়েন্ট — ম্যাপে খুঁজুন
@@ -217,7 +370,7 @@ export default function Home() {
           {COX_SPOTS.map((s) => (
             <Link
               key={s.key}
-              to={`/finder?spot=${encodeURIComponent(s.key)}`}
+              to={`/spot/${s.key}`}
               className="chip hover:border-sunset-gold/50"
             >
               <span>{SPOT_KIND_EMOJI[s.kind] || '📍'}</span>
@@ -346,7 +499,7 @@ export default function Home() {
                       </svg>
 
                       <p className="text-white/80 leading-relaxed line-clamp-4 text-sm sm:text-base">
-                        “{r.comment || 'অসাধারণ ফটোগ্রাফি এবং সময়মতো ডেলিভারি পেয়েছি!'}”
+                        “{r.comment || 'অসাধারণ ফটোগ্রাফি এবং সময়মতো ডেলিভারি পেয়েছি!'}”
                       </p>
                     </div>
 

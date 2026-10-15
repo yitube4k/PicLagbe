@@ -4,15 +4,19 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
 import { Booking, Review, Notification, Photographer, Package } from '../lib/types';
 import { toBn, taka, bnDate } from '../lib/utils';
+import { waLink } from '../lib/cloudinary';
 import PhotographerCard from '../components/PhotographerCard';
+import { ProfileEditSection, MigrationSection, KycSection } from '../components/ProfileSections';
 
-type DashTab = 'bookings' | 'favorites' | 'reviews' | 'notifications';
+type DashTab = 'bookings' | 'favorites' | 'reviews' | 'notifications' | 'profile' | 'kyc';
 
 type EnrichedBooking = Booking & {
   photographers?: {
     display_name?: string | null;
     profile_photo_url?: string | null;
     slug?: string | null;
+    phone?: string | null;
+    whatsapp?: string | null;
   } | null;
   packages?: {
     name?: string | null;
@@ -66,7 +70,7 @@ export default function CustomerDash() {
         const [bookingsRes, favRes, reviewsRes, notifRes] = await Promise.all([
           supabase
             .from('bookings')
-            .select('*, photographers(display_name, profile_photo_url, slug), packages(name, price)')
+            .select('*, photographers(display_name, profile_photo_url, slug, phone, whatsapp), packages(name, price)')
             .eq('customer_id', profile.id)
             .order('created_at', { ascending: false }),
           supabase
@@ -332,6 +336,22 @@ export default function CustomerDash() {
           >
             নোটিফিকেশন ({toBn(notifications.filter((n) => !n.read).length)})
           </button>
+          <button
+            type="button"
+            onClick={() => setTab('profile')}
+            className={tab === 'profile' ? 'chip-active rounded-full px-5 py-2 text-sm' : 'chip !border-transparent text-white/75 hover:text-white'}
+          >
+            👤 প্রোফাইল
+          </button>
+          {profile.role === 'photographer' && (
+            <button
+              type="button"
+              onClick={() => setTab('kyc')}
+              className={tab === 'kyc' ? 'chip-active rounded-full px-5 py-2 text-sm' : 'chip !border-transparent text-white/75 hover:text-white'}
+            >
+              🛡️ KYC
+            </button>
+          )}
         </div>
       </div>
 
@@ -363,6 +383,8 @@ export default function CustomerDash() {
                     {bookings.map((b) => {
                       const photographerName = b.photographers?.display_name || 'ফটোগ্রাফার';
                       const photographerPhoto = b.photographers?.profile_photo_url;
+                      const photographerPhone = b.photographers?.whatsapp || b.photographers?.phone || null;
+                      const waHref = waLink(photographerPhone, `আসসালামু আলাইকুম, আমার বুকিং (${bnDate(b.event_date)}) নিয়ে কথা বলতে চাই — PicLagbe`);
                       const packageName = b.packages?.name || 'কাস্টম প্যাকেজ';
                       const packagePrice = b.packages?.price || 0;
                       const isReviewOpen = reviewingBookingId === b.id;
@@ -403,6 +425,26 @@ export default function CustomerDash() {
                             <span className="text-white/45">স্পট: {b.event_location || 'কক্সবাজার'}</span>
 
                             <div className="flex items-center gap-2">
+                              {photographerPhone && (
+                                <>
+                                  <a
+                                    href={waHref || '#'}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="btn-primary !py-1.5 !px-3 !text-xs !bg-emerald-500/90 hover:!bg-emerald-500"
+                                    title={`WhatsApp — ${photographerName}`}
+                                  >
+                                    💬 WhatsApp
+                                  </a>
+                                  <a
+                                    href={`tel:${photographerPhone.replace(/[^+\d]/g, '')}`}
+                                    className="btn-ghost !py-1.5 !px-3 !text-xs"
+                                    title={`কল — ${photographerPhone}`}
+                                  >
+                                    📞 কল
+                                  </a>
+                                </>
+                              )}
                               {b.status === 'pending' && (
                                 <button
                                   type="button"
@@ -577,6 +619,16 @@ export default function CustomerDash() {
                 )}
               </div>
             )}
+            {/* PROFILE TAB — এডিট + (customer হলে) ফটোগ্রাফার মাইগ্রেশন */}
+            {tab === 'profile' && (
+              <div className="space-y-10">
+                <ProfileEditSection />
+                {profile.role === 'customer' && <MigrationSection />}
+              </div>
+            )}
+
+            {/* KYC TAB — ফটোগ্রাফার রোল */}
+            {tab === 'kyc' && profile.role === 'photographer' && <KycSection />}
           </>
         )}
       </div>

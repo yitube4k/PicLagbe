@@ -3,6 +3,8 @@ export type Profile = {
   email: string | null
   full_name: string | null
   phone: string | null
+  whatsapp: string | null
+  bio: string | null
   avatar_url: string | null
   role: 'customer' | 'photographer' | 'admin'
   created_at: string
@@ -29,6 +31,7 @@ export type Photographer = {
   profile_views: number | null
   home_spot: string | null
   phone: string | null
+  whatsapp: string | null
   service_areas: string | null
   photographer_categories?: { category_id: number; categories?: { name: string; slug: string; icon: string } }[]
 }

@@ -6,8 +6,9 @@ import { useAuth } from '../lib/auth';
 import { Profile, Photographer, Booking, BlogPost } from '../lib/types';
 import { toBn, taka, bnDate } from '../lib/utils';
 import { COX_SPOTS } from '../lib/constants';
+import RoleRequestsPanel from '../components/RoleRequestsPanel';
 
-type AdminTab = 'overview' | 'users' | 'photographers' | 'kyc' | 'chats' | 'bookings' | 'blog';
+type AdminTab = 'overview' | 'users' | 'photographers' | 'requests' | 'kyc' | 'chats' | 'bookings' | 'blog';
 
 type AdminBooking = Booking & {
   photographers?: { display_name?: string | null } | null;
@@ -63,6 +64,7 @@ export default function AdminDash() {
     bookings: 0,
     pendingPhotographers: 0,
     pendingKyc: 0,
+    pendingRoleRequests: 0,
   });
 
   // Data states
@@ -115,6 +117,7 @@ export default function AdminDash() {
           cntBookings,
           cntPending,
           cntKyc,
+          cntRoleReq,
           recBookingsRes,
           usersRes,
           photoRes,
@@ -128,6 +131,7 @@ export default function AdminDash() {
           supabase.from('bookings').select('*', { count: 'exact', head: true }),
           supabase.from('photographers').select('*', { count: 'exact', head: true }).eq('profile_status', 'pending'),
           supabase.from('kyc_submissions').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
+          supabase.from('role_requests').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
           supabase
             .from('bookings')
             .select('*, photographers(display_name), profiles(full_name)')
@@ -153,6 +157,7 @@ export default function AdminDash() {
           bookings: cntBookings.count || 0,
           pendingPhotographers: cntPending.count || 0,
           pendingKyc: cntKyc.count || 0,
+          pendingRoleRequests: cntRoleReq.count || 0,
         });
 
         if (!recBookingsRes.error) setRecentBookings((recBookingsRes.data as AdminBooking[]) || []);
@@ -455,6 +460,9 @@ export default function AdminDash() {
           <button type="button" onClick={() => setTab('photographers')} className={tab === 'photographers' ? 'chip-active rounded-full px-4 py-2 text-xs sm:text-sm' : 'chip !border-transparent text-white/75 hover:text-white py-2 text-xs sm:text-sm'}>
             📷 ফটোগ্রাফার ({toBn(counts.pendingPhotographers)})
           </button>
+          <button type="button" onClick={() => setTab('requests')} className={tab === 'requests' ? 'chip-active rounded-full px-4 py-2 text-xs sm:text-sm' : 'chip !border-transparent text-white/75 hover:text-white py-2 text-xs sm:text-sm'}>
+            🎬 মাইগ্রেশন ({toBn(counts.pendingRoleRequests)})
+          </button>
           <button type="button" onClick={() => setTab('kyc')} className={tab === 'kyc' ? 'chip-active rounded-full px-4 py-2 text-xs sm:text-sm' : 'chip !border-transparent text-white/75 hover:text-white py-2 text-xs sm:text-sm'}>
             🆔 KYC রিভিউ ({toBn(counts.pendingKyc)})
           </button>
@@ -674,6 +682,8 @@ export default function AdminDash() {
               )}
             </div>
           )}
+
+          {tab === 'requests' && <RoleRequestsPanel />}
 
           {tab === 'kyc' && (
             <div className="space-y-6">

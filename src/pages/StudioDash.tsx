@@ -6,13 +6,17 @@ import { Photographer, Booking, Package, PortfolioImage, Review } from '../lib/t
 import { toBn, taka, bnDate } from '../lib/utils';
 import { COX_SPOTS } from '../lib/constants';
 import CldUploadField from '../components/CldUploadField';
+import ScheduleTab from '../components/ScheduleTab';
+import { waLink } from '../lib/cloudinary';
 
-type StudioTab = 'overview' | 'bookings' | 'packages' | 'portfolio' | 'profile' | 'verification';
+type StudioTab = 'overview' | 'bookings' | 'schedule' | 'packages' | 'portfolio' | 'profile' | 'verification';
 
 type StudioBooking = Booking & {
   profiles?: {
     full_name?: string | null;
     avatar_url?: string | null;
+    phone?: string | null;
+    whatsapp?: string | null;
   } | null;
   packages?: {
     name?: string | null;
@@ -127,7 +131,7 @@ export default function StudioDash() {
         const [bRes, pkgRes, portRes, revRes, kycRes] = await Promise.all([
           supabase
             .from('bookings')
-            .select('*, profiles!bookings_customer_id_fkey(full_name, avatar_url), packages(name, price)')
+            .select('*, profiles!bookings_customer_id_fkey(full_name, avatar_url, phone, whatsapp), packages(name, price)')
             .eq('photographer_id', p.id)
             .order('created_at', { ascending: false }),
           supabase.from('packages').select('*').eq('photographer_id', p.id).order('price'),
@@ -540,6 +544,13 @@ export default function StudioDash() {
           </button>
           <button
             type="button"
+            onClick={() => setTab('schedule')}
+            className={tab === 'schedule' ? 'chip-active rounded-full px-5 py-2 text-sm' : 'chip !border-transparent text-white/75 hover:text-white'}
+          >
+            🗓️ সময়সূচি
+          </button>
+          <button
+            type="button"
             onClick={() => setTab('packages')}
             className={tab === 'packages' ? 'chip-active rounded-full px-5 py-2 text-sm' : 'chip !border-transparent text-white/75 hover:text-white'}
           >
@@ -645,6 +656,11 @@ export default function StudioDash() {
           </div>
         )}
 
+        {/* SCHEDULE TAB — ক্যালেন্ডার + টাইম-স্লট + নোট */}
+        {tab === 'schedule' && (
+          <ScheduleTab photographerId={photographer.id} bookings={bookings} />
+        )}
+
         {/* BOOKINGS TAB */}
         {tab === 'bookings' && (
           <div className="space-y-4">
@@ -693,6 +709,30 @@ export default function StudioDash() {
                       <p className="text-sm italic text-white/65 bg-white/[0.03] p-3 rounded-xl2">
                         “{b.notes}”
                       </p>
+                    )}
+
+                    {/* Customer contact — ডিল কোঅর্ডিনেশন */}
+                    {(b.profiles?.whatsapp || b.profiles?.phone) && (
+                      <div className="flex flex-wrap items-center gap-2 text-xs">
+                        <span className="text-white/50">📱 গ্রাহক:</span>
+                        <span className="text-white/85 font-semibold tabular-nums" dir="ltr">
+                          {b.profiles?.whatsapp || b.profiles?.phone}
+                        </span>
+                        <a
+                          href={waLink(b.profiles?.whatsapp || b.profiles?.phone, `আসসালামু আলাইকুম, আপনার বুকিং (${bnDate(b.event_date)}) নিয়ে কথা বলছি — PicLagbe`) || '#'}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="btn-primary !py-1.5 !px-3 !text-xs !bg-emerald-500/90 hover:!bg-emerald-500"
+                        >
+                          💬 WhatsApp
+                        </a>
+                        <a
+                          href={`tel:${(b.profiles?.whatsapp || b.profiles?.phone || '').replace(/[^+\d]/g, '')}`}
+                          className="btn-ghost !py-1.5 !px-3 !text-xs"
+                        >
+                          📞 কল
+                        </a>
+                      </div>
                     )}
 
                     {/* Action buttons */}
