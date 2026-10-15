@@ -1,0 +1,41 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --gold: #d4af37;
+  --ink: #121316;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  @apply bg-paper text-gray-900 font-body antialiased;
+}
+
+h1, h2, h3, h4 { @apply font-heading; }
+
+.btn-primary {
+  @apply inline-flex items-center justify-center gap-2 bg-gold hover:bg-golddark text-ink font-heading font-semibold px-5 py-2.5 rounded-full transition-all duration-200 active:scale-[0.98] shadow-sm hover:shadow-md;
+}
+.btn-outline {
+  @apply inline-flex items-center justify-center gap-2 border border-gray-300 hover:border-gold hover:text-golddark text-gray-700 font-heading font-medium px-5 py-2.5 rounded-full transition-all duration-200 active:scale-[0.98] bg-white;
+}
+.btn-dark {
+  @apply inline-flex items-center justify-center gap-2 bg-ink hover:bg-slate2 text-white font-heading font-semibold px-5 py-2.5 rounded-full transition-all duration-200 active:scale-[0.98];
+}
+.card {
+  @apply bg-white rounded-xl2 border border-gray-200 shadow-card;
+}
+.input {
+  @apply w-full px-4 py-2.5 border border-gray-300 rounded-sm2 focus:outline-none focus:ring-2 focus:ring-gold/50 focus:border-gold transition bg-white text-sm;
+}
+.badge {
+  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+}
+.pill {
+  @apply px-4 py-2 rounded-full border border-gray-300 bg-white text-sm font-heading cursor-pointer transition-all hover:border-gold;
+}
+.pill-active {
+  @apply border-gold border-2 text-golddark bg-gold/5 font-semibold;
+}
