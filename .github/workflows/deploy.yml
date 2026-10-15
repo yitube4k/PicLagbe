@@ -13,7 +13,7 @@ jobs:
         with: { node-version: '20' }
       - run: npm install --ignore-scripts
       - run: npm rebuild esbuild 2>/dev/null || true
-      - run: VITE_BASE=/PicLagbe/ npx vite build
+      - run: VITE_BASE=/PicLagbe/ VITE_SUPABASE_URL=https://fiixytfznzppwgsogmnm.supabase.co VITE_SUPABASE_ANON_KEY=sb_publishable_1k9ZQHtBPZKkxueeAaz9jQ_TaktMdL6 npx vite build
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
         with:
