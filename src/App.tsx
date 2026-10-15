@@ -64,7 +64,7 @@ function Shell() {
 export default function App() {
   return (
     <AuthProvider>
-      <Router>
+      <Router basename={import.meta.env.VITE_BASE || '/'}>
         <Shell />
       </Router>
     </AuthProvider>
