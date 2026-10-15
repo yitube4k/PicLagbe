@@ -916,6 +916,10 @@
 .ph-name-label::before {
   display: none !important;
 }
+/* প্যান-লেভেল none-কে হারিয়ে নাম পিলকে ক্লিকেবল রাখা */
+.leaflet-tooltip-pane .leaflet-tooltip.ph-name-label {
+  pointer-events: auto !important;
+}
 
 /* ═══ PREMIUM BOOKING FORM (ivory editorial) ═══ */
 .bf-pkg {
