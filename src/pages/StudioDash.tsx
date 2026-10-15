@@ -5,6 +5,7 @@ import { useAuth } from '../lib/auth';
 import { Photographer, Booking, Package, PortfolioImage, Review } from '../lib/types';
 import { toBn, taka, bnDate } from '../lib/utils';
 import { COX_SPOTS } from '../lib/constants';
+import CldUploadField from '../components/CldUploadField';
 
 type StudioTab = 'overview' | 'bookings' | 'packages' | 'portfolio' | 'profile' | 'verification';
 
@@ -69,6 +70,8 @@ export default function StudioDash() {
   const [profPrice, setProfPrice] = useState(1000);
   const [profAvatar, setProfAvatar] = useState('');
   const [profCover, setProfCover] = useState('');
+  const [profPhone, setProfPhone] = useState('');
+  const [profAreas, setProfAreas] = useState('');
   const [profSaving, setProfSaving] = useState(false);
 
   // KYC verification form state
@@ -117,6 +120,8 @@ export default function StudioDash() {
         setProfPrice(p.starting_price || 1000);
         setProfAvatar(p.profile_photo_url || '');
         setProfCover(p.cover_photo_url || '');
+        setProfPhone(p.phone || '');
+        setProfAreas(p.service_areas || '');
 
         // Fetch bookings, packages, portfolio, reviews, kyc in parallel
         const [bRes, pkgRes, portRes, revRes, kycRes] = await Promise.all([
@@ -352,6 +357,8 @@ export default function StudioDash() {
       starting_price: Number(profPrice) || 1000,
       profile_photo_url: profAvatar.trim() || null,
       cover_photo_url: profCover.trim() || null,
+      phone: profPhone.trim() || null,
+      service_areas: profAreas.trim() || null,
     };
 
     const { error } = await supabase
@@ -879,41 +886,52 @@ export default function StudioDash() {
           <div className="space-y-6">
             <h3 className="font-bold text-white text-lg">পোর্টফোলিও ম্যানেজমেন্ট</h3>
 
-            {/* Add Portfolio Form */}
+            {/* Add Portfolio Form — Cloudinary hosting (f_auto → WebP) */}
             <form onSubmit={handleAddPortfolio} className="glass-card p-5 rounded-xl3 space-y-4">
               <h4 className="font-bold text-white text-sm">নতুন কাজ বা ছবি যোগ করুন</h4>
-              <div className="grid sm:grid-cols-3 gap-3">
-                <input
-                  type="url"
-                  required
+              <p className="text-[11px] text-white/50 -mt-2">
+                ফাইল আপলোড করলে Cloudinary-তে হোস্ট হবে — স্বয়ংক্রিয়ভাবে WebP-তে কনভার্ট হয়ে মোবাইলে দ্রুত লোড হবে।
+              </p>
+              <div className="grid sm:grid-cols-2 gap-3">
+                <CldUploadField
+                  label="ছবি / ভিডিও (Cloudinary আপলোড বা লিংক)"
                   value={portUrl}
-                  onChange={(e) => setPortUrl(e.target.value)}
-                  placeholder="ছবির বা ভিডিওর লিংক (https://…)"
-                  className="glass-input sm:col-span-2"
+                  onChange={setPortUrl}
+                  accept="both"
+                  folder="piclagbe/portfolio"
+                  placeholder="https://… (Cloudinary / Imgur / যেকোনো লিংক)"
+                  onUploaded={(rt) => {
+                    if (rt === 'video' && portType === 'photo') setPortType('video');
+                  }}
                 />
-                <select
-                  value={portType}
-                  onChange={(e) => setPortType(e.target.value as 'photo' | 'video' | 'demo')}
-                  className="glass-select"
-                >
-                  <option value="photo">ছবি (Photo)</option>
-                  <option value="video">ভিডিও (Video)</option>
-                  <option value="demo">ডেমো শুট (Demo)</option>
-                </select>
+                <div className="space-y-3">
+                  <div>
+                    <label className="field-label">ধরন</label>
+                    <select
+                      value={portType}
+                      onChange={(e) => setPortType(e.target.value as 'photo' | 'video' | 'demo')}
+                      className="glass-select"
+                    >
+                      <option value="photo">ছবি (Photo)</option>
+                      <option value="video">ভিডিও (Video)</option>
+                      <option value="demo">ডেমো শুট (Demo)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="field-label">ক্যাপশন</label>
+                    <input
+                      type="text"
+                      value={portCaption}
+                      onChange={(e) => setPortCaption(e.target.value)}
+                      placeholder="যেমন: লাবণী পয়েন্ট সানসেট"
+                      className="glass-input"
+                    />
+                  </div>
+                </div>
               </div>
-
-              <div className="flex gap-3">
-                <input
-                  type="text"
-                  value={portCaption}
-                  onChange={(e) => setPortCaption(e.target.value)}
-                  placeholder="ক্যাপশন (যেমন: লাবণী পয়েন্ট সানসেট)"
-                  className="glass-input flex-1"
-                />
-                <button type="submit" className="btn-primary shrink-0 px-6">
-                  যোগ করুন
-                </button>
-              </div>
+              <button type="submit" disabled={!portUrl.trim()} className="btn-primary w-full justify-center sm:w-auto">
+                যোগ করুন
+              </button>
             </form>
 
             {/* Portfolio Grid */}
@@ -1033,21 +1051,41 @@ export default function StudioDash() {
             </div>
 
             <div className="grid sm:grid-cols-2 gap-4">
+              <CldUploadField
+                label="প্রোফাইল ছবি (Cloudinary আপলোড বা লিংক)"
+                value={profAvatar}
+                onChange={setProfAvatar}
+                accept="image"
+                folder="piclagbe/avatars"
+              />
+              <CldUploadField
+                label="কভার ছবি (Cloudinary আপলোড বা লিংক)"
+                value={profCover}
+                onChange={setProfCover}
+                accept="image"
+                folder="piclagbe/covers"
+              />
+            </div>
+
+            <div className="grid sm:grid-cols-2 gap-4">
               <div>
-                <label className="field-label">প্রোফাইল ছবির লিংক</label>
+                <label className="field-label">ফোন নম্বর (WhatsApp কন্টাক্টের জন্য)</label>
                 <input
-                  type="url"
-                  value={profAvatar}
-                  onChange={(e) => setProfAvatar(e.target.value)}
+                  type="tel"
+                  value={profPhone}
+                  onChange={(e) => setProfPhone(e.target.value)}
+                  placeholder="01XXXXXXXXX"
                   className="glass-input"
                 />
+                <p className="text-[11px] text-white/45 mt-1">দিলে প্রোফাইলে WhatsApp-এ মেসেজ বাটন দেখা যাবে।</p>
               </div>
               <div>
-                <label className="field-label">কভার ছবির লিংক</label>
+                <label className="field-label">সার্ভিস এরিয়া (কমা দিয়ে আলাদা করুন)</label>
                 <input
-                  type="url"
-                  value={profCover}
-                  onChange={(e) => setProfCover(e.target.value)}
+                  type="text"
+                  value={profAreas}
+                  onChange={(e) => setProfAreas(e.target.value)}
+                  placeholder="লাবণী পয়েন্ট, হিমছড়ি, ইনানী বিচ"
                   className="glass-input"
                 />
               </div>
@@ -1127,39 +1165,30 @@ export default function StudioDash() {
                   />
                 </div>
                 <div className="grid sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="field-label">NID ফ্রন্ট ইমেজ URL</label>
-                    <input
-                      type="url"
-                      required
-                      value={kycNidFront}
-                      onChange={(e) => setKycNidFront(e.target.value)}
-                      placeholder="https://..."
-                      className="glass-input"
-                    />
-                  </div>
-                  <div>
-                    <label className="field-label">NID ব্যাক ইমেজ URL (ঐচ্ছিক)</label>
-                    <input
-                      type="url"
-                      value={kycNidBack}
-                      onChange={(e) => setKycNidBack(e.target.value)}
-                      placeholder="https://..."
-                      className="glass-input"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="field-label">আপনার লাইভ সেলফি URL</label>
-                  <input
-                    type="url"
+                  <CldUploadField
+                    label="NID ফ্রন্ট (আপলোড বা লিংক)"
+                    value={kycNidFront}
+                    onChange={setKycNidFront}
+                    accept="image"
+                    folder="piclagbe/kyc"
                     required
-                    value={kycSelfie}
-                    onChange={(e) => setKycSelfie(e.target.value)}
-                    placeholder="https://..."
-                    className="glass-input"
+                  />
+                  <CldUploadField
+                    label="NID ব্যাক (ঐচ্ছিক)"
+                    value={kycNidBack}
+                    onChange={setKycNidBack}
+                    accept="image"
+                    folder="piclagbe/kyc"
                   />
                 </div>
+                <CldUploadField
+                  label="আপনার লাইভ সেলফি (আপলোড বা লিংক)"
+                  value={kycSelfie}
+                  onChange={setKycSelfie}
+                  accept="image"
+                  folder="piclagbe/kyc"
+                  required
+                />
                 <div>
                   <label className="field-label">অতিরিক্ত নোট (যদি থাকে)</label>
                   <textarea

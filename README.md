@@ -45,3 +45,22 @@ src/
 ├── pages/        Home, Search, PhotographerProfile, Auth (Login/Register/Join)
 └── dashboard/    CustomerDash (+NotificationBell), PhotographerDash, AdminDash
 ```
+
+## ☁️ Cloudinary Setup (ছবি/ভিডিও হোস্টিং — ফ্রি)
+সব পোর্টফোলিও ছবি/ভিডিও, প্রোফাইল/কভার ফটো ও KYC ডকুমেন্ট **Cloudinary**-তে হোস্ট হয় — Supabase-এ শুধু URL (text) থাকে। Delivery স্বয়ংক্রিয়ভাবে **WebP/AVIP-তে কনভার্ট** (`f_auto,q_auto`) হয় এবং মোবাইলের জন্য responsive `srcSet` তৈরি হয়।
+
+1. [cloudinary.com](https://cloudinary.com)-এ ফ্রি অ্যাকাউন্ট খুলুন
+2. Dashboard থেকে **Cloud name** কপি করুন
+3. Settings → Upload → **Add upload preset** → Signing mode: **Unsigned** → সেভ করুন
+4. `.env`-এ দিন:
+```env
+VITE_CLOUDINARY_CLOUD_NAME=your-cloud-name
+VITE_CLOUDINARY_UPLOAD_PRESET=your-unsigned-preset
+```
+সেটআপ না থাকলেও পুরনো লিংক-পেস্ট পদ্ধতি কাজ করবে; ফাইল-আপলোড বাটন ব্যবহারের জন্য এই কনফিগ লাগবে।
+
+## 🗺️ ম্যাপ (API key ছাড়া ফ্রি)
+Leaflet + **Esri World Imagery** (স্যাটেলাইট) ও **Esri Dark Gray Canvas** (ম্যাপ) — কোনো API key ছাড়াই ফ্রি। "আমার লোকেশন নিন" চাপলে প্রতিটি স্পটের **দূরত্ব (কিমি)** দেখায় ও দূরত্ব অনুযায়ী সাজায়।
+
+## 📱 WhatsApp কন্টাক্ট
+ফটোগ্রাফার Studio Dashboard → প্রোফাইল সেটিংসে ফোন নম্বর দিলে প্রোফাইল পেজে **WhatsApp-এ মেসেজ** বাটন দেখাবে (pre-filled Bengali message সহ)।

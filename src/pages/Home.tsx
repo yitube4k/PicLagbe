@@ -165,8 +165,6 @@ export default function Home() {
     navigate(`/photographers?${params.toString()}`);
   };
 
-  const marqueeSpots = [...COX_SPOTS, ...COX_SPOTS];
-
   return (
     <div className="min-h-screen">
       {/* ═══ HERO SECTION ═══ */}
@@ -292,27 +290,18 @@ export default function Home() {
           কক্সবাজারের সব শুটিং পয়েন্ট — ম্যাপে খুঁজুন
         </p>
 
-        <div
-          className="overflow-hidden relative"
-          style={{
-            maskImage:
-              'linear-gradient(to right, transparent, black 10%, black 90%, transparent)',
-            WebkitMaskImage:
-              'linear-gradient(to right, transparent, black 10%, black 90%, transparent)',
-          }}
-        >
-          <div className="flex gap-3 w-max animate-marquee hover:[animation-play-state:paused]">
-            {marqueeSpots.map((s, idx) => (
-              <Link
-                key={`${s.key}-${idx}`}
-                to={`/finder?spot=${encodeURIComponent(s.key)}`}
-                className="chip hover:border-sunset-gold/50 shrink-0"
-              >
-                <span>{SPOT_KIND_EMOJI[s.kind] || '📍'}</span>
-                <span>{s.nameBn}</span>
-              </Link>
-            ))}
-          </div>
+        {/* Perf: static wrap-grid — continuous marquee animation removed (device lag) */}
+        <div className="flex flex-wrap justify-center gap-2.5">
+          {COX_SPOTS.map((s) => (
+            <Link
+              key={s.key}
+              to={`/finder?spot=${encodeURIComponent(s.key)}`}
+              className="chip hover:border-sunset-gold/50"
+            >
+              <span>{SPOT_KIND_EMOJI[s.kind] || '📍'}</span>
+              <span>{s.nameBn}</span>
+            </Link>
+          ))}
         </div>
       </section>
 

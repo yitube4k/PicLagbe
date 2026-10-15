@@ -28,6 +28,8 @@ export type Photographer = {
   rating_count: number | null
   profile_views: number | null
   home_spot: string | null
+  phone: string | null
+  service_areas: string | null
   photographer_categories?: { category_id: number; categories?: { name: string; slug: string; icon: string } }[]
 }
 

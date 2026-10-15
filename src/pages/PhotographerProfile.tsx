@@ -1,13 +1,71 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
 import { Photographer, Package } from '../lib/types';
 import { toBn, taka } from '../lib/utils';
 import { SPOT_BY_KEY } from '../lib/constants';
-import Reveal from '../components/Reveal';
-import BookingModal from '../components/BookingModal';
+import { waLink, cldUrl } from '../lib/cloudinary';
+import BookingForm from '../components/BookingForm';
 import MediaReviews from '../components/MediaReviews';
+
+/* ── Small presentational helpers ─────────────────────────────── */
+
+function VerifiedBadge() {
+  return (
+    <span
+      className="inline-flex items-center gap-1 rounded-full border border-[#bfd8cb] bg-[#e6efe9] px-2.5 py-0.5 text-[11px] font-bold text-[#1d4d3b]"
+      title="KYC-ভেরিফায়েড ফটোগ্রাফার"
+    >
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+        <polyline points="9 12 11 14 15 10" />
+      </svg>
+      ভেরিফায়েড
+    </span>
+  );
+}
+
+function Stars({ value, size = 14 }: { value: number; size?: number }) {
+  return (
+    <span className="inline-flex items-center gap-0.5" aria-hidden="true">
+      {[1, 2, 3, 4, 5].map((s) => (
+        <svg
+          key={s}
+          width={size}
+          height={size}
+          viewBox="0 0 24 24"
+          fill={s <= Math.round(value) ? '#b08d57' : 'none'}
+          stroke="#b08d57"
+          strokeWidth="1.8"
+          strokeLinejoin="round"
+        >
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+        </svg>
+      ))}
+    </span>
+  );
+}
+
+function StatBlock({ label, value, sub }: { label: string; value: string; sub?: string }) {
+  return (
+    <div className="rounded-[12px] border border-[#e6ddcc] bg-[#faf7f0] px-3 py-3 text-center">
+      <div className="pf-serif text-lg font-bold text-[#26231e] leading-tight">{value}</div>
+      <div className="text-[11px] font-semibold text-[#6b6357] mt-0.5">{label}</div>
+      {sub && <div className="text-[10px] text-[#8a8172]">{sub}</div>}
+    </div>
+  );
+}
+
+function WhatsAppIcon({ size = 18 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z" />
+    </svg>
+  );
+}
+
+/* ── Page ─────────────────────────────────────────────────────── */
 
 export default function PhotographerProfile() {
   const { id } = useParams<{ id: string }>();
@@ -17,111 +75,119 @@ export default function PhotographerProfile() {
   const [photographer, setPhotographer] = useState<Photographer | null>(null);
   const [packages, setPackages] = useState<Package[]>([]);
   const [loading, setLoading] = useState(true);
-  const [bookingOpen, setBookingOpen] = useState(false);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [completedCount, setCompletedCount] = useState<number | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [bookPkgId, setBookPkgId] = useState<string>('');
   const [chatStarting, setChatStarting] = useState(false);
+  const [avatarBroken, setAvatarBroken] = useState(false);
+  const [coverBroken, setCoverBroken] = useState(false);
 
   const viewCountedRef = useRef(false);
 
-  useEffect(() => {
-    let active = true;
+  const loadProfile = useCallback(async () => {
+    if (!id) return;
+    setLoading(true);
+    setLoadFailed(false);
 
-    async function loadProfile() {
-      if (!id) return;
-      setLoading(true);
+    try {
+      const [photoRes, pkgRes] = await Promise.all([
+        supabase
+          .from('photographers')
+          .select('*, photographer_categories(category_id, categories(name, slug, icon))')
+          .eq('id', id)
+          .maybeSingle(),
+        supabase
+          .from('packages')
+          .select('*')
+          .eq('photographer_id', id)
+          .order('price', { ascending: true }),
+      ]);
 
-      try {
-        const [photoRes, pkgRes] = await Promise.all([
+      if (photoRes.error || !photoRes.data) {
+        console.error('Photographer profile fetch error:', photoRes.error);
+        setPhotographer(null);
+        setLoadFailed(true);
+      } else {
+        const pData = photoRes.data as Photographer;
+        setPhotographer(pData);
+        setLoadFailed(false);
+
+        // Increment view count once per mount (existing behaviour preserved)
+        if (!viewCountedRef.current) {
+          viewCountedRef.current = true;
           supabase
             .from('photographers')
-            .select('*, photographer_categories(category_id, categories(name, slug, icon))')
+            .update({ profile_views: (pData.profile_views || 0) + 1 })
             .eq('id', id)
-            .maybeSingle(),
-          supabase
-            .from('packages')
-            .select('*')
-            .eq('photographer_id', id)
-            .order('price', { ascending: true }),
-        ]);
-
-        if (!active) return;
-
-        if (photoRes.error || !photoRes.data) {
-          console.error('Photographer profile fetch error:', photoRes.error);
-          setPhotographer(null);
-        } else {
-          const pData = photoRes.data as Photographer;
-          setPhotographer(pData);
-
-          // Increment view count once per session/mount
-          if (!viewCountedRef.current) {
-            viewCountedRef.current = true;
-            supabase
-              .from('photographers')
-              .update({ profile_views: (pData.profile_views || 0) + 1 })
-              .eq('id', id)
-              .then(({ error }) => {
-                if (error) console.error('View increment error:', error);
-              });
-          }
-        }
-
-        if (pkgRes.error) {
-          console.error('Packages fetch error:', pkgRes.error);
-        } else {
-          setPackages((pkgRes.data as Package[]) || []);
-        }
-      } catch (err) {
-        if (active) {
-          console.error('Profile load error:', err);
-        }
-      } finally {
-        if (active) {
-          setLoading(false);
+            .then(({ error }) => {
+              if (error) console.error('View increment error:', error);
+            });
         }
       }
+
+      if (pkgRes.error) {
+        console.error('Packages fetch error:', pkgRes.error);
+        setPackages([]);
+      } else {
+        setPackages((pkgRes.data as Package[]) || []);
+      }
+    } catch (err) {
+      console.error('Profile load error:', err);
+      setPhotographer(null);
+      setLoadFailed(true);
+    } finally {
+      setLoading(false);
     }
+  }, [id]);
 
+  useEffect(() => {
     loadProfile();
+    setAvatarBroken(false);
+    setCoverBroken(false);
+  }, [loadProfile]);
 
+  // Completed-shoot counter — shown only when RLS permits and count > 0
+  useEffect(() => {
+    if (!id) return;
+    let active = true;
+    supabase
+      .from('bookings')
+      .select('id', { count: 'exact', head: true })
+      .eq('photographer_id', id)
+      .eq('status', 'completed')
+      .then(({ count, error }) => {
+        if (active && !error && typeof count === 'number') setCompletedCount(count);
+      });
     return () => {
       active = false;
     };
   }, [id]);
 
-  if (loading) {
-    return (
-      <div className="max-w-5xl mx-auto px-6 pt-32 pb-20">
-        <div className="skeleton h-96 rounded-xl3 w-full" />
-      </div>
-    );
-  }
+  // Body scroll lock for mobile booking sheet
+  useEffect(() => {
+    document.body.style.overflow = sheetOpen ? 'hidden' : '';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [sheetOpen]);
 
-  if (!photographer) {
-    return (
-      <div className="max-w-5xl mx-auto px-6 pt-36 pb-20 text-center">
-        <div className="glass-card p-12 rounded-xl3 max-w-lg mx-auto">
-          <h2 className="text-xl font-bold text-white mb-2">ফটোগ্রাফার পাওয়া যায়নি</h2>
-          <p className="text-sm text-white/60 mb-6">
-            এই প্রোফাইলটি মুছে ফেলা হয়েছে অথবা ভুল লিঙ্কে প্রবেশ করেছেন।
-          </p>
-          <button
-            type="button"
-            onClick={() => navigate('/photographers')}
-            className="btn-primary"
-          >
-            সব ফটোগ্রাফার দেখুন
-          </button>
-        </div>
-      </div>
-    );
-  }
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setSheetOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
 
-  const avgRating = Number(photographer.rating_avg || 0).toFixed(1);
-  const ratingCount = Number(photographer.rating_count || 0);
-  const spotObj = SPOT_BY_KEY(photographer.home_spot || '');
-  const spotNameBn = spotObj?.nameBn || photographer.full_location || 'কক্সবাজার';
-
-  const isOwnProfile = profile?.role === 'photographer' && photographer.user_id === profile?.id;
+  const bookNow = (pkgId?: string) => {
+    if (pkgId) setBookPkgId(pkgId);
+    if (window.innerWidth < 1024) {
+      setSheetOpen(true);
+    } else {
+      document.getElementById('pf-booking')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
 
   const handleStartChat = async () => {
     if (!session) {
@@ -131,7 +197,6 @@ export default function PhotographerProfile() {
     if (!photographer || chatStarting) return;
     setChatStarting(true);
     try {
-      // find existing conversation
       const { data: existing } = await supabase
         .from('conversations')
         .select('id')
@@ -142,7 +207,6 @@ export default function PhotographerProfile() {
         navigate(`/chat?c=${existing.id}`);
         return;
       }
-      // create new conversation
       const { data: created, error } = await supabase
         .from('conversations')
         .insert({ customer_id: session.user.id, photographer_id: photographer.id })
@@ -158,351 +222,549 @@ export default function PhotographerProfile() {
     }
   };
 
-  // Budget range calculation
+  /* ── Loading skeleton ── */
+  if (loading) {
+    return (
+      <div className="pf-page">
+        <div className="pf-skeleton h-44 md:h-60 !rounded-none" />
+        <div className="max-w-6xl mx-auto px-4 -mt-14 relative">
+          <div className="pf-card p-6">
+            <div className="flex items-center gap-5">
+              <div className="pf-skeleton w-24 h-24 !rounded-2xl shrink-0" />
+              <div className="flex-1 space-y-3">
+                <div className="pf-skeleton h-6 w-1/3" />
+                <div className="pf-skeleton h-4 w-1/2" />
+                <div className="pf-skeleton h-4 w-1/4" />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6">
+              {[0, 1, 2, 3].map((i) => (
+                <div key={i} className="pf-skeleton h-16" />
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="max-w-6xl mx-auto px-4 py-8 grid lg:grid-cols-[1fr_360px] gap-6">
+          <div className="space-y-6">
+            <div className="pf-skeleton h-40" />
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              {[0, 1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="pf-skeleton aspect-[4/5]" />
+              ))}
+            </div>
+          </div>
+          <div className="pf-skeleton h-96 hidden lg:block" />
+        </div>
+      </div>
+    );
+  }
+
+  /* ── Error / not found ── */
+  if (!photographer) {
+    return (
+      <div className="pf-page flex items-center justify-center min-h-screen px-4">
+        <div className="pf-card p-10 max-w-md w-full text-center">
+          <div className="w-14 h-14 mx-auto rounded-full bg-[#f1e8d8] flex items-center justify-center mb-4">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#b08d57" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+          </div>
+          <h2 className="pf-serif text-xl font-bold text-[#26231e] mb-2">
+            {loadFailed ? 'প্রোফাইল লোড করা যায়নি' : 'ফটোগ্রাফার পাওয়া যায়নি'}
+          </h2>
+          <p className="text-sm text-[#6b6357] mb-6 leading-relaxed">
+            {loadFailed
+              ? 'নেটওয়ার্ক সমস্যা হতে পারে — আবার চেষ্টা করুন অথবা পরে ফিরে আসুন।'
+              : 'এই প্রোফাইলটি মুছে ফেলা হয়েছে অথবা ভুল লিঙ্কে প্রবেশ করেছেন।'}
+          </p>
+          <div className="flex gap-3 justify-center flex-wrap">
+            {loadFailed && (
+              <button type="button" onClick={loadProfile} className="pf-btn-primary">
+                আবার চেষ্টা করুন
+              </button>
+            )}
+            <Link to="/photographers" className="pf-btn-outline">
+              সব ফটোগ্রাফার দেখুন
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  /* ── Ready ── */
+  const avgRating = Number(photographer.rating_avg || 0);
+  const ratingCount = Number(photographer.rating_count || 0);
+  const spotObj = SPOT_BY_KEY(photographer.home_spot || '');
+  const spotNameBn = spotObj?.nameBn || photographer.full_location || 'কক্সবাজার';
+  const isOwnProfile = profile?.role === 'photographer' && photographer.user_id === profile?.id;
+
   const prices = packages.map((pkg) => Number(pkg.price));
   const minPrice = prices.length > 0 ? Math.min(...prices) : Number(photographer.starting_price || 0);
-  const maxPrice = prices.length > 0 ? Math.max(...prices) : minPrice;
 
-  // Average hourly rate calculation
-  const avgHourly =
-    packages.length > 0
-      ? packages.reduce(
-          (acc, pkg) => acc + Number(pkg.price) / Math.max(1, Number(pkg.duration_hours || 1)),
-          0
-        ) / packages.length
-      : Number(photographer.starting_price || 0);
+  const serviceAreas: string[] = (photographer.service_areas || '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  const languages: string[] = (photographer.languages || '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  const equipment: string[] = (photographer.equipment || '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  const categories = (photographer.photographer_categories || [])
+    .map((c) => c?.categories?.name)
+    .filter(Boolean) as string[];
+
+  const waHref = waLink(
+    photographer.phone,
+    `আসসালামু আলাইকুম ${photographer.display_name} ভাই, ফটোলাগবে থেকে যোগাযোগ করছি। একটি ফটোশুট সম্পর্কে জানতে চাই।`
+  );
+
+  const avatarSrc = photographer.profile_photo_url && !avatarBroken
+    ? cldUrl(photographer.profile_photo_url, { w: 240, h: 240, c: 'fill' })
+    : '';
+
+  const coverSrc = photographer.cover_photo_url && !coverBroken
+    ? cldUrl(photographer.cover_photo_url, { w: 1600, c: 'fill' })
+    : '';
 
   const getInitials = (name?: string | null) => {
     if (!name || !name.trim()) return 'ফ';
     const parts = name.trim().split(/\s+/);
-    if (parts.length >= 2) {
-      return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
-    }
+    if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
     return parts[0].slice(0, 2).toUpperCase();
   };
 
   return (
-    <div className="min-h-screen pb-24 lg:pb-0">
-      {/* 1) COVER SECTION */}
-      <div className="relative h-[46vh] min-h-[340px] overflow-hidden bg-twilight-900">
-        {photographer.cover_photo_url ? (
+    <div className="pf-page pb-24 lg:pb-0">
+      {/* ═══ COVER ═══ */}
+      <div className="relative h-44 md:h-60 overflow-hidden bg-[#143528]">
+        {coverSrc ? (
           <img
-            src={photographer.cover_photo_url}
-            alt={photographer.display_name}
+            src={coverSrc}
+            alt={`${photographer.display_name} — কভার ছবি`}
             className="w-full h-full object-cover"
+            onError={() => setCoverBroken(true)}
           />
         ) : (
-          <div className="w-full h-full bg-sunset-soft" />
+          <div
+            className="w-full h-full"
+            style={{
+              background:
+                'linear-gradient(135deg, #143528 0%, #1d4d3b 55%, #2a6350 100%)',
+            }}
+          />
         )}
-
-        {/* Overlays */}
-        <div className="absolute inset-0 bg-gradient-to-t from-twilight-950 via-twilight-950/40 to-transparent pointer-events-none" />
-
-        {/* Back Button */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{ background: 'linear-gradient(to bottom, rgba(20,53,40,0.05) 40%, #f7f3ec 100%)' }}
+        />
         <button
           type="button"
           onClick={() => navigate(-1)}
-          className="absolute top-24 left-6 glass-strong rounded-full px-4 py-2 flex items-center gap-2 text-white text-sm hover:border-sunset-gold/50 transition z-20"
+          className="absolute top-20 left-4 z-20 inline-flex items-center gap-2 rounded-full border border-[#e6ddcc] bg-white/90 px-4 py-2 text-sm font-semibold text-[#26231e] shadow-sm hover:bg-white"
         >
-          <span>←</span>
-          <span>ফিরে যান</span>
+          <span aria-hidden="true">←</span> ফিরে যান
         </button>
-
-        {/* Floating Identity Card */}
-        <div className="absolute -bottom-1 inset-x-0 z-30">
-          <div className="max-w-5xl mx-auto px-6">
-            <div className="glass-strong rounded-xl3 p-6 flex flex-wrap items-center gap-5 shadow-glass-lg border border-white/[0.15]">
-              {/* Avatar */}
-              <div className="relative shrink-0">
-                {photographer.profile_photo_url ? (
-                  <img
-                    src={photographer.profile_photo_url}
-                    alt={photographer.display_name}
-                    className="w-24 h-24 rounded-2xl ring-4 ring-sunset-gold/30 object-cover bg-twilight-800"
-                  />
-                ) : (
-                  <div className="w-24 h-24 rounded-2xl ring-4 ring-sunset-gold/30 bg-sunset-gradient flex items-center justify-center text-2xl font-extrabold text-[#1A0E06]">
-                    {getInitials(photographer.display_name)}
-                  </div>
-                )}
-              </div>
-
-              {/* Info */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h1 className="text-2xl font-extrabold text-white truncate">
-                    {photographer.display_name}
-                  </h1>
-                  {photographer.verified && (
-                    <span className="badge badge-verified bg-emerald-500/20 border-emerald-400/45 text-emerald-300">
-                      ✓ ভেরিফায়েড
-                    </span>
-                  )}
-                </div>
-
-                <div className="flex items-center gap-2 flex-wrap text-sm text-white/60 mt-1">
-                  <span className="flex items-center gap-1">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" strokeWidth="2">
-                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                      <circle cx="12" cy="10" r="3" />
-                    </svg>
-                    {photographer.full_location || 'কক্সবাজার'}
-                  </span>
-                  <span>·</span>
-                  <span>💎 {toBn(photographer.experience_years || 1)}+ বছর অভিজ্ঞতা</span>
-                  <span>·</span>
-                  <span className="flex items-center gap-1 text-white">
-                    <span className="text-sunset-gold">★</span> {toBn(avgRating)} ({toBn(ratingCount)})
-                  </span>
-                </div>
-
-                {/* Categories */}
-                {photographer.photographer_categories && photographer.photographer_categories.length > 0 && (
-                  <div className="flex flex-wrap items-center gap-1.5 mt-3">
-                    {photographer.photographer_categories.map((c, i) => {
-                      const catName = c?.categories?.name;
-                      if (!catName) return null;
-                      return (
-                        <span key={c.category_id || i} className="chip !text-xs !py-1 !px-2.5">
-                          {catName}
-                        </span>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-
-              {/* Right CTA */}
-              <div className="shrink-0 text-right ml-auto flex flex-col items-end gap-2">
-                <div>
-                  <span className="text-xs text-white/45 mr-1">শুরু প্যাকেজ</span>
-                  <div className="price-tag text-2xl">{taka(photographer.starting_price || 0)}</div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setBookingOpen(true)}
-                  className="btn-primary px-6 py-3 text-base"
-                >
-                  📅 বুক করুন
-                </button>
-                {!isOwnProfile && (
-                  <button
-                    type="button"
-                    onClick={handleStartChat}
-                    disabled={chatStarting}
-                    className="btn-ghost px-5 py-3 text-sm"
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="inline-block mr-1.5 -mt-0.5">
-                      <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
-                    </svg>
-                    {chatStarting ? 'খোলা হচ্ছে…' : 'চ্যাট করুন'}
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
 
-      {/* 2) BODY CONTENT */}
-      <div className="max-w-5xl mx-auto px-6 py-12 space-y-12 mt-4">
-        {/* About + Quick Facts */}
-        <div className="grid lg:grid-cols-3 gap-6">
-          <div className="glass-card p-6 lg:col-span-2 rounded-xl3 space-y-4">
-            <h3 className="text-lg font-bold text-white">নিজের সম্পর্কে</h3>
-            <p className="text-white/75 leading-relaxed text-base">
-              {photographer.bio || 'কক্সবাজারের সমুদ্র সৈকত ও প্রকৃতিকে ফ্রেমে বন্দি করতে আমি ভালোবাস। প্রি-ওয়েডিং, বিয়ে কিংবা ট্রাভেল শুটের জন্য আমার সাথে যোগাযোগ করতে পারেন।'}
+      {/* ═══ HEADER CARD ═══ */}
+      <div className="max-w-6xl mx-auto px-4 relative z-10 -mt-12 md:-mt-14">
+        <header className="pf-card p-5 md:p-7">
+          <div className="flex flex-col md:flex-row md:items-start gap-5">
+            {/* Avatar */}
+            <div className="shrink-0 relative">
+              {avatarSrc ? (
+                <img
+                  src={avatarSrc}
+                  alt={photographer.display_name}
+                  className="w-24 h-24 md:w-28 md:h-28 rounded-2xl object-cover border-2 border-[#e6ddcc]"
+                  style={{ boxShadow: '0 0 0 4px #f1e8d8' }}
+                  onError={() => setAvatarBroken(true)}
+                />
+              ) : (
+                <div
+                  className="w-24 h-24 md:w-28 md:h-28 rounded-2xl bg-[#f1e8d8] border-2 border-[#e3d5b8] flex items-center justify-center pf-serif text-2xl font-bold text-[#b08d57]"
+                >
+                  {getInitials(photographer.display_name)}
+                </div>
+              )}
+              {photographer.verified && (
+                <span className="absolute -bottom-2 -right-2 rounded-full bg-[#1d4d3b] text-white p-1.5 border-2 border-[#f7f3ec]" title="ভেরিফায়েড">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                </span>
+              )}
+            </div>
+
+            {/* Identity */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <h1 className="text-2xl md:text-[1.7rem] font-bold text-[#26231e] leading-tight">
+                  {photographer.display_name}
+                </h1>
+                {photographer.verified && <VerifiedBadge />}
+              </div>
+
+              <div className="flex items-center gap-x-3 gap-y-1 flex-wrap text-sm text-[#6b6357] mt-1.5">
+                <span className="inline-flex items-center gap-1.5">
+                  <Stars value={avgRating} />
+                  <b className="text-[#26231e]">{toBn(avgRating.toFixed(1))}</b>
+                  <span className="text-[#8a8172]">({toBn(ratingCount)} রিভিউ)</span>
+                </span>
+                <span className="text-[#d8cfbd]" aria-hidden="true">|</span>
+                <span className="inline-flex items-center gap-1">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#b08d57" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                    <circle cx="12" cy="10" r="3" />
+                  </svg>
+                  {photographer.full_location || spotNameBn}
+                </span>
+                <span className="text-[#d8cfbd]" aria-hidden="true">|</span>
+                <span>{toBn(photographer.experience_years || 1)}+ বছর অভিজ্ঞতা</span>
+              </div>
+
+              {categories.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mt-3">
+                  {categories.map((c, i) => (
+                    <span key={i} className="pf-chip !text-[11px] !py-1">{c}</span>
+                  ))}
+                </div>
+              )}
+
+              {/* Mobile quick stats */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mt-4 lg:hidden">
+                <StatBlock label="রেটিং" value={`★ ${toBn(avgRating.toFixed(1))}`} sub={`${toBn(ratingCount)} রিভিউ`} />
+                <StatBlock label="অভিজ্ঞতা" value={`${toBn(photographer.experience_years || 1)}+`} sub="বছর" />
+                {completedCount !== null && completedCount > 0 && (
+                  <StatBlock label="সম্পন্ন শুট" value={toBn(completedCount)} sub="কমপ্লিট" />
+                )}
+                <StatBlock label="প্রোফাইল ভিউ" value={toBn(photographer.profile_views || 0)} />
+              </div>
+            </div>
+
+            {/* Desktop CTA */}
+            <div className="hidden lg:flex flex-col items-end gap-2 shrink-0">
+              <div className="text-right">
+                <span className="text-[11px] font-semibold text-[#8a8172] block">শুরু প্যাকেজ</span>
+                <span className="pf-serif text-2xl font-bold text-[#1d4d3b]">{taka(minPrice)}</span>
+              </div>
+              <button type="button" onClick={() => bookNow()} className="pf-btn-primary">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <rect x="3" y="4" width="18" height="18" rx="2" />
+                  <line x1="16" y1="2" x2="16" y2="6" />
+                  <line x1="8" y1="2" x2="8" y2="6" />
+                  <line x1="3" y1="10" x2="21" y2="10" />
+                </svg>
+                বুক করুন
+              </button>
+              {waHref && (
+                <a href={waHref} target="_blank" rel="noopener noreferrer" className="pf-btn-outline !text-[#128c4b] !border-[#128c4b]/40 hover:!bg-[#e6f4ec]">
+                  <WhatsAppIcon /> WhatsApp
+                </a>
+              )}
+            </div>
+          </div>
+
+          {/* Desktop stats */}
+          <div className="hidden lg:grid grid-cols-4 gap-3 mt-6 pt-6 border-t border-[#e6ddcc]">
+            <StatBlock label="রেটিং" value={`★ ${toBn(avgRating.toFixed(1))}`} sub={`${toBn(ratingCount)} রিভিউ`} />
+            <StatBlock label="অভিজ্ঞতা" value={`${toBn(photographer.experience_years || 1)}+ বছর`} />
+            {completedCount !== null && completedCount > 0 ? (
+              <StatBlock label="সম্পন্ন শুট" value={toBn(completedCount)} sub="কমপ্লিট বুকিং" />
+            ) : (
+              <StatBlock label="হোম স্পট" value={spotNameBn.length > 14 ? spotNameBn.slice(0, 14) + '…' : spotNameBn} />
+            )}
+            <StatBlock label="প্রোফাইল ভিউ" value={toBn(photographer.profile_views || 0)} />
+          </div>
+        </header>
+      </div>
+
+      {/* ═══ BODY ═══ */}
+      <div className="max-w-6xl mx-auto px-4 py-8 grid lg:grid-cols-[1fr_360px] gap-6 items-start">
+        {/* ── MAIN ── */}
+        <main className="space-y-6 min-w-0">
+          {/* About */}
+          <section className="pf-card p-6" aria-labelledby="pf-about-h">
+            <h2 id="pf-about-h" className="pf-serif text-lg font-bold text-[#26231e] mb-3">নিজের সম্পর্কে</h2>
+            <p className="text-[15px] leading-[1.85] text-[#4d463c]">
+              {photographer.bio?.trim() ||
+                `${spotNameBn} এলাকার প্রফেশনাল ফটোগ্রাফার। প্রি-ওয়েডিং, বিয়ে, ট্রাভেল ও ফ্যামিলি শুটের জন্য আমার সাথে যোগাযোগ করতে পারেন — প্রাকৃতিক আলোয় জীবন্ত ও আবেগময় ফ্রেম আমার বিশেষত্ব।`}
             </p>
 
-            {photographer.languages && photographer.languages.length > 0 && (
-              <div className="pt-2">
-                <span className="text-xs font-semibold text-white/50 block mb-2">ভাষাসমূহ</span>
-                <div className="flex flex-wrap gap-2">
-                  {photographer.languages.split(',').map((s) => s.trim()).filter(Boolean).map((lang, idx) => (
-                    <span key={idx} className="chip !text-xs">
-                      🗣 {lang}
-                    </span>
-                  ))}
-                </div>
+            {(languages.length > 0 || equipment.length > 0) && (
+              <div className="grid sm:grid-cols-2 gap-4 mt-5 pt-5 border-t border-[#e6ddcc]">
+                {languages.length > 0 && (
+                  <div>
+                    <span className="text-[11px] font-bold uppercase tracking-wide text-[#8a8172] block mb-2">ভাষাসমূহ</span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {languages.map((lang, i) => (
+                        <span key={i} className="pf-chip !text-[11px] !py-1">{lang}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {equipment.length > 0 && (
+                  <div>
+                    <span className="text-[11px] font-bold uppercase tracking-wide text-[#8a8172] block mb-2">যন্ত্রপাতি</span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {equipment.map((eq, i) => (
+                        <span key={i} className="pf-chip !text-[11px] !py-1">{eq}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
+          </section>
 
-            {photographer.equipment && photographer.equipment.length > 0 && (
-              <div className="pt-2">
-                <span className="text-xs font-semibold text-white/50 block mb-2">যন্ত্রপাতি ও ক্যামেরা</span>
-                <div className="flex flex-wrap gap-2">
-                  {photographer.equipment.split(',').map((s) => s.trim()).filter(Boolean).map((eq, idx) => (
-                    <span key={idx} className="chip !text-xs">
-                      🎥 {eq}
-                    </span>
-                  ))}
-                </div>
+          {/* Specialties & service areas */}
+          <section className="pf-card p-6" aria-labelledby="pf-areas-h">
+            <h2 id="pf-areas-h" className="pf-serif text-lg font-bold text-[#26231e] mb-3">সার্ভিস এরিয়া ও বিশেষত্ব</h2>
+            <div className="flex flex-wrap gap-2">
+              <span className="pf-chip">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#b08d57" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                  <circle cx="12" cy="10" r="3" />
+                </svg>
+                হোম স্পট: {spotNameBn}
+              </span>
+              {serviceAreas.map((a, i) => (
+                <span key={i} className="pf-chip">{a}</span>
+              ))}
+              <span className="pf-chip">সমগ্র কক্সবাজার</span>
+            </div>
+            {spotObj && (
+              <Link
+                to={`/finder?spot=${encodeURIComponent(spotObj.key)}`}
+                className="mt-4 inline-flex items-center gap-1.5 text-sm font-bold text-[#1d4d3b] hover:underline"
+              >
+                ম্যাপে এই স্পট দেখুন
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                  <polyline points="12 5 19 12 12 19" />
+                </svg>
+              </Link>
+            )}
+          </section>
+
+          {/* Gallery / media / reviews */}
+          <MediaReviews photographerId={photographer.id} />
+
+          {/* Packages */}
+          <section aria-labelledby="pf-pkg-h">
+            <div className="flex items-end justify-between mb-4">
+              <div>
+                <h2 id="pf-pkg-h" className="pf-serif text-xl font-bold text-[#26231e]">প্যাকেজ ও মূল্য</h2>
+                <p className="text-sm text-[#6b6357] mt-0.5">স্বচ্ছ দাম — কোনো লুকানো চার্জ নেই</p>
+              </div>
+            </div>
+
+            {packages.length === 0 ? (
+              <div className="pf-card p-8 text-center">
+                <p className="text-[#4d463c] font-semibold">এখনো কোনো প্যাকেজ যোগ করা হয়নি</p>
+                <p className="text-sm text-[#6b6357] mt-1">কাস্টম বুকিংয়ের জন্য সরাসরি রিকোয়েস্ট পাঠান অথবা WhatsApp-এ মেসেজ করুন।</p>
+              </div>
+            ) : (
+              <div className="grid md:grid-cols-2 gap-4">
+                {packages.map((pkg, idx) => {
+                  const isPopular = idx === 0;
+                  return (
+                    <article
+                      key={pkg.id}
+                      className={`pf-card p-5 flex flex-col relative ${isPopular ? '!border-[#b08d57]' : ''}`}
+                    >
+                      {isPopular && (
+                        <span className="absolute -top-2.5 right-4 rounded-full bg-[#b08d57] px-3 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
+                          জনপ্রিয়
+                        </span>
+                      )}
+                      <div className="flex items-baseline justify-between gap-3">
+                        <h3 className="pf-serif font-bold text-[#26231e] text-base">{pkg.name}</h3>
+                        <span className="pf-serif text-xl font-bold text-[#1d4d3b] whitespace-nowrap">{taka(pkg.price)}</span>
+                      </div>
+                      <p className="text-xs text-[#6b6357] mt-0.5">
+                        {toBn(pkg.duration_hours || 0)} ঘণ্টা{pkg.description ? ` · ${pkg.description}` : ''}
+                      </p>
+                      {pkg.features && pkg.features.length > 0 && (
+                        <ul className="mt-3 space-y-1.5 flex-1">
+                          {pkg.features.map((feat, fIdx) => (
+                            <li key={fIdx} className="flex items-start gap-2 text-[13px] text-[#4d463c]">
+                              <svg className="shrink-0 mt-[3px]" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#1d4d3b" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                <polyline points="20 6 9 17 4 12" />
+                              </svg>
+                              {feat}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => bookNow(pkg.id)}
+                        className={isPopular ? 'pf-btn-primary w-full mt-4' : 'pf-btn-outline w-full mt-4'}
+                      >
+                        এই প্যাকেজে বুক করুন
+                      </button>
+                    </article>
+                  );
+                })}
               </div>
             )}
-          </div>
+          </section>
 
-          {/* Quick Facts Column */}
-          <div className="space-y-4">
-            <div className="glass-card p-4 rounded-xl2 flex justify-between items-center">
-              <span className="text-sm text-white/60">সাড়ার হার</span>
-              <span className="font-bold text-white text-base">৯৫%</span>
-            </div>
-            <div className="glass-card p-4 rounded-xl2 flex justify-between items-center">
-              <span className="text-sm text-white/60">প্রোফাইল ভিউ</span>
-              <span className="font-bold text-sunset-gold text-base">
-                {toBn(photographer.profile_views || 0)}
-              </span>
-            </div>
-            <div className="glass-card p-4 rounded-xl2 flex justify-between items-center">
-              <span className="text-sm text-white/60">হোম স্পট</span>
-              <span className="font-bold text-white text-sm truncate max-w-[160px]" title={spotNameBn}>
-                {spotNameBn}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* PACKAGES & BUDGET REVIEW */}
-        <div>
-          <div className="mb-6">
-            <h3 className="section-head text-xl">প্যাকেজ ও বাজেট রিভিউ</h3>
-            <p className="section-sub mt-1">স্বচ্ছ দাম — লুকানো চার্জ নেই</p>
-          </div>
-
-          {/* Budget Summary Strip */}
-          <div className="glass rounded-xl3 p-5 mb-6 flex flex-wrap gap-6 items-center justify-between">
-            <div className="flex items-center gap-3">
-              <span className="text-sm text-white/60">বাজেট রেঞ্জ:</span>
-              <span className="price-tag">
-                {taka(minPrice)} – {taka(maxPrice)}
-              </span>
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="text-sm text-white/60">গড় প্রতি ঘণ্টা:</span>
-              <span className="price-tag">{taka(Math.round(avgHourly))}</span>
+          {/* Safety */}
+          <section className="rounded-[18px] border border-[#d9e6de] bg-[#eef5f1] p-5 flex gap-4 items-start">
+            <div className="w-11 h-11 rounded-xl bg-[#1d4d3b] text-white flex items-center justify-center shrink-0">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+              </svg>
             </div>
             <div>
-              {Number(avgRating) >= 4.5 ? (
-                <span className="bdg-accepted">💰 দুর্দান্ত ভ্যালু</span>
-              ) : (
-                <span className="badge">ভ্যালু ভালো</span>
+              <h3 className="pf-serif font-bold text-[#143528]">নিরাপদ বুকিং</h3>
+              <p className="text-sm text-[#3f5c50] mt-1 leading-relaxed">
+                অগ্রিম পেমেন্ট ছাড়াই বুক করুন — ফটোগ্রাফার রিকোয়েস্ট গ্রহণ করলে তবেই কনফার্ম। কোনো সমস্যা হলে অ্যাডমিন সাপোর্ট সবসময় পাশে আছে।
+              </p>
+            </div>
+          </section>
+        </main>
+
+        {/* ── DESKTOP BOOKING RAIL (navbar-এর নিচে sticky — কখনো লুকায় না) ── */}
+        <aside
+          id="pf-booking"
+          className="hidden lg:block lg:sticky lg:top-24 scroll-mt-24"
+          aria-label="বুকিং কার্ড"
+        >
+          <div className="pf-card p-6 !border-[#cfc4ac]">
+            <div className="flex items-baseline justify-between mb-1">
+              <h2 className="pf-serif text-lg font-bold text-[#26231e]">বুকিং</h2>
+              <span className="text-sm text-[#6b6357]">
+                শুরু <span className="pf-serif font-bold text-[#1d4d3b] text-lg">{taka(minPrice)}</span>
+              </span>
+            </div>
+            <p className="text-xs text-[#8a8172] mb-5">তারিখ বাছাই করে রিকোয়েস্ট পাঠান — রিপ্লাই ২৪ ঘণ্টার মধ্যে</p>
+
+            <BookingForm
+              p={photographer}
+              packages={packages}
+              selectedPkgId={bookPkgId === '' ? undefined : bookPkgId}
+              onPackageChange={setBookPkgId}
+              compact
+            />
+
+            <div className="mt-5 pt-5 border-t border-[#e6ddcc] space-y-2.5">
+              {waHref && (
+                <a
+                  href={waHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full inline-flex items-center justify-center gap-2 rounded-[12px] border border-[#128c4b]/40 bg-[#e6f4ec] px-4 py-2.5 text-sm font-bold text-[#128c4b] hover:bg-[#d9eee2] transition-colors"
+                >
+                  <WhatsAppIcon /> WhatsApp-এ মেসেজ করুন
+                </a>
               )}
-              <span className="text-xs text-white/50 ml-2">রিভিউ-ভিত্তিক মূল্যায়ন</span>
+              {!isOwnProfile && (
+                <button
+                  type="button"
+                  onClick={handleStartChat}
+                  disabled={chatStarting}
+                  className="pf-btn-outline w-full"
+                >
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+                  </svg>
+                  {chatStarting ? 'খোলা হচ্ছে…' : 'সাইট-চ্যাটে কথা বলুন'}
+                </button>
+              )}
             </div>
           </div>
-
-          {packages.length === 0 ? (
-            <div className="glass-card p-8 rounded-xl3 text-center text-white/70">
-              কাস্টম প্যাকেজের জন্য সরাসরি বুক করুন
-            </div>
-          ) : (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-              {packages.map((pkg, idx) => {
-                const isPopular = idx === 0;
-                return (
-                  <div
-                    key={pkg.id}
-                    className={`glass-card p-6 rounded-xl3 flex flex-col justify-between relative ${
-                      isPopular ? 'border-sunset-gold/50 shadow-sunset-glow' : ''
-                    }`}
-                  >
-                    {isPopular && (
-                      <span className="badge bg-sunset-gradient text-[#1A0E06] font-extrabold absolute top-4 right-4">
-                        জনপ্রিয়
-                      </span>
-                    )}
-
-                    <div>
-                      <h4 className="font-bold text-white text-lg mb-1">{pkg.name}</h4>
-                      <p className="text-xs text-white/60 min-h-[40px] leading-relaxed">
-                        {pkg.description || 'প্রফেশনাল শুটিং ও হাই রেজুলেশন এডিটেড ছবি।'}
-                      </p>
-
-                      <div className="mt-3 flex items-baseline justify-between">
-                        <span className="price-tag text-2xl">{taka(pkg.price)}</span>
-                        <span className="text-xs text-white/50">⏱ {toBn(pkg.duration_hours || 0)} ঘণ্টা</span>
-                      </div>
-                    </div>
-
-                    <hr className="divider-glow my-4" />
-
-                    {pkg.features && pkg.features.length > 0 && (
-                      <ul className="space-y-2 flex-1 mb-6">
-                        {pkg.features.map((feat, fIdx) => (
-                          <li key={fIdx} className="flex items-start gap-2 text-sm text-white/75">
-                            <span className="text-sunset-gold font-bold shrink-0">✓</span>
-                            <span>{feat}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-
-                    <button
-                      type="button"
-                      onClick={() => setBookingOpen(true)}
-                      className={isPopular ? 'btn-primary w-full justify-center' : 'btn-ghost w-full justify-center'}
-                    >
-                      বুক করুন
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        {/* MEDIA & REVIEWS TABS */}
-        <MediaReviews photographerId={photographer.id} />
-
-        {/* SAFETY STRIP */}
-        <div className="glass rounded-xl2 p-5 flex gap-4 items-center">
-          <div className="w-12 h-12 rounded-2xl glass flex items-center justify-center shrink-0 text-xl">
-            🛡️
-          </div>
-          <div>
-            <h4 className="font-bold text-white text-base">নিরাপদ বুকিং</h4>
-            <p className="text-sm text-white/60 mt-0.5 leading-relaxed">
-              অগ্রিম পেমেন্ট ছাড়াই বুক করুন। ফটোগ্রাফার রিকোয়েস্ট গ্রহণ করলে তবেই কনফার্ম। কোনো সমস্যা হলে অ্যাডমিন সাপোর্ট আছে।
-            </p>
-          </div>
-        </div>
+        </aside>
       </div>
 
-      {/* FIXED MOBILE CTA (lg:hidden) */}
-      <div className="fixed bottom-0 inset-x-0 z-40 lg:hidden glass-strong border-t border-white/10 p-4 flex items-center justify-between gap-4">
-        <div>
-          <span className="text-[11px] text-white/45 block">শুরু প্যাকেজ</span>
-          <span className="price-tag text-lg">{taka(photographer.starting_price || 0)}</span>
+      {/* ═══ MOBILE STICKY CTA ═══ */}
+      <div className="fixed bottom-0 inset-x-0 z-40 lg:hidden border-t border-[#e6ddcc] bg-white/95 backdrop-blur-md px-4 py-3 flex items-center gap-3">
+        <div className="min-w-0">
+          <span className="text-[10px] font-semibold text-[#8a8172] block leading-none">শুরু প্যাকেজ</span>
+          <span className="pf-serif text-lg font-bold text-[#1d4d3b] leading-tight">{taka(minPrice)}</span>
         </div>
-        <div className="flex items-center gap-3 flex-1">
+        {waHref && (
+          <a
+            href={waHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="WhatsApp-এ যোগাযোগ করুন"
+            className="shrink-0 inline-flex items-center justify-center w-11 h-11 rounded-[12px] border border-[#128c4b]/40 bg-[#e6f4ec] text-[#128c4b]"
+          >
+            <WhatsAppIcon size={20} />
+          </a>
+        )}
+        {!isOwnProfile && (
           <button
             type="button"
             onClick={handleStartChat}
             disabled={chatStarting}
             aria-label="ফটোগ্রাফারের সাথে চ্যাট করুন"
-            className="btn-ghost justify-center py-3 px-4 shrink-0"
+            className="shrink-0 inline-flex items-center justify-center w-11 h-11 rounded-[12px] border border-[#cfc4ac] bg-white text-[#1d4d3b]"
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
             </svg>
           </button>
-          <button
-            type="button"
-            onClick={() => setBookingOpen(true)}
-            className="btn-primary flex-1 justify-center py-3 text-base"
-          >
-            📅 বুক করুন
-          </button>
-        </div>
+        )}
+        <button type="button" onClick={() => bookNow()} className="pf-btn-primary flex-1 justify-center !py-3">
+          বুক করুন
+        </button>
       </div>
 
-      {/* Booking Modal */}
-      <BookingModal
-        p={photographer}
-        packages={packages}
-        open={bookingOpen}
-        onClose={() => setBookingOpen(false)}
-      />
+      {/* ═══ MOBILE BOOKING SHEET ═══ */}
+      {sheetOpen && (
+        <div className="fixed inset-0 z-[85] lg:hidden" role="dialog" aria-modal="true" aria-label="বুকিং ফর্ম">
+          <div className="absolute inset-0 bg-[#26231e]/55" onClick={() => setSheetOpen(false)} />
+          <div className="absolute inset-x-0 bottom-0 max-h-[92vh] rounded-t-[22px] bg-[#f7f3ec] border-t border-[#e6ddcc] flex flex-col">
+            <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-[#e6ddcc] shrink-0">
+              <div className="flex items-center gap-3 min-w-0">
+                {avatarSrc ? (
+                  <img src={avatarSrc} alt="" className="w-10 h-10 rounded-full object-cover border border-[#e6ddcc]" />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-[#f1e8d8] flex items-center justify-center pf-serif font-bold text-[#b08d57] text-sm">
+                    {getInitials(photographer.display_name)}
+                  </div>
+                )}
+                <div className="min-w-0">
+                  <h3 className="pf-serif font-bold text-[#26231e] text-sm truncate">{photographer.display_name}</h3>
+                  <p className="text-[11px] text-[#8a8172]">বুকিং রিকোয়েস্ট</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSheetOpen(false)}
+                aria-label="বন্ধ করুন"
+                className="w-9 h-9 rounded-full border border-[#e6ddcc] bg-white flex items-center justify-center text-[#6b6357]"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+            <div className="overflow-y-auto px-5 py-5">
+              <BookingForm
+                p={photographer}
+                packages={packages}
+                selectedPkgId={bookPkgId === '' ? undefined : bookPkgId}
+                onPackageChange={setBookPkgId}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -35,6 +35,9 @@ export default function Finder() {
   const [photographers, setPhotographers] = useState<Photographer[]>([]);
   const [loading, setLoading] = useState(true);
   const [spotSearch, setSpotSearch] = useState('');
+  const [baseLayer, setBaseLayer] = useState<'map' | 'sat'>('map');
+  const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(null);
+  const [locStatus, setLocStatus] = useState<'idle' | 'loading' | 'denied' | 'error'>('idle');
 
   const navigate = useNavigate();
   const mapElRef = useRef<HTMLDivElement | null>(null);
@@ -85,14 +88,50 @@ export default function Finder() {
     return g;
   }, [photographers]);
 
-  // Filtered spots for left rail
-  const filteredSpots = COX_SPOTS.filter(
-    (s) =>
-      s.nameBn.toLowerCase().includes(spotSearch.toLowerCase()) ||
-      s.nameEn.toLowerCase().includes(spotSearch.toLowerCase())
-  );
+  // Filtered spots for left rail (distance-sorted when user location known)
+  const filteredSpots = useMemo(() => {
+    const q = spotSearch.toLowerCase();
+    const list = COX_SPOTS.filter(
+      (s) => s.nameBn.toLowerCase().includes(q) || s.nameEn.toLowerCase().includes(q)
+    );
+    if (userLoc) {
+      return [...list].sort(
+        (a, b) => distKm(userLoc.lat, userLoc.lng, a.lat, a.lng) - distKm(userLoc.lat, userLoc.lng, b.lat, b.lng)
+      );
+    }
+    return list;
+  }, [spotSearch, userLoc]);
 
   const selectedSpotObj = COX_SPOTS.find((s) => s.key === selectedSpotKey);
+
+  // Distance (durutto) from user's location to a spot
+  const userDistTo = useCallback(
+    (lat: number, lng: number) => (userLoc ? distKm(userLoc.lat, userLoc.lng, lat, lng) : null),
+    [userLoc]
+  );
+
+  const handleLocate = () => {
+    if (!('geolocation' in navigator)) {
+      setLocStatus('error');
+      return;
+    }
+    setLocStatus('loading');
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        setUserLoc(loc);
+        setLocStatus('idle');
+        const map = mapInstanceRef.current;
+        if (map) {
+          map.flyTo([loc.lat, loc.lng], Math.max(10, Math.min(14, 12)), { duration: 0.6 });
+        }
+      },
+      (err) => {
+        setLocStatus(err.code === err.PERMISSION_DENIED ? 'denied' : 'error');
+      },
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
+    );
+  };
 
   const photographersForSelectedSpot = selectedSpotKey
     ? photographersBySpot[selectedSpotKey] || []
@@ -128,10 +167,7 @@ export default function Finder() {
 
     L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      attribution: '© OpenStreetMap © CARTO',
-      maxZoom: 18,
-    }).addTo(map);
+    // Base tile layers are managed by the baseLayer effect (map/satellite toggle)
 
     // Marine Drive polyline
     L.polyline(
@@ -152,6 +188,71 @@ export default function Finder() {
       mapInstanceRef.current = null;
     };
   }, []);
+
+  // Base layers: keyless free tiles — Esri Dark Gray Canvas (map) + Esri World Imagery (satellite)
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
+
+    const dark = L.tileLayer(
+      'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+      {
+        attribution: 'Esri, HERE, Garmin, © OpenStreetMap contributors',
+        maxZoom: 19,
+      }
+    );
+    const darkRef = L.tileLayer(
+      'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}',
+      { maxZoom: 19 }
+    );
+    const sat = L.tileLayer(
+      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      {
+        attribution: 'Esri, Maxar, Earthstar Geographics',
+        maxZoom: 19,
+      }
+    );
+    const satRef = L.tileLayer(
+      'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+      { maxZoom: 19 }
+    );
+
+    if (baseLayer === 'sat') {
+      sat.addTo(map);
+      satRef.addTo(map);
+    } else {
+      dark.addTo(map);
+      darkRef.addTo(map);
+    }
+
+    return () => {
+      map.removeLayer(dark);
+      map.removeLayer(darkRef);
+      map.removeLayer(sat);
+      map.removeLayer(satRef);
+    };
+  }, [baseLayer]);
+
+  // User location marker (re-drawn when userLoc changes)
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
+    if (!userLoc) return;
+
+    const icon = L.divIcon({
+      className: '',
+      html: `<div style="width:22px;height:22px;border-radius:50%;background:#38bdf8;border:3px solid #ffffff;box-shadow:0 0 0 6px rgba(56,189,248,0.35), 0 2px 10px rgba(0,0,0,0.5);"></div>`,
+      iconSize: [22, 22],
+      iconAnchor: [11, 11],
+    });
+    const m = L.marker([userLoc.lat, userLoc.lng], { icon, zIndexOffset: 1000 })
+      .addTo(map)
+      .bindTooltip('আপনার লোকেশন', { direction: 'top', offset: [0, -14], className: 'spot-tip' });
+
+    return () => {
+      m.remove();
+    };
+  }, [userLoc]);
 
   // Update Markers when spots, selection or photographer data change
   useEffect(() => {
@@ -197,9 +298,10 @@ export default function Finder() {
 
       const marker = L.marker([s.lat, s.lng], { icon: customIcon, zIndexOffset: 500 }).addTo(map);
 
-      // Hover tooltip: spot name + live photographer count
+      // Hover tooltip: spot name + live photographer count + distance
+      const d = userDistTo(s.lat, s.lng);
       marker.bindTooltip(
-        `<b>${s.nameBn}</b> · ${count > 0 ? toBn(count) + ' জন ফটোগ্রাফার' : 'খালি'}`,
+        `<b>${s.nameBn}</b> · ${count > 0 ? toBn(count) + ' জন ফটোগ্রাফার' : 'খালি'}${d !== null ? ` · ~${toBn(d.toFixed(1))} কিমি` : ''}`,
         { direction: 'top', offset: [0, -14], opacity: 0.95, className: 'spot-tip' }
       );
 
@@ -244,7 +346,7 @@ export default function Finder() {
         phMarkersRef.current.push(m);
       });
     });
-  }, [selectedSpotKey, panelOpen, spotCounts, photographersBySpot, navigate]);
+  }, [selectedSpotKey, panelOpen, spotCounts, photographersBySpot, navigate, userDistTo]);
 
   // FlyTo when selectedSpotKey changes via left rail / marker click
   useEffect(() => {
@@ -266,7 +368,7 @@ export default function Finder() {
       <div className="mb-8">
         <h2 className="section-head">🗺️ কক্সবাজার ম্যাপ ফাইন্ডার</h2>
         <p className="section-sub mt-1">
-          ১৯টি শুটিং পয়েন্ট — স্পট বা ফটোগ্রাফার পয়েন্টে ক্লিক করুন
+          ১৯টি শুটিং পয়েন্ট — স্যাটেলাইট ভিউ, দূরত্ব ও ফটোগ্রাফার সার্চ (কোনো API key লাগে না)
         </p>
       </div>
 
@@ -284,6 +386,36 @@ export default function Finder() {
               className="glass-input !py-2.5 !text-sm"
             />
           </div>
+
+          {/* Locate + distance bar */}
+          <div className="mb-3 flex items-center gap-2 flex-wrap">
+            <button
+              type="button"
+              onClick={handleLocate}
+              disabled={locStatus === 'loading'}
+              className="chip !py-1.5 text-xs"
+            >
+              {locStatus === 'loading' ? '⏳ লোকেশন নেওয়া হচ্ছে…' : '📍 আমার লোকেশন নিন'}
+            </button>
+            {userLoc && (
+              <button
+                type="button"
+                onClick={() => { setUserLoc(null); setLocStatus('idle'); }}
+                className="chip chip-active !py-1.5 text-xs"
+                title="দূরত্ব সাজানো বন্ধ করুন"
+              >
+                দূরত্ব অনুযায়ী সাজানো ✓
+              </button>
+            )}
+          </div>
+          {locStatus === 'denied' && (
+            <p className="text-[11px] text-rose-300 mb-2 leading-relaxed">
+              লোকেশন পারমিশন দেওয়া হয়নি — ব্রাউজার সেটিংস থেকে অনুমতি দিন।
+            </p>
+          )}
+          {locStatus === 'error' && (
+            <p className="text-[11px] text-amber-300 mb-2">লোকেশন পাওয়া যায়নি — আবার চেষ্টা করুন।</p>
+          )}
 
           {/* Scrollable Spot List */}
           <div className="no-scrollbar overflow-y-auto space-y-2 pr-1 flex-1">
@@ -312,7 +444,9 @@ export default function Finder() {
                         {s.nameBn}
                       </h4>
                       <span className="text-[11px] text-white/45 truncate block">
-                        {s.nameEn}
+                        {userLoc
+                          ? `~${toBn(distKm(userLoc.lat, userLoc.lng, s.lat, s.lng).toFixed(1))} কিমি দূরে`
+                          : s.nameEn}
                       </span>
                     </div>
                   </div>
@@ -345,6 +479,30 @@ export default function Finder() {
             className="w-full h-[calc(100vh-220px)] min-h-[460px] rounded-[14px] z-0"
           />
 
+          {/* Layer toggle: Map / Satellite (free, keyless) */}
+          <div className="absolute top-4 right-4 z-[500] flex gap-1.5 map-glass !p-1.5">
+            <button
+              type="button"
+              onClick={() => setBaseLayer('map')}
+              aria-pressed={baseLayer === 'map'}
+              className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-colors ${
+                baseLayer === 'map' ? 'bg-sunset-gradient text-[#1A0E06]' : 'text-white/75 hover:text-white'
+              }`}
+            >
+              ম্যাপ
+            </button>
+            <button
+              type="button"
+              onClick={() => setBaseLayer('sat')}
+              aria-pressed={baseLayer === 'sat'}
+              className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-colors ${
+                baseLayer === 'sat' ? 'bg-sunset-gradient text-[#1A0E06]' : 'text-white/75 hover:text-white'
+              }`}
+            >
+              🛰️ স্যাটেলাইট
+            </button>
+          </div>
+
           {/* Top-Left Overlay */}
           <div className="absolute top-4 left-4 z-[500] map-glass pointer-events-none">
             <h4 className="text-sm font-bold text-white">ফটোলাগবে স্পট ম্যাপ</h4>
@@ -369,6 +527,11 @@ export default function Finder() {
                       ? `✅ ${toBn(photographersForSelectedSpot.length)} জন অ্যাভেইলেবল`
                       : '⚠️ কেউ নেই'}
                   </span>
+                  {userLoc && selectedSpotObj && (
+                    <span className="badge text-[10px] bg-sunset-soft text-sunset-gold border-sunset-gold/30">
+                      📏 ~{toBn(distKm(userLoc.lat, userLoc.lng, selectedSpotObj.lat, selectedSpotObj.lng).toFixed(1))} কিমি দূরে
+                    </span>
+                  )}
                 </div>
                 <button
                   type="button"
