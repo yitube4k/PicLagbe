@@ -85,8 +85,8 @@ export default function SearchPanel({ variant = 'hero', initial, autoFocus: auto
       aria-label="ফটোগ্রাফার সার্চ"
       className={
         isHero
-          ? 'sp-hero relative rounded-[22px] p-2 max-w-2xl mx-auto shadow-[0_24px_70px_-18px_rgba(0,0,0,0.75)]'
-          : 'sp-hero relative rounded-[18px] p-1.5'
+          ? 'sp-hero relative z-20 rounded-[22px] p-2 max-w-2xl mx-auto shadow-[0_24px_70px_-18px_rgba(0,0,0,0.75)]'
+          : 'sp-hero relative z-20 rounded-[18px] p-1.5'
       }
     >
       <span aria-hidden="true" className="sp-hero-line" />

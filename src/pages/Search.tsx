@@ -235,7 +235,7 @@ export default function Search() {
           }}
           role="search"
           aria-label="ফটোগ্রাফার সার্চ"
-          className="sp-hero relative rounded-[20px] p-2 shadow-[0_18px_50px_-16px_rgba(0,0,0,0.7)]"
+          className="sp-hero relative z-20 rounded-[20px] p-2 shadow-[0_18px_50px_-16px_rgba(0,0,0,0.7)]"
         >
           <span aria-hidden="true" className="sp-hero-line" />
           <div className="flex items-center gap-1.5">
