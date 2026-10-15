@@ -899,7 +899,7 @@
   }
 }
 
-/* ক্যামেরা মার্কারের পাশে ফটোগ্রাফারের নাম (সবসময় দৃশ্যমান) */
+/* ক্যামেরা মার্কারের পাশে ফটোগ্রাফারের নাম (সবসময় দৃশ্যমান + ক্লিকেবল ট্যাপ টার্গেট) */
 .ph-name-label {
   background: rgba(10, 14, 26, 0.9) !important;
   color: #ffffff !important;
@@ -910,7 +910,8 @@
   font-weight: 700;
   padding: 2px 8px !important;
   white-space: nowrap;
-  pointer-events: none;
+  pointer-events: auto;
+  cursor: pointer;
 }
 .ph-name-label::before {
   display: none !important;

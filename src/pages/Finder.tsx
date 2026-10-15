@@ -330,6 +330,17 @@ export default function Finder() {
           const pid = p.id || p.slug;
           if (pid) window.open(`/photographer/${p.id || p.slug}`, '_blank', 'noopener,noreferrer');
         });
+
+        // নাম পিল নিজেই ক্লিকেবল — বড় ট্যাপ টার্গেট (ক্যামেরা ওভারল্যাপ হলেও প্রোফাইল খোলে)
+        const tipEl = m.getTooltip()?.getElement?.() as HTMLElement | null;
+        if (tipEl) {
+          tipEl.style.cursor = 'pointer';
+          tipEl.addEventListener('click', (ev) => {
+            ev.stopPropagation();
+            const pid = p.id || p.slug;
+            if (pid) window.open(`/photographer/${p.id || p.slug}`, '_blank', 'noopener,noreferrer');
+          });
+        }
         phMarkersRef.current.push(m);
       });
     });
