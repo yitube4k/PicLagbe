@@ -148,7 +148,7 @@ export default function Finder() {
 
     const map = L.map(mapElRef.current, {
       center: [21.28, 92.05],
-      zoom: 10,
+      zoom: 11,
       zoomControl: false,
       attributionControl: true,
     });
@@ -280,7 +280,7 @@ export default function Finder() {
         iconAnchor: [17, 17],
       });
 
-      const marker = L.marker([s.lat, s.lng], { icon: customIcon, zIndexOffset: 500 }).addTo(map);
+      const marker = L.marker([s.lat, s.lng], { icon: customIcon, zIndexOffset: 400 }).addTo(map);
 
       // Hover tooltip: spot name + live photographer count + distance + direction hint
       const d = userDistTo(s.lat, s.lng);
@@ -300,8 +300,8 @@ export default function Finder() {
       const group = photographersBySpot[s.key] || [];
       group.forEach((p, i) => {
         const angle = (i * Math.PI) / 4;
-        const dLat = 0.004 * Math.sin(angle);
-        const dLng = (0.004 / Math.cos((s.lat * Math.PI) / 180)) * Math.cos(angle);
+        const dLat = 0.007 * Math.sin(angle);
+        const dLng = (0.007 / Math.cos((s.lat * Math.PI) / 180)) * Math.cos(angle);
         const html = `
           <div style="
             width: 26px;
@@ -317,7 +317,7 @@ export default function Finder() {
           ">📷</div>
         `;
         const icon = L.divIcon({ className: '', html, iconSize: [26, 26], iconAnchor: [13, 13] });
-        const m = L.marker([s.lat + dLat, s.lng + dLng], { icon, zIndexOffset: 800 }).addTo(map);
+        const m = L.marker([s.lat + dLat, s.lng + dLng], { icon, zIndexOffset: 1200 }).addTo(map);
 
         // নাম লেবেল — ক্যামেরা আইকনের পাশে সবসময় ভাসমান
         m.bindTooltip(

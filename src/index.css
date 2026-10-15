@@ -621,6 +621,14 @@
   box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45) !important;
   font-size: 12px !important;
   padding: 4px 10px !important;
+  pointer-events: none;
+}
+/* টুলটিপ কখনো মার্কারের ক্লিক খাবে না (মার্কার pane-এর উপরে থাকে) */
+.leaflet-tooltip-pane {
+  pointer-events: none !important;
+}
+.leaflet-tooltip-pane .leaflet-tooltip {
+  pointer-events: none !important;
 }
 .spot-tip::before {
   border-top-color: rgba(251, 191, 36, 0.45) !important;
