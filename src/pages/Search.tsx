@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Photographer } from '../lib/types';
 import { toBn } from '../lib/utils';
-import { COX_SPOTS } from '../lib/constants';
+import { COX_SPOTS, SPOT_BY_KEY } from '../lib/constants';
 import Reveal from '../components/Reveal';
 import PhotographerCard from '../components/PhotographerCard';
 
@@ -27,6 +27,20 @@ const STATIC_CATEGORIES = [
   { slug: 'videography', label: 'ভিডিওগ্রাফি' },
 ];
 
+const SlidersIcon = ({ size = 17 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <line x1="4" y1="21" x2="4" y2="14" />
+    <line x1="4" y1="10" x2="4" y2="3" />
+    <line x1="12" y1="21" x2="12" y2="12" />
+    <line x1="12" y1="8" x2="12" y2="3" />
+    <line x1="20" y1="21" x2="20" y2="16" />
+    <line x1="20" y1="12" x2="20" y2="3" />
+    <line x1="1" y1="14" x2="7" y2="14" />
+    <line x1="9" y1="8" x2="15" y2="8" />
+    <line x1="17" y1="16" x2="23" y2="16" />
+  </svg>
+);
+
 export default function Search() {
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -42,6 +56,8 @@ export default function Search() {
   const [categories, setCategories] = useState<CategoryItem[]>([]);
   const [photographers, setPhotographers] = useState<Photographer[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const filterRef = useRef<HTMLDivElement | null>(null);
 
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -60,6 +76,22 @@ export default function Search() {
       active = false;
     };
   }, []);
+
+  // ফিল্টার মেনুর বাইরে ক্লিকে বন্ধ
+  useEffect(() => {
+    if (!filtersOpen) return;
+    const onDown = (e: MouseEvent | TouchEvent) => {
+      if (filterRef.current && !filterRef.current.contains(e.target as Node)) {
+        setFiltersOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('touchstart', onDown, { passive: true });
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('touchstart', onDown);
+    };
+  }, [filtersOpen]);
 
   // Sync URL params whenever filters change
   useEffect(() => {
@@ -180,220 +212,278 @@ export default function Search() {
       ? categories.map((c) => ({ slug: c.slug || c.id, label: c.name }))
       : STATIC_CATEGORIES;
 
+  const activeFilterCount = (spot ? 1 : 0) + (cat ? 1 : 0) + (minP ? 1 : 0) + (maxP ? 1 : 0) + (minR > 0 ? 1 : 0) + (sort !== 'rating' ? 1 : 0);
+
+  const catLabel = (slug: string) => categoryListToUse.find((c) => c.slug === slug)?.label || slug;
+
   return (
-    <div className="min-h-screen max-w-7xl mx-auto px-6 pt-28 pb-20">
+    <div className="min-h-screen max-w-7xl mx-auto px-4 sm:px-6 pt-24 pb-20">
       {/* Page Header */}
-      <div className="mb-10">
+      <div className="mb-6 text-center">
         <h2 className="section-head">ফটোগ্রাফার খুঁজুন</h2>
         <p className="section-sub mt-1">
           কক্সবাজারের ভেরিফায়েড প্রফেশনালদের ফিল্টার করুন
         </p>
-        <p className="text-sm text-white/50 mt-3 font-medium">
-          {toBn(photographers.length)} জন ফটোগ্রাফার পাওয়া গেছে
-        </p>
       </div>
 
-      {/* Main Layout */}
-      <div className="lg:flex gap-8 items-start">
-        {/* Filter Rail */}
-        <aside className="lg:w-80 shrink-0 order-first mb-8 lg:mb-0 glass rounded-xl3 p-6 space-y-5 lg:sticky lg:top-24">
-          <div className="flex items-center justify-between">
-            <h3 className="font-bold text-white text-base">ফিল্টার</h3>
+      {/* ═══ Google-স্টাইল সার্চ বার + অপশন মেনু ═══ */}
+      <div className="max-w-3xl mx-auto mb-4">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            setFiltersOpen(false);
+          }}
+          role="search"
+          aria-label="ফটোগ্রাফার সার্চ"
+          className="sp-hero relative rounded-[20px] p-2 shadow-[0_18px_50px_-16px_rgba(0,0,0,0.7)]"
+        >
+          <span aria-hidden="true" className="sp-hero-line" />
+          <div className="flex items-center gap-1.5">
+            <span aria-hidden="true" className="shrink-0 w-11 flex items-center justify-center text-white/45">
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+            </span>
+
+            <input
+              type="text"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="ফটোগ্রাফার, সার্ভিস বা স্পট লিখুন…"
+              aria-label="ফটোগ্রাফার খুঁজুন"
+              className="sp-input flex-1 min-w-0 !border-0 !bg-transparent !shadow-none px-1 min-h-[50px] text-[15px]"
+            />
+
+            {/* ফিল্টার টগল */}
+            <div ref={filterRef} className="relative shrink-0">
+              <button
+                type="button"
+                onClick={() => setFiltersOpen((v) => !v)}
+                aria-expanded={filtersOpen}
+                aria-label="ফিল্টার অপশন"
+                className={`relative flex items-center justify-center w-11 h-11 rounded-full border transition-colors ${
+                  filtersOpen || activeFilterCount > 0
+                    ? 'border-sunset-gold/55 bg-sunset-soft text-sunset-gold'
+                    : 'border-white/[0.12] bg-white/[0.05] text-white/60 hover:text-white hover:border-white/25'
+                }`}
+              >
+                <SlidersIcon size={18} />
+                {activeFilterCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-sunset-coral text-white text-[9px] font-extrabold flex items-center justify-center">
+                    {toBn(activeFilterCount)}
+                  </span>
+                )}
+              </button>
+
+              {/* অপশন মেনু — সব ফিল্টার এক জায়গায় */}
+              {filtersOpen && (
+                <div className="absolute right-0 top-[52px] z-30 glass-strong !rounded-[18px] shadow-glass-lg p-4 w-[300px] max-h-[70vh] overflow-y-auto">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-white/45 px-1 pb-3">
+                    ফিল্টার অপশন
+                  </p>
+
+                  <label className="field-label !text-[11px]">📍 স্পট</label>
+                  <select
+                    value={spot}
+                    onChange={(e) => setSpot(e.target.value)}
+                    className="glass-select mb-3"
+                  >
+                    <option value="">সব স্পট</option>
+                    {COX_SPOTS.map((s) => (
+                      <option key={s.key} value={s.key}>
+                        {s.nameBn}
+                      </option>
+                    ))}
+                  </select>
+
+                  <label className="field-label !text-[11px]">📷 ক্যাটাগরি</label>
+                  <select
+                    value={cat}
+                    onChange={(e) => setCat(e.target.value)}
+                    className="glass-select mb-3"
+                  >
+                    <option value="">সব ক্যাটাগরি</option>
+                    {categoryListToUse.map((c) => (
+                      <option key={c.slug} value={c.slug}>
+                        {c.label}
+                      </option>
+                    ))}
+                  </select>
+
+                  <label className="field-label !text-[11px]">💰 বাজেট (৳)</label>
+                  <div className="flex gap-2 mb-3">
+                    <input
+                      type="number"
+                      value={minP}
+                      onChange={(e) => setMinP(e.target.value)}
+                      placeholder="সর্বনিম্ন"
+                      className="glass-input"
+                    />
+                    <input
+                      type="number"
+                      value={maxP}
+                      onChange={(e) => setMaxP(e.target.value)}
+                      placeholder="সর্বোচ্চ"
+                      className="glass-input"
+                    />
+                  </div>
+
+                  <label className="field-label !text-[11px]">⭐ রেটিং</label>
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {[
+                      { label: 'সব', val: 0 },
+                      { label: '৩+', val: 3 },
+                      { label: '৪+', val: 4 },
+                      { label: '৪.৫+', val: 4.5 },
+                    ].map((r) => (
+                      <button
+                        key={r.val}
+                        type="button"
+                        onClick={() => setMinR(r.val)}
+                        className={minR === r.val ? 'chip-active' : 'chip'}
+                      >
+                        {r.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  <label className="field-label !text-[11px]">↕️ সাজান</label>
+                  <select
+                    value={sort}
+                    onChange={(e) => setSort(e.target.value)}
+                    className="glass-select"
+                  >
+                    <option value="rating">রেটিং বেশি আগে</option>
+                    <option value="price_asc">দাম: কম → বেশি</option>
+                    <option value="price_desc">দাম: বেশি → কম</option>
+                    <option value="new">নতুন</option>
+                  </select>
+
+                  <div className="flex items-center justify-between gap-2 pt-3.5 mt-1 border-t border-white/[0.08]">
+                    <button
+                      type="button"
+                      onClick={handleResetFilters}
+                      className="text-xs font-semibold text-white/55 hover:text-white"
+                    >
+                      ↺ সব মুছুন
+                    </button>
+                    <button type="submit" className="btn-sunset !py-2 !px-6 !text-xs">
+                      দেখাও
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <button
+              type="submit"
+              aria-label="সার্চ করুন"
+              className="btn-sunset shrink-0 flex items-center justify-center gap-2 px-5 min-h-[42px] text-[14px]"
+            >
+              খুঁজুন
+            </button>
+          </div>
+        </form>
+
+        {/* সক্রিয় ফিল্টার চিপস */}
+        {activeFilterCount > 0 && (
+          <div className="flex flex-wrap items-center gap-2 mt-3 justify-center">
+            {spot && (
+              <button type="button" onClick={() => setSpot('')} className="chip !py-1">
+                📍 {SPOT_BY_KEY(spot)?.nameBn || spot} ✕
+              </button>
+            )}
+            {cat && (
+              <button type="button" onClick={() => setCat('')} className="chip !py-1">
+                📷 {catLabel(cat)} ✕
+              </button>
+            )}
+            {minP && (
+              <button type="button" onClick={() => setMinP('')} className="chip !py-1">
+                ↓ ৳{toBn(minP)} থেকে ✕
+              </button>
+            )}
+            {maxP && (
+              <button type="button" onClick={() => setMaxP('')} className="chip !py-1">
+                ↑ ৳{toBn(maxP)} পর্যন্ত ✕
+              </button>
+            )}
+            {minR > 0 && (
+              <button type="button" onClick={() => setMinR(0)} className="chip !py-1">
+                ⭐ {toBn(minR)}+ ✕
+              </button>
+            )}
+            {sort !== 'rating' && (
+              <button type="button" onClick={() => setSort('rating')} className="chip !py-1">
+                ↕️ {sort === 'price_asc' ? 'দাম কম→বেশি' : sort === 'price_desc' ? 'দাম বেশি→কম' : 'নতুন'} ✕
+              </button>
+            )}
             <button
               type="button"
               onClick={handleResetFilters}
-              className="text-xs text-sunset-gold hover:underline font-semibold"
+              className="text-xs font-semibold text-sunset-gold hover:underline"
             >
               সব মুছুন
             </button>
           </div>
+        )}
 
-          <hr className="divider-glow" />
+        <p className="text-sm text-white/50 mt-3 font-medium text-center">
+          {toBn(photographers.length)} জন ফটোগ্রাফার পাওয়া গেছে
+        </p>
+      </div>
 
-          {/* 1) Search Input */}
-          <div>
-            <label className="field-label">সার্চ</label>
-            <div className="relative">
+      {/* Results */}
+      <main>
+        {loading ? (
+          <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-6">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="skeleton h-96 rounded-xl3" />
+            ))}
+          </div>
+        ) : photographers.length === 0 ? (
+          <div className="glass-card p-12 text-center rounded-xl3 max-w-xl mx-auto">
+            <div className="w-16 h-16 rounded-2xl glass mx-auto flex items-center justify-center mb-4 text-sunset-gold">
               <svg
-                width="16"
-                height="16"
+                width="32"
+                height="32"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/45 pointer-events-none"
               >
                 <circle cx="11" cy="11" r="8" />
                 <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                <line x1="8" y1="11" x2="14" y2="11" />
               </svg>
-              <input
-                type="text"
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-                placeholder="নাম বা বিষয়…"
-                className="glass-input !pl-10"
-              />
             </div>
-          </div>
-
-          {/* 2) Spot Select */}
-          <div>
-            <label className="field-label">স্পট</label>
-            <select
-              value={spot}
-              onChange={(e) => setSpot(e.target.value)}
-              className="glass-select"
+            <h3 className="text-xl font-bold text-white mb-2">
+              কোনো ফটোগ্রাফার মেলেনি
+            </h3>
+            <p className="text-white/60 text-sm max-w-sm mx-auto mb-6">
+              আপনার দেওয়া ফিল্টারের সাথে মিলে যায় এমন কোনো প্রফেশনাল পাওয়া যায়নি। ফিল্টার একটু বদলে দেখুন।
+            </p>
+            <button
+              type="button"
+              onClick={handleResetFilters}
+              className="btn-primary"
             >
-              <option value="">সব স্পট</option>
-              {COX_SPOTS.map((s) => (
-                <option key={s.key} value={s.key}>
-                  {s.nameBn}
-                </option>
-              ))}
-            </select>
+              রিসেট করুন
+            </button>
           </div>
-
-          {/* 3) Category Select */}
-          <div>
-            <label className="field-label">ক্যাটাগরি</label>
-            <select
-              value={cat}
-              onChange={(e) => setCat(e.target.value)}
-              className="glass-select"
-            >
-              <option value="">সব ক্যাটাগরি</option>
-              {categoryListToUse.map((c) => (
-                <option key={c.slug} value={c.slug}>
-                  {c.label}
-                </option>
-              ))}
-            </select>
+        ) : (
+          <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-6">
+            {photographers.map((p, i) => (
+              <Reveal key={p.id} delay={i * 50}>
+                <PhotographerCard p={p} />
+              </Reveal>
+            ))}
           </div>
-
-          {/* 4) Budget Range */}
-          <div>
-            <label className="field-label">সর্বোচ্চ বাজেট (৳)</label>
-            <div className="flex gap-2">
-              <input
-                type="number"
-                value={minP}
-                onChange={(e) => setMinP(e.target.value)}
-                placeholder="সর্বনিম্ন"
-                className="glass-input"
-              />
-              <input
-                type="number"
-                value={maxP}
-                onChange={(e) => setMaxP(e.target.value)}
-                placeholder="সর্বোচ্চ"
-                className="glass-input"
-              />
-            </div>
-          </div>
-
-          {/* 5) Rating Chips */}
-          <div>
-            <label className="field-label">রেটিং</label>
-            <div className="flex flex-wrap gap-2">
-              {[
-                { label: 'সব', val: 0 },
-                { label: '৩+', val: 3 },
-                { label: '৪+', val: 4 },
-                { label: '৪.৫+', val: 4.5 },
-              ].map((r) => {
-                const isActive = minR === r.val;
-                return (
-                  <button
-                    key={r.val}
-                    type="button"
-                    onClick={() => setMinR(r.val)}
-                    className={isActive ? 'chip-active' : 'chip'}
-                  >
-                    {r.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* 6) Sort Select */}
-          <div>
-            <label className="field-label">সাজান</label>
-            <select
-              value={sort}
-              onChange={(e) => setSort(e.target.value)}
-              className="glass-select"
-            >
-              <option value="rating">রেটিং বেশি আগে</option>
-              <option value="price_asc">দাম: কম → বেশি</option>
-              <option value="price_desc">দাম: বেশি → কম</option>
-              <option value="new">নতুন</option>
-            </select>
-          </div>
-
-          {/* 7) Reset Button */}
-          <button
-            type="button"
-            onClick={handleResetFilters}
-            className="btn-ghost w-full justify-center"
-          >
-            ↺ ফিল্টার রিসেট
-          </button>
-        </aside>
-
-        {/* Results Area */}
-        <main className="flex-1 min-w-0">
-          {loading ? (
-            <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-6">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="skeleton h-96 rounded-xl3" />
-              ))}
-            </div>
-          ) : photographers.length === 0 ? (
-            <div className="glass-card p-12 text-center rounded-xl3">
-              <div className="w-16 h-16 rounded-2xl glass mx-auto flex items-center justify-center mb-4 text-sunset-gold">
-                <svg
-                  width="32"
-                  height="32"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <circle cx="11" cy="11" r="8" />
-                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                  <line x1="8" y1="11" x2="14" y2="11" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-bold text-white mb-2">
-                কোনো ফটোগ্রাফার মেলেনি
-              </h3>
-              <p className="text-white/60 text-sm max-w-sm mx-auto mb-6">
-                আপনার দেওয়া ফিল্টারের সাথে মিলে যায় এমন কোনো প্রফেশনাল পাওয়া যায়নি। ফিল্টার একটু বদলে দেখুন।
-              </p>
-              <button
-                type="button"
-                onClick={handleResetFilters}
-                className="btn-primary"
-              >
-                রিসেট করুন
-              </button>
-            </div>
-          ) : (
-            <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-6">
-              {photographers.map((p, i) => (
-                <Reveal key={p.id} delay={i * 50}>
-                  <PhotographerCard p={p} />
-                </Reveal>
-              ))}
-            </div>
-          )}
-        </main>
-      </div>
+        )}
+      </main>
     </div>
   );
 }

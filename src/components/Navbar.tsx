@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { NavLink, Link, useLocation } from 'react-router-dom';
+import { NavLink, Link, useLocation, useNavigate } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
 import { SITE } from '../lib/constants';
 import SearchPanel from './SearchPanel';
@@ -69,10 +70,13 @@ const NAV_ITEMS: NavItem[] = [
 export default function Navbar() {
   const { session, profile } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const [scrolled, setScrolled] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const searchWrapRef = useRef<HTMLDivElement | null>(null);
+  const menuRef = useRef<HTMLDivElement | null>(null);
 
   // সার্চ প্যানেলের বাইরে ক্লিক করলে বন্ধ
   useEffect(() => {
@@ -101,13 +105,31 @@ export default function Navbar() {
 
   useEffect(() => {
     setDrawerOpen(false);
+    setMenuOpen(false);
   }, [location.pathname, location.search]);
+
+  // ইউজার-মেনুর বাইরে ক্লিক করলে বন্ধ
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onDown = (e: MouseEvent | TouchEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('touchstart', onDown, { passive: true });
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('touchstart', onDown);
+    };
+  }, [menuOpen]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         setDrawerOpen(false);
         setSearchOpen(false);
+        setMenuOpen(false);
       }
     };
 
@@ -124,15 +146,12 @@ export default function Navbar() {
     };
   }, [drawerOpen, searchOpen]);
 
-  const getRoleConfig = () => {
-    const role = profile?.role || 'customer';
-    if (role === 'admin') {
-      return { to: '/admin', label: 'অ্যাডমিন' };
-    }
-    if (role === 'photographer') {
-      return { to: '/studio', label: 'মাই স্টুডিও' };
-    }
-    return { to: '/dashboard', label: 'আমার ড্যাশবোর্ড' };
+  /* লগআউট — সব জায়গা থেকে এক ক্লিকে */
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setMenuOpen(false);
+    setDrawerOpen(false);
+    navigate('/');
   };
 
   const getInitials = (name?: string | null) => {
@@ -144,7 +163,6 @@ export default function Navbar() {
     return parts[0].slice(0, 2).toUpperCase();
   };
 
-  const roleConfig = getRoleConfig();
 
   const renderAvatar = () => {
     if (profile?.avatar_url) {
@@ -316,7 +334,7 @@ export default function Navbar() {
                 </Link>
               </>
             ) : (
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 <Link
                   to="/chat"
                   aria-label="মেসেজ ইনবক্স"
@@ -327,19 +345,81 @@ export default function Navbar() {
                     <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                   </svg>
                 </Link>
-                <Link
-                  to={roleConfig.to}
-                  className="btn-primary px-5 py-2.5 text-sm"
-                >
-                  {roleConfig.label}
-                </Link>
-                <Link
-                  to={roleConfig.to}
-                  aria-label="প্রোফাইল ও ড্যাশবোর্ড"
-                  className="rounded-full focus:outline-none focus:ring-2 focus:ring-sunset-coral"
-                >
-                  {renderAvatar()}
-                </Link>
+
+                {/* ═══ অপশন মেনু (অ্যাভাটার ক্লিক) — প্রোফাইল / স্টুডিও / অ্যাডমিন / লগআউট ═══ */}
+                <div ref={menuRef} className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setMenuOpen((v) => !v)}
+                    aria-expanded={menuOpen}
+                    aria-haspopup="menu"
+                    aria-label="অ্যাকাউন্ট মেনু"
+                    className={`rounded-full focus:outline-none focus:ring-2 focus:ring-sunset-coral transition ${menuOpen ? 'ring-2 ring-sunset-gold/60' : ''}`}
+                  >
+                    {renderAvatar()}
+                  </button>
+
+                  {menuOpen && (
+                    <div
+                      role="menu"
+                      className="absolute right-0 top-12 w-64 glass-strong !rounded-[18px] p-2 shadow-glass-lg origin-top-right"
+                    >
+                      {/* header */}
+                      <div className="flex items-center gap-3 px-3 pt-2 pb-3">
+                        {renderAvatar()}
+                        <div className="min-w-0">
+                          <span className="text-sm font-bold text-white truncate block">
+                            {profile?.full_name || 'ব্যবহারকারী'}
+                          </span>
+                          <span className="text-[11px] text-white/50 truncate block">
+                            {profile?.email || ''}
+                          </span>
+                        </div>
+                      </div>
+
+                      <hr className="divider-glow my-1" />
+
+                      <Link
+                        to="/dashboard"
+                        role="menuitem"
+                        className="flex items-center gap-3 rounded-xl2 px-3 py-2.5 text-sm font-medium text-white/85 hover:bg-white/[0.08] hover:text-white"
+                      >
+                        <span>👤</span> প্রোফাইল দেখুন
+                      </Link>
+
+                      {profile?.role === 'photographer' && (
+                        <Link
+                          to="/studio"
+                          role="menuitem"
+                          className="flex items-center gap-3 rounded-xl2 px-3 py-2.5 text-sm font-medium text-white/85 hover:bg-white/[0.08] hover:text-white"
+                        >
+                          <span>🎛️</span> মাই স্টুডিও
+                        </Link>
+                      )}
+
+                      {profile?.role === 'admin' && (
+                        <Link
+                          to="/admin"
+                          role="menuitem"
+                          className="flex items-center gap-3 rounded-xl2 px-3 py-2.5 text-sm font-medium text-sunset-gold hover:bg-white/[0.08]"
+                        >
+                          <span>🛡️</span> অ্যাডমিন প্যানেল
+                        </Link>
+                      )}
+
+                      <hr className="divider-glow my-1" />
+
+                      <button
+                        type="button"
+                        role="menuitem"
+                        onClick={handleLogout}
+                        className="w-full flex items-center gap-3 rounded-xl2 px-3 py-2.5 text-sm font-semibold text-rose-300 hover:bg-rose-500/10 text-left"
+                      >
+                        <span>🚪</span> লগআউট
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -439,7 +519,7 @@ export default function Navbar() {
               </Link>
             </div>
           ) : (
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-1.5">
               <div className="flex items-center gap-3 px-2 py-1">
                 {renderAvatar()}
                 <div className="flex flex-col min-w-0">
@@ -447,28 +527,54 @@ export default function Navbar() {
                     {profile?.full_name || 'ব্যবহারকারী'}
                   </span>
                   <span className="text-xs text-white/55 truncate">
-                    {profile?.role === 'admin'
-                      ? 'অ্যাডমিন প্রোফাইল'
-                      : profile?.role === 'photographer'
-                      ? 'ভেরিফায়েড ফটোগ্রাফার'
-                      : 'সম্মানিত গ্রাহক'}
+                    {profile?.email || ''}
                   </span>
                 </div>
               </div>
+
               <Link
-                to={roleConfig.to}
+                to="/dashboard"
                 onClick={() => setDrawerOpen(false)}
-                className="btn-primary w-full py-2.5 text-sm justify-center"
+                className="rounded-xl2 px-4 py-2.5 flex items-center gap-3 text-sm font-medium text-white/85 hover:bg-white/[0.08]"
               >
-                {roleConfig.label}
+                <span>👤</span> প্রোফাইল দেখুন
               </Link>
+
+              {profile?.role === 'photographer' && (
+                <Link
+                  to="/studio"
+                  onClick={() => setDrawerOpen(false)}
+                  className="btn-primary w-full py-2.5 text-sm justify-center"
+                >
+                  🎛️ মাই স্টুডিও
+                </Link>
+              )}
+
+              {profile?.role === 'admin' && (
+                <Link
+                  to="/admin"
+                  onClick={() => setDrawerOpen(false)}
+                  className="btn-primary w-full py-2.5 text-sm justify-center"
+                >
+                  🛡️ অ্যাডমিন প্যানেল
+                </Link>
+              )}
+
               <Link
                 to="/chat"
                 onClick={() => setDrawerOpen(false)}
                 className="btn-ghost w-full py-2.5 text-sm justify-center"
               >
-                মেসেজ ইনবক্স
+                💬 মেসেজ ইনবক্স
               </Link>
+
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="w-full rounded-xl2 px-4 py-2.5 flex items-center justify-center gap-2 text-sm font-semibold text-rose-300 hover:bg-rose-500/10 transition"
+              >
+                🚪 লগআউট
+              </button>
             </div>
           )}
         </aside>

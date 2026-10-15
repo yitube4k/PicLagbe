@@ -2,14 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
-import { Photographer, Booking, Package, PortfolioImage, Review } from '../lib/types';
+import { Photographer, Booking, Package, PortfolioImage, Review, Post } from '../lib/types';
 import { toBn, taka, bnDate } from '../lib/utils';
 import { COX_SPOTS } from '../lib/constants';
 import CldUploadField from '../components/CldUploadField';
 import ScheduleTab from '../components/ScheduleTab';
+import PostCard from '../components/PostCard';
+import PostComposer from '../components/PostComposer';
 import { waLink } from '../lib/cloudinary';
 
-type StudioTab = 'overview' | 'bookings' | 'schedule' | 'packages' | 'portfolio' | 'profile' | 'verification';
+type StudioTab = 'overview' | 'bookings' | 'schedule' | 'posts' | 'packages' | 'portfolio' | 'profile' | 'verification';
 
 type StudioBooking = Booking & {
   profiles?: {
@@ -50,6 +52,12 @@ export default function StudioDash() {
   const [packages, setPackages] = useState<Package[]>([]);
   const [portfolio, setPortfolio] = useState<PortfolioImage[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
+
+  // Posts tab state
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [postsLoading, setPostsLoading] = useState(true);
+  const [composerOpen, setComposerOpen] = useState(false);
+  const [editingPost, setEditingPost] = useState<Post | null>(null);
 
   // Package edit/add form state
   const [pkgEditingId, setPkgEditingId] = useState<string | null>(null);
@@ -168,6 +176,29 @@ export default function StudioDash() {
       active = false;
     };
   }, [session, useNavigateInstance]);
+
+  /* ── Posts: নিজের সব পোস্ট (সব স্টেটাস) ── */
+  const loadPosts = async (phId: string) => {
+    setPostsLoading(true);
+    const { data } = await supabase
+      .from('posts')
+      .select('*')
+      .eq('photographer_id', phId)
+      .order('created_at', { ascending: false });
+    if (data) setPosts(data as Post[]);
+    setPostsLoading(false);
+  };
+
+  useEffect(() => {
+    if (photographer?.id) loadPosts(photographer.id);
+    else setPostsLoading(false);
+  }, [photographer?.id]);
+
+  const handleDeletePost = async (p: Post) => {
+    if (!window.confirm(`"${p.title}" পোস্টটি মুছে ফেলবেন?`)) return;
+    const { error } = await supabase.from('posts').delete().eq('id', p.id);
+    if (!error && photographer?.id) loadPosts(photographer.id);
+  };
 
   const handleRefreshStudio = async () => {
     if (!session) return;
@@ -551,6 +582,13 @@ export default function StudioDash() {
           </button>
           <button
             type="button"
+            onClick={() => setTab('posts')}
+            className={tab === 'posts' ? 'chip-active rounded-full px-5 py-2 text-sm' : 'chip !border-transparent text-white/75 hover:text-white'}
+          >
+            🖼 পোস্ট ({toBn(posts.length)})
+          </button>
+          <button
+            type="button"
             onClick={() => setTab('packages')}
             className={tab === 'packages' ? 'chip-active rounded-full px-5 py-2 text-sm' : 'chip !border-transparent text-white/75 hover:text-white'}
           >
@@ -659,6 +697,93 @@ export default function StudioDash() {
         {/* SCHEDULE TAB — ক্যালেন্ডার + টাইম-স্লট + নোট */}
         {tab === 'schedule' && (
           <ScheduleTab photographerId={photographer.id} bookings={bookings} />
+        )}
+
+        {/* POSTS TAB — কাজের পোস্ট (ছবি/ভিডিও + বিবরণ + দাম), অ্যাডমিন অনুমোদিত হলে প্রোফাইলে দেখা যাবে */}
+        {tab === 'posts' && (
+          <div className="space-y-6">
+            {composerOpen ? (
+              <PostComposer
+                photographerId={photographer.id}
+                editing={editingPost}
+                onDone={(kind) => {
+                  setComposerOpen(false);
+                  setEditingPost(null);
+                  if (photographer?.id) loadPosts(photographer.id);
+                  // eslint-disable-next-line no-console
+                  console.info(kind === 'created' ? 'পোস্ট তৈরি হয়েছে' : 'পোস্ট আপডেট হয়েছে');
+                }}
+                onCancel={() => {
+                  setComposerOpen(false);
+                  setEditingPost(null);
+                }}
+              />
+            ) : (
+              <>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <h3 className="font-bold text-white text-lg">আমার কাজের পোস্ট</h3>
+                    <p className="text-xs text-white/55 mt-0.5">
+                      ছবি/ভিডিও দিয়ে কাজের বিবরণ ও দাম পোস্ট করুন — অ্যাডমিন অনুমোদনের পর প্রোফাইলে প্রকাশ হবে।
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => { setEditingPost(null); setComposerOpen(true); }}
+                    className="btn-primary text-sm"
+                  >
+                    ＋ নতুন পোস্ট
+                  </button>
+                </div>
+
+                {postsLoading ? (
+                  <div className="grid md:grid-cols-2 gap-6">
+                    {Array.from({ length: 2 }).map((_, i) => (
+                      <div key={i} className="skeleton h-72 rounded-xl3" />
+                    ))}
+                  </div>
+                ) : posts.length === 0 ? (
+                  <div className="glass-card rounded-xl3 p-12 text-center">
+                    <div className="w-16 h-16 rounded-2xl glass mx-auto flex items-center justify-center mb-4 text-2xl">🖼</div>
+                    <p className="font-semibold text-white/85">এখনও কোনো পোস্ট নেই</p>
+                    <p className="text-sm text-white/55 mt-1 mb-6">
+                      আপনার সেরা কাজের ছবি/ভিডিও দিয়ে প্রথম পোস্টটি করুন।
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => { setEditingPost(null); setComposerOpen(true); }}
+                      className="btn-primary text-sm"
+                    >
+                      ＋ প্রথম পোস্ট করুন
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid md:grid-cols-2 gap-6">
+                    {posts.map((p) => (
+                      <PostCard
+                        key={p.id}
+                        post={p}
+                        showStatus
+                        onEdit={
+                          p.status === 'pending' || p.status === 'rejected'
+                            ? (pp) => { setEditingPost(pp); setComposerOpen(true); }
+                            : undefined
+                        }
+                        onDelete={handleDeletePost}
+                      />
+                    ))}
+                  </div>
+                )}
+
+                {/* নোট: অ্যাপ্রুভড পোস্ট এডিট করা যায় না */}
+                {posts.some((p) => p.status === 'approved') && (
+                  <p className="text-[11px] text-white/45 px-1">
+                    ℹ️ অনুমোদিত পোস্ট এডিট করা যায় না — বদলাতে চাইলে ডিলিট করে নতুন পোস্ট দিন।
+                  </p>
+                )}
+              </>
+            )}
+          </div>
         )}
 
         {/* BOOKINGS TAB */}

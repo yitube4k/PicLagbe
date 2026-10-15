@@ -2,12 +2,13 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
-import { Photographer, Package } from '../lib/types';
+import { Photographer, Package, Post } from '../lib/types';
 import { toBn, taka } from '../lib/utils';
 import { SPOT_BY_KEY } from '../lib/constants';
 import { waLink, cldUrl } from '../lib/cloudinary';
 import BookingForm from '../components/BookingForm';
 import MediaReviews from '../components/MediaReviews';
+import PostCard from '../components/PostCard';
 
 /* ── Small presentational helpers ─────────────────────────────── */
 
@@ -82,6 +83,7 @@ export default function PhotographerProfile() {
   const [chatStarting, setChatStarting] = useState(false);
   const [avatarBroken, setAvatarBroken] = useState(false);
   const [coverBroken, setCoverBroken] = useState(false);
+  const [posts, setPosts] = useState<Post[]>([]);
 
   const viewCountedRef = useRef(false);
 
@@ -158,6 +160,25 @@ export default function PhotographerProfile() {
       .eq('status', 'completed')
       .then(({ count, error }) => {
         if (active && !error && typeof count === 'number') setCompletedCount(count);
+      });
+    return () => {
+      active = false;
+    };
+  }, [id]);
+
+  // অ্যাপ্রুভড কাজের পোস্ট (অ্যাডমিন-অনুমোদিত ফিড)
+  useEffect(() => {
+    if (!id) return;
+    let active = true;
+    supabase
+      .from('posts')
+      .select('*, photographers(id, display_name, profile_photo_url)')
+      .eq('photographer_id', id)
+      .eq('status', 'approved')
+      .order('created_at', { ascending: false })
+      .limit(12)
+      .then(({ data }) => {
+        if (active && data) setPosts(data as Post[]);
       });
     return () => {
       active = false;
@@ -555,6 +576,21 @@ export default function PhotographerProfile() {
               </Link>
             )}
           </section>
+
+          {/* কাজের পোস্ট — অ্যাডমিন-অনুমোদিত ফিড */}
+          {posts.length > 0 && (
+            <section aria-labelledby="pf-posts-h">
+              <div className="mb-4">
+                <h2 id="pf-posts-h" className="pf-serif text-xl font-bold text-[#26231e]">কাজের পোস্ট</h2>
+                <p className="text-sm text-[#6b6357] mt-0.5">সাম্প্রতিক কাজ, অফার ও প্যাকেজ আপডেট</p>
+              </div>
+              <div className="grid sm:grid-cols-2 gap-4">
+                {posts.map((p) => (
+                  <PostCard key={p.id} post={p} tone="light" />
+                ))}
+              </div>
+            </section>
+          )}
 
           {/* Reviews — ছবি/ভিডিও/ডেমো সেকশন বাদ (বুকিং পেজ হালকা ও দ্রুত) */}
           <section aria-labelledby="pf-review-h">

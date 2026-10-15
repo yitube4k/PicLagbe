@@ -259,28 +259,6 @@ export default function Home() {
           <Reveal delay={100}>
             <SearchPanel variant="hero" />
           </Reveal>
-
-          {/* Stats Row */}
-          <Reveal delay={200}>
-            <div className="mt-12 grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
-              <div className="stat-card">
-                <div className="stat-num">{toBn('120')}+</div>
-                <div className="stat-label">ভেরিফায়েড ফটোগ্রাফার</div>
-              </div>
-              <div className="stat-card">
-                <div className="stat-num">{toBn('3,500')}+</div>
-                <div className="stat-label">শুট সম্পন্ন</div>
-              </div>
-              <div className="stat-card">
-                <div className="stat-num">{toBn('4.9')}</div>
-                <div className="stat-label">গড় রেটিং</div>
-              </div>
-              <div className="stat-card">
-                <div className="stat-num">{toBn(COX_SPOTS.length)}</div>
-                <div className="stat-label">কক্সবাজার স্পট</div>
-              </div>
-            </div>
-          </Reveal>
         </div>
       </section>
 
@@ -359,24 +337,46 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ═══ সব পয়েন্টের নাম ═══ */}
-      <section className="py-8 border-y border-white/[0.08] bg-white/[0.02]">
-        <p className="text-xs sm:text-sm text-center text-white/50 mb-5 font-medium tracking-wide">
-          কক্সবাজারের সব শুটিং পয়েন্ট — ম্যাপে খুঁজুন
+      {/* ═══ সব ট্যুর পয়েন্ট — গোল আইকন + নিচে নাম (মোবাইলে সারিতে ৩টি) ═══ */}
+      <section className="py-10 sm:py-14 border-y border-white/[0.08] bg-white/[0.02]">
+        <p className="text-base sm:text-lg text-center text-white font-bold mb-1 tracking-tight">
+          কক্সবাজারের সব ট্যুর পয়েন্ট
+        </p>
+        <p className="text-xs sm:text-sm text-center text-white/50 mb-7 font-medium">
+          যেকোনো পয়েন্টে ক্লিক করুন — গাইড, ফটোগ্রাফার ও দিক-নির্দেশনা
         </p>
 
-        {/* Perf: static wrap-grid — continuous marquee animation removed (device lag) */}
-        <div className="flex flex-wrap justify-center gap-2.5">
-          {COX_SPOTS.map((s) => (
-            <Link
-              key={s.key}
-              to={`/spot/${s.key}`}
-              className="chip hover:border-sunset-gold/50"
-            >
-              <span>{SPOT_KIND_EMOJI[s.kind] || '📍'}</span>
-              <span>{s.nameBn}</span>
-            </Link>
-          ))}
+        {/* Perf: ছোট ক্রপ করা থাম্বনেইল + lazy — স্ট্যাটিক গ্রিড, কোনো অ্যানিমেশন নেই */}
+        <div className="max-w-6xl mx-auto px-4 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 xl:grid-cols-10 gap-x-2 gap-y-6">
+          {COX_SPOTS.map((s) => {
+            const photo = SPOT_PHOTOS[s.key];
+            return (
+              <Link
+                key={s.key}
+                to={`/spot/${s.key}`}
+                className="group flex flex-col items-center gap-2 focus:outline-none"
+              >
+                <span className="relative block w-[72px] h-[72px] sm:w-20 sm:h-20 rounded-full overflow-hidden ring-2 ring-white/10 group-hover:ring-sunset-gold/60 transition-colors bg-twilight-800">
+                  {photo ? (
+                    <img
+                      src={cldUrl(photo, { w: 160, h: 160, c: 'fill' })}
+                      alt={s.nameBn}
+                      loading="lazy"
+                      onError={(e) => { e.currentTarget.style.opacity = '0'; }}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span className="w-full h-full bg-sunset-soft flex items-center justify-center text-2xl">
+                      {SPOT_KIND_EMOJI[s.kind] || '📍'}
+                    </span>
+                  )}
+                </span>
+                <span className="text-[11px] sm:text-xs font-semibold text-white/75 group-hover:text-sunset-gold transition-colors text-center leading-tight">
+                  {s.nameBn}
+                </span>
+              </Link>
+            );
+          })}
         </div>
       </section>
 

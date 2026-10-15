@@ -16,7 +16,7 @@ import BlogPost from './pages/BlogPost';
 import Auth from './pages/Auth';
 import CustomerDash from './pages/CustomerDash';
 import StudioDash from './pages/StudioDash';
-import AdminDash from './pages/AdminDash';
+import AdminPanel from './pages/AdminPanel';
 import ChatPage from './pages/ChatPage';
 
 function ScrollToTop() {
@@ -67,7 +67,7 @@ export default function App() {
               <Route path="/dashboard" element={<CustomerDash />} />
               <Route path="/chat" element={<ChatPage />} />
               <Route path="/studio" element={<StudioDash />} />
-              <Route path="/admin" element={<AdminDash />} />
+              <Route path="/admin" element={<AdminPanel />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </main>

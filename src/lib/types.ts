@@ -100,3 +100,22 @@ export type BlogPost = {
   published: boolean
   created_at: string
 }
+
+/* ── Photographer POSTS (feed-style, admin-approved) ── */
+export type PostMedia = { url: string; type: 'image' | 'video' }
+
+export type Post = {
+  id: string
+  photographer_id: string
+  title: string
+  body: string | null
+  price: number | null
+  media: PostMedia[]
+  status: 'pending' | 'approved' | 'rejected'
+  review_note: string | null
+  like_count: number
+  created_at: string
+  updated_at: string
+  photographers?: Partial<Photographer>
+  post_likes?: { user_id: string }[]
+}
