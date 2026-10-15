@@ -296,12 +296,13 @@ export default function Finder() {
 
     // Photographer markers — slight ring offset around their home spot
     // 📷 আইকনের পাশে ফটোগ্রাফারের নাম সবসময় দেখা যায় (permanent label)
-    COX_SPOTS.forEach((s) => {
+    COX_SPOTS.forEach((s, sIdx) => {
       const group = photographersBySpot[s.key] || [];
       group.forEach((p, i) => {
-        const angle = (i * Math.PI) / 4;
-        const dLat = 0.007 * Math.sin(angle);
-        const dLng = (0.007 / Math.cos((s.lat * Math.PI) / 180)) * Math.cos(angle);
+        // প্রতিবেশী স্পটের রিং-এর সাথে ওভারল্যাপ এড়াতে প্রতি স্পটে বেস-অ্যাঙ্গেল আলাদা
+        const angle = (i * Math.PI) / 4 + (sIdx * Math.PI) / 8;
+        const dLat = 0.011 * Math.sin(angle);
+        const dLng = (0.011 / Math.cos((s.lat * Math.PI) / 180)) * Math.cos(angle);
         const html = `
           <div style="
             width: 26px;
