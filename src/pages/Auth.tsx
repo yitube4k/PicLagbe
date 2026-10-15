@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
 import { COX_SPOTS } from '../lib/constants';
 
-type AuthMode = 'login' | 'register' | 'photographer';
+type AuthMode = 'login' | 'register' | 'photographer' | 'forgot' | 'reset';
 
 export default function Auth() {
   const { session, profile } = useAuth();
@@ -13,8 +13,16 @@ export default function Auth() {
 
   const modeParam = searchParams.get('mode') as AuthMode;
   const [mode, setMode] = useState<AuthMode>(
-    ['login', 'register', 'photographer'].includes(modeParam) ? modeParam : 'login'
+    ['login', 'register', 'photographer', 'forgot', 'reset'].includes(modeParam) ? modeParam : 'login'
   );
+
+  // Supabase রিকভারি লিঙ্ক (#access_token=...&type=recovery) এসেছে কি না দেখি
+  useEffect(() => {
+    const h = window.location.hash || '';
+    if (h.includes('type=recovery') || h.includes('type%3Drecovery')) {
+      setMode('reset');
+    }
+  }, []);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -23,6 +31,7 @@ export default function Auth() {
   const [location, setLocation] = useState('লাবণী পয়েন্ট');
   const [expYears, setExpYears] = useState('2');
 
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -48,7 +57,82 @@ export default function Auth() {
     setMode(newMode);
     setErrorMsg(null);
     setSuccessMsg(null);
-    setSearchParams({ mode: newMode });
+    if (['login', 'register', 'photographer'].includes(newMode)) {
+      setSearchParams({ mode: newMode });
+    }
+  };
+
+  // Google দিয়ে সাইনআপ/লগইন (Supabase OAuth)
+  const handleGoogleAuth = async () => {
+    setLoading(true);
+    setErrorMsg(null);
+    try {
+      const redirectTo = `${window.location.origin}${import.meta.env.BASE_URL || '/'}`;
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo },
+      });
+      if (error) {
+        setErrorMsg('Google দিয়ে প্রবেশ করতে সমস্যা হয়েছে — আবার চেষ্টা করুন।');
+        setLoading(false);
+      }
+      // সফল হলে OAuth পেজে রিডাইরেক্ট হবে
+    } catch (err) {
+      console.error('Google auth error:', err);
+      setErrorMsg('Google লগইন ব্যর্থ হয়েছে।');
+      setLoading(false);
+    }
+  };
+
+  // পাসওয়ার্ড রিসেট লিঙ্ক পাঠানো
+  const handleForgotSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setErrorMsg(null);
+    setSuccessMsg(null);
+    try {
+      const redirectTo = `${window.location.origin}${import.meta.env.BASE_URL || '/'}auth`;
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo });
+      if (error) {
+        setErrorMsg('রিসেট লিঙ্ক পাঠাতে সমস্যা হয়েছে — ইমেইলটি যাচাই করুন।');
+      } else {
+        setSuccessMsg('✅ রিসেট লিঙ্ক আপনার ইমেইলে পাঠানো হয়েছে — ইনবক্স (স্প্যামসহ) দেখুন।');
+      }
+    } catch (err) {
+      console.error('Forgot password error:', err);
+      setErrorMsg('একটি অপ্রত্যাশিত ত্রুটি ঘটেছে।');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // নতুন পাসওয়ার্ড সেট (রিকভারি লিঙ্ক থেকে)
+  const handleResetSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (password.length < 6) {
+      setErrorMsg('পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে।');
+      return;
+    }
+    if (password !== confirmPassword) {
+      setErrorMsg('দুটি পাসওয়ার্ড মিলছে না।');
+      return;
+    }
+    setLoading(true);
+    setErrorMsg(null);
+    try {
+      const { error } = await supabase.auth.updateUser({ password });
+      if (error) {
+        setErrorMsg('পাসওয়ার্ড রিসেট করা যায়নি — লিঙ্কটি পুরনো হয়ে গেলে আবার "ভুলে গেছেন" চাপুন।');
+      } else {
+        setSuccessMsg('✅ পাসওয়ার্ড রিসেট সফল! ড্যাশবোর্ডে নিয়ে যাওয়া হচ্ছে…');
+        setTimeout(() => navigate('/dashboard'), 1200);
+      }
+    } catch (err) {
+      console.error('Reset password error:', err);
+      setErrorMsg('একটি অপ্রত্যাশিত ত্রুটি ঘটেছে।');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleAuthSubmit = async (e: React.FormEvent) => {
@@ -190,8 +274,8 @@ export default function Auth() {
 
         {/* Right Form Panel */}
         <div className="glass-strong rounded-xl3 p-6 sm:p-8 shadow-glass-lg border border-white/[0.15]">
-          {/* Tab Switcher */}
-          <div className="glass rounded-full p-1.5 flex gap-1 mb-6">
+          {/* Tab Switcher (forgot/reset মোডে লুকানো) */}
+          <div className={mode === 'forgot' || mode === 'reset' ? 'hidden' : 'glass rounded-full p-1.5 flex gap-1 mb-6'}>
             <button
               type="button"
               onClick={() => handleModeChange('login')}
@@ -220,6 +304,10 @@ export default function Auth() {
               ? 'স্বাগতম ফিরে!'
               : mode === 'register'
               ? 'অ্যাকাউন্ট খুলুন'
+              : mode === 'forgot'
+              ? 'পাসওয়ার্ড ভুলে গেছেন?'
+              : mode === 'reset'
+              ? 'নতুন পাসওয়ার্ড দিন'
               : 'আপনার স্টুডিও শুরু করুন'}
           </h3>
           <p className="text-xs text-white/50 mb-6">
@@ -227,10 +315,31 @@ export default function Auth() {
               ? 'আপনার ইমেইল ও পাসওয়ার্ড দিয়ে লগইন করুন।'
               : mode === 'register'
               ? 'ফটোলাগবে কমিউনিটিতে যুক্ত হন।'
+              : mode === 'forgot'
+              ? 'রেজিস্টার করা ইমেইল দিন — রিসেট লিঙ্ক পাঠিয়ে দেব।'
+              : mode === 'reset'
+              ? 'আপনার নতুন পাসওয়ার্ড সেট করুন।'
               : 'কক্সবাজারে আপনার ফটোগ্রাফি ব্যবসা প্রসারিত করুন।'}
           </p>
 
-          <form onSubmit={handleAuthSubmit} className="space-y-4">
+          <form
+            onSubmit={(e) => {
+              if (mode === 'forgot') return handleForgotSubmit(e);
+              if (mode === 'reset') return handleResetSubmit(e);
+              return handleAuthSubmit(e);
+            }}
+            className="space-y-4"
+          >
+            {(mode === 'forgot' || mode === 'reset') && (
+              <button
+                type="button"
+                onClick={() => handleModeChange('login')}
+                className="text-xs text-white/55 hover:text-sunset-gold font-semibold inline-flex items-center gap-1"
+              >
+                ← লগইনে ফিরে যান
+              </button>
+            )}
+
             {(mode === 'register' || mode === 'photographer') && (
               <div>
                 <label className="field-label">পূর্ণ নাম</label>
@@ -245,6 +354,7 @@ export default function Auth() {
               </div>
             )}
 
+            {mode !== 'reset' && (
             <div>
               <label className="field-label">ইমেইল ঠিকানা</label>
               <input
@@ -256,9 +366,11 @@ export default function Auth() {
                 className="glass-input"
               />
             </div>
+            )}
 
+            {mode !== 'forgot' && (
             <div className="relative">
-              <label className="field-label">পাসওয়ার্ড</label>
+              <label className="field-label">{mode === 'reset' ? 'নতুন পাসওয়ার্ড' : 'পাসওয়ার্ড'}</label>
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
@@ -279,6 +391,34 @@ export default function Auth() {
                 </button>
               </div>
             </div>
+            )}
+
+            {mode === 'reset' && (
+              <div>
+                <label className="field-label">নতুন পাসওয়ার্ড আবার লিখুন</label>
+                <input
+                  type="password"
+                  required
+                  minLength={6}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="আবার লিখুন"
+                  className="glass-input"
+                />
+              </div>
+            )}
+
+            {mode === 'login' && (
+              <div className="text-right -mt-1">
+                <button
+                  type="button"
+                  onClick={() => handleModeChange('forgot')}
+                  className="text-xs font-semibold text-sunset-gold hover:underline"
+                >
+                  পাসওয়ার্ড ভুলে গেছেন?
+                </button>
+              </div>
+            )}
 
             {mode === 'photographer' && (
               <>
@@ -347,13 +487,53 @@ export default function Auth() {
                 ? 'লগইন করুন'
                 : mode === 'register'
                 ? 'রেজিস্টার করুন'
+                : mode === 'forgot'
+                ? 'রিসেট লিঙ্ক পাঠান'
+                : mode === 'reset'
+                ? 'নতুন পাসওয়ার্ড সেট করুন'
                 : 'স্টুডিও আবেদন জমা দিন'}
             </button>
+
+            {/* ═══ Google দিয়ে সাইনআপ/লগইন (login/register-এ দেখাবে) ═══ */}
+            {(mode === 'login' || mode === 'register') && (
+              <>
+                <div className="flex items-center gap-3 pt-1">
+                  <span className="h-px flex-1 bg-white/[0.12]" />
+                  <span className="text-[11px] text-white/45 font-semibold">অথবা</span>
+                  <span className="h-px flex-1 bg-white/[0.12]" />
+                </div>
+                <button
+                  type="button"
+                  onClick={handleGoogleAuth}
+                  disabled={loading}
+                  className="w-full inline-flex items-center justify-center gap-3 rounded-[13px] border border-white/15 bg-white/[0.06] py-3 text-sm font-bold text-white hover:bg-white/[0.1] transition-colors"
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.27-4.74 3.27-8.1z" />
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84A11 11 0 0 0 12 23z" />
+                    <path fill="#FBBC05" d="M5.84 14.1a6.6 6.6 0 0 1 0-4.2V7.06H2.18a11 11 0 0 0 0 9.88l3.66-2.84z" />
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84C6.71 7.31 9.14 5.38 12 5.38z" />
+                  </svg>
+                  Google দিয়ে {mode === 'login' ? 'লগইন' : 'সাইনআপ'} করুন
+                </button>
+              </>
+            )}
           </form>
 
           {/* Footer Switcher */}
           <div className="text-xs text-white/45 text-center mt-6 pt-4 border-t border-white/[0.08]">
-            {mode === 'login' ? (
+            {mode === 'forgot' || mode === 'reset' ? (
+              <p>
+                মনে পড়েছে?{' '}
+                <button
+                  type="button"
+                  onClick={() => handleModeChange('login')}
+                  className="text-sunset-gold font-semibold hover:underline"
+                >
+                  লগইন করুন
+                </button>
+              </p>
+            ) : mode === 'login' ? (
               <p>
                 অ্যাকাউন্ট নেই?{' '}
                 <button

@@ -9,6 +9,7 @@ import Home from './pages/Home';
 import Search from './pages/Search';
 import PhotographerProfile from './pages/PhotographerProfile';
 import Finder from './pages/Finder';
+import SpotPage from './pages/SpotPage';
 import Community from './pages/Community';
 import Blog from './pages/Blog';
 import BlogPost from './pages/BlogPost';
@@ -47,25 +48,8 @@ export default function App() {
       <AuthProvider>
         <ScrollToTop />
         <div className="min-h-screen flex flex-col relative">
-          {/* Aurora Background with 4 floating blobs */}
-          <div className="aurora" aria-hidden="true">
-            <span
-              className="absolute rounded-full blur-[110px] opacity-20"
-              style={{ width: '500px', height: '500px', top: '-10%', left: '-10%', background: '#f97316' }}
-            />
-            <span
-              className="absolute rounded-full blur-[110px] opacity-20"
-              style={{ width: '480px', height: '480px', top: '10%', right: '-10%', background: '#fbbf24' }}
-            />
-            <span
-              className="absolute rounded-full blur-[110px] opacity-20"
-              style={{ width: '520px', height: '520px', bottom: '-10%', left: '10%', background: '#4FD1C5' }}
-            />
-            <span
-              className="absolute rounded-full blur-[110px] opacity-20"
-              style={{ width: '540px', height: '540px', bottom: '-10%', right: '10%', background: '#9333ea' }}
-            />
-          </div>
+          {/* Perf: .aurora এখন শুধু static radial-gradient (CSS) — blur blob spans সরানো হয়েছে (লো-এন্ড ডিভাইসে GPU ল্যাগ) */}
+          <div className="aurora" aria-hidden="true" />
 
           <Navbar />
 
@@ -75,6 +59,7 @@ export default function App() {
               <Route path="/photographers" element={<Search />} />
               <Route path="/photographer/:id" element={<PhotographerProfile />} />
               <Route path="/finder" element={<Finder />} />
+              <Route path="/spot/:key" element={<SpotPage />} />
               <Route path="/community" element={<Community />} />
               <Route path="/blog" element={<Blog />} />
               <Route path="/blog/:slug" element={<BlogPost />} />

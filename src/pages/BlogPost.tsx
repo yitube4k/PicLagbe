@@ -1,8 +1,104 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { BlogPost } from '../lib/types';
 import { toBn, bnDate } from '../lib/utils';
+import { SPOT_BY_KEY, SPOT_KIND_BN } from '../lib/constants';
+import { matchSpotKey, SPOT_PHOTOS } from '../lib/spotPhotos';
+import { openDirections } from './Finder';
+import { cldUrl } from '../lib/cloudinary';
+
+/** স্পটে available ফটোগ্রাফার সংখ্যা (parent থেকে আসে) */
+interface SpotStat {
+  count: number;
+  minPrice: number | null;
+}
+
+/* ═══ LOCATION CARD — লোকেশনের আসল ছবি + নিচে ফটোগ্রাফার+গাইড+ডিরেকশন এক রো-তে ═══ */
+function LocationCard({ spotKey, stat }: { spotKey: string; stat?: SpotStat }) {
+  const spot = SPOT_BY_KEY(spotKey);
+  if (!spot) return null;
+
+  const photo = SPOT_PHOTOS[spotKey];
+  const hasPgs = (stat?.count || 0) > 0;
+
+  return (
+    <figure id={`loc-spot-${spotKey}`} className="my-7 scroll-mt-28">
+      {/* আসল লোকেশন ছবি */}
+      <div className="relative rounded-[16px] overflow-hidden border border-white/10 bg-twilight-800">
+        {photo ? (
+          <img
+            src={cldUrl(photo, { w: 960, c: 'fill' })}
+            srcSet={[480, 960, 1400]
+              .map((w) => `${cldUrl(photo, { w, c: 'fill' })} ${w}w`)
+              .join(', ')}
+            sizes="(min-width: 768px) 768px, 100vw"
+            alt={`${spot.nameBn} — কক্সবাজারের আসল ছবি`}
+            className="w-full aspect-[16/9] object-cover"
+            loading="lazy"
+          />
+        ) : (
+          <div className="w-full aspect-[16/9] bg-sunset-soft" />
+        )}
+        <figcaption className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-4 pt-10 pb-3">
+          <span className="text-sm font-bold text-white">
+            📍 {spot.nameBn}
+          </span>
+          <span className="text-[11px] text-white/70 ml-2">{spot.nameEn} · {SPOT_KIND_BN[spot.kind] || spot.kind}</span>
+        </figcaption>
+      </div>
+
+      {/* ছবির ঠিক নিচে — ফটোগ্রাফার + গাইডলাইন + ডিরেকশন এক রো-তে */}
+      <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+        {/* ১) ফটোগ্রাফার */}
+        <Link
+          to={`/spot/${spotKey}`}
+          className={`glass rounded-xl2 p-3 flex items-center gap-2.5 hover:border-sunset-gold/50 transition-colors ${
+            hasPgs ? '' : 'opacity-80'
+          }`}
+        >
+          <span aria-hidden="true" className="text-lg shrink-0">📷</span>
+          <span className="min-w-0">
+            <b className="block text-[12.5px] text-white leading-tight">
+              {hasPgs ? `${toBn(stat!.count)} জন ফটোগ্রাফার` : 'ফটোগ্রাফার খুঁজুন'}
+            </b>
+            <span className="block text-[10.5px] text-white/55 leading-tight mt-0.5">
+              {hasPgs && stat!.minPrice ? `শুরু ৳${toBn(Number(stat!.minPrice).toLocaleString('en-IN'))}` : 'কাছের স্পট দেখুন'}
+            </span>
+          </span>
+          <span aria-hidden="true" className="ml-auto text-white/40 text-sm shrink-0">→</span>
+        </Link>
+
+        {/* ২) গাইডলাইন */}
+        <div className="glass rounded-xl2 p-3 flex items-center gap-2.5">
+          <span aria-hidden="true" className="text-lg shrink-0">💡</span>
+          <span className="min-w-0">
+            <b className="block text-[12.5px] text-white leading-tight">গাইডলাইন</b>
+            <span className="block text-[10.5px] text-white/55 leading-snug mt-0.5 line-clamp-2">
+              {spot.descBn}
+            </span>
+          </span>
+        </div>
+
+        {/* ৩) ডিরেকশন — ক্লিকে গুগল ম্যাপ (নতুন ট্যাব) */}
+        <button
+          type="button"
+          onClick={() => openDirections(spot.lat, spot.lng, null)}
+          className="glass rounded-xl2 p-3 flex items-center gap-2.5 hover:border-sunset-gold/50 transition-colors text-left"
+        >
+          <span aria-hidden="true" className="text-lg shrink-0">🧭</span>
+          <span className="min-w-0">
+            <b className="block text-[12.5px] text-white leading-tight">গুগল ম্যাপ ডিরেকশন</b>
+            <span className="block text-[10.5px] text-white/55 leading-tight mt-0.5">
+              ক্লিকে নতুন ট্যাবে রাস্তা দেখুন
+            </span>
+          </span>
+          <span aria-hidden="true" className="ml-auto text-white/40 text-sm shrink-0">↗</span>
+        </button>
+      </div>
+    </figure>
+  );
+}
 
 export default function BlogPostPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -10,6 +106,7 @@ export default function BlogPostPage() {
 
   const [post, setPost] = useState<BlogPost | null>(null);
   const [relatedPosts, setRelatedPosts] = useState<BlogPost[]>([]);
+  const [spotStats, setSpotStats] = useState<Record<string, SpotStat>>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -51,6 +148,25 @@ export default function BlogPostPage() {
           if (active && !relRes.error && relRes.data) {
             setRelatedPosts(relRes.data as BlogPost[]);
           }
+
+          // স্পট ফটোগ্রাফার স্ট্যাট (LocationCard-এর জন্য — ১টি কোয়েরি)
+          const phRes = await supabase
+            .from('photographers')
+            .select('id, home_spot, starting_price')
+            .eq('profile_status', 'approved');
+
+          if (active && !phRes.error && phRes.data) {
+            const stats: Record<string, SpotStat> = {};
+            (phRes.data as { home_spot: string | null; starting_price: number | null }[]).forEach((p) => {
+              if (!p.home_spot) return;
+              const cur = stats[p.home_spot] || { count: 0, minPrice: null };
+              cur.count += 1;
+              const pr = Number(p.starting_price || 0);
+              if (pr > 0 && (cur.minPrice === null || pr < cur.minPrice)) cur.minPrice = pr;
+              stats[p.home_spot] = cur;
+            });
+            setSpotStats(stats);
+          }
         }
       } catch (err) {
         if (active) {
@@ -69,6 +185,19 @@ export default function BlogPostPage() {
       active = false;
     };
   }, [slug]);
+
+  // আর্টিকেলে উল্লেখিত স্পটগুলো (select ড্রপডাউনের জন্য)
+  const mentionedSpots = useMemo(() => {
+    const keys: string[] = [];
+    (post?.content || '').split('\n').forEach((line) => {
+      const t = line.trim();
+      if (t.startsWith('## ')) {
+        const k = matchSpotKey(t.replace(/^##\s*/, ''));
+        if (k && !keys.includes(k)) keys.push(k);
+      }
+    });
+    return keys;
+  }, [post?.content]);
 
   if (loading) {
     return (
@@ -122,14 +251,23 @@ export default function BlogPostPage() {
       if (!trimmed) return;
 
       if (trimmed.startsWith('## ')) {
+        const headingText = trimmed.replace(/^##\s*/, '');
+        const spotKey = matchSpotKey(headingText);
         elements.push(
           <h2
             key={index}
-            className="text-xl sm:text-2xl font-bold text-white mt-10 mb-4 pl-4 border-l-2 border-sunset-gold"
+            id={spotKey ? `h-spot-${spotKey}` : undefined}
+            className="text-xl sm:text-2xl font-bold text-white mt-10 mb-4 pl-4 border-l-2 border-sunset-gold scroll-mt-28"
           >
-            {parseFormattedText(trimmed.replace(/^##\s*/, ''))}
+            {parseFormattedText(headingText)}
           </h2>
         );
+        // স্পট হেডিংয়ের ঠিক নিচে — আসল ছবি + ফটোগ্রাফার/গাইড/ডিরেকশন রো
+        if (spotKey) {
+          elements.push(
+            <LocationCard key={`loc-${index}`} spotKey={spotKey} stat={spotStats[spotKey]} />
+          );
+        }
       } else if (trimmed.startsWith('- ')) {
         elements.push(
           <li key={index} className="text-white/75 text-base my-2 pl-2 list-disc ml-5">
@@ -162,7 +300,7 @@ export default function BlogPostPage() {
       {/* Hero Cover */}
       <div className="relative h-[42vh] min-h-[300px] overflow-hidden bg-twilight-900">
         {post.cover_url ? (
-          <img src={post.cover_url} alt={post.title} className="w-full h-full object-cover" />
+          <img src={cldUrl(post.cover_url, { w: 1600, c: 'fill' })} alt={post.title} className="w-full h-full object-cover" />
         ) : (
           <div className="w-full h-full bg-sunset-soft" />
         )}
@@ -209,6 +347,31 @@ export default function BlogPostPage() {
             </div>
           </div>
         </div>
+
+        {/* স্পট সিলেক্টর — নির্বাচন করলে সেই স্পটের ছবি+কার্ডে স্ক্রল করবে */}
+        {mentionedSpots.length >= 2 && (
+          <div className="glass-strong rounded-xl3 p-4 mt-4 border border-white/[0.15] flex items-center gap-3 flex-wrap">
+            <label htmlFor="spot-jump" className="text-sm font-bold text-white whitespace-nowrap">
+              🗺️ স্পট বাছাই করুন:
+            </label>
+            <select
+              id="spot-jump"
+              value=""
+              onChange={(e) => {
+                const k = e.target.value;
+                if (!k) return;
+                document.getElementById(`loc-spot-${k}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }}
+              className="glass-select flex-1 min-w-[200px] !py-2.5"
+            >
+              <option value="">— স্পট নির্বাচন করুন —</option>
+              {mentionedSpots.map((k) => {
+                const s = SPOT_BY_KEY(k);
+                return s ? <option key={k} value={k}>{s.nameBn}</option> : null;
+              })}
+            </select>
+          </div>
+        )}
       </div>
 
       {/* Content Body */}
@@ -242,9 +405,10 @@ export default function BlogPostPage() {
                   <div className="h-28 w-full bg-twilight-800 overflow-hidden">
                     {rel.cover_url ? (
                       <img
-                        src={rel.cover_url}
+                        src={cldUrl(rel.cover_url, { w: 480, c: 'fill' })}
                         alt={rel.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition"
+                        className="w-full h-full object-cover"
+                        loading="lazy"
                       />
                     ) : (
                       <div className="w-full h-full bg-sunset-soft" />

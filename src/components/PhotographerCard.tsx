@@ -31,11 +31,11 @@ export default function PhotographerCard({ p }: PhotographerCardProps) {
           <img
             src={p.cover_photo_url}
             alt={p.display_name || 'ফটোগ্রাফার কভার'}
-            className="w-full h-full object-cover group-hover:scale-105 transition duration-700"
+            className="w-full h-full object-cover "
             loading="lazy"
           />
         ) : (
-          <div className="w-full h-full bg-sunset-soft group-hover:scale-105 transition duration-700" />
+          <div className="w-full h-full bg-sunset-soft " />
         )}
 
         {/* Bottom Gradient Overlay */}

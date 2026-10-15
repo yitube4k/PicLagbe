@@ -698,21 +698,21 @@ export default function AdminDash() {
                         <div>
                           <span className="text-xs text-white/50 block mb-1">NID ফ্রন্ট</span>
                           <a href={sub.nid_front_url} target="_blank" rel="noreferrer" className="block h-36 rounded-xl2 overflow-hidden bg-twilight-900 border border-white/10">
-                            <img src={sub.nid_front_url} alt="NID Front" className="w-full h-full object-cover hover:scale-105 transition" />
+                            <img src={sub.nid_front_url} alt="NID Front" className="w-full h-full object-cover " />
                           </a>
                         </div>
                         {sub.nid_back_url && (
                           <div>
                             <span className="text-xs text-white/50 block mb-1">NID ব্যাক</span>
                             <a href={sub.nid_back_url} target="_blank" rel="noreferrer" className="block h-36 rounded-xl2 overflow-hidden bg-twilight-900 border border-white/10">
-                              <img src={sub.nid_back_url} alt="NID Back" className="w-full h-full object-cover hover:scale-105 transition" />
+                              <img src={sub.nid_back_url} alt="NID Back" className="w-full h-full object-cover " />
                             </a>
                           </div>
                         )}
                         <div>
                           <span className="text-xs text-white/50 block mb-1">সেলফি</span>
                           <a href={sub.selfie_url} target="_blank" rel="noreferrer" className="block h-36 rounded-xl2 overflow-hidden bg-twilight-900 border border-white/10">
-                            <img src={sub.selfie_url} alt="Selfie" className="w-full h-full object-cover hover:scale-105 transition" />
+                            <img src={sub.selfie_url} alt="Selfie" className="w-full h-full object-cover " />
                           </a>
                         </div>
                       </div>

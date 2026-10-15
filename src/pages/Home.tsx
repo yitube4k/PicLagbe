@@ -1,24 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Photographer, Review } from '../lib/types';
 import { toBn } from '../lib/utils';
 import { COX_SPOTS } from '../lib/constants';
 import Reveal from '../components/Reveal';
+import SearchPanel from '../components/SearchPanel';
 import PhotographerCard from '../components/PhotographerCard';
-
-const CATEGORY_OPTIONS = [
-  { value: 'Wedding', label: 'ওয়েডিং (Wedding)' },
-  { value: 'Pre-Wedding', label: 'প্রি-ওয়েডিং (Pre-Wedding)' },
-  { value: 'Birthday', label: 'জন্মদিন (Birthday)' },
-  { value: 'Event', label: 'ইভেন্ট (Event)' },
-  { value: 'Portrait', label: 'পোর্ট্রেট (Portrait)' },
-  { value: 'Fashion', label: 'ফ্যাশন (Fashion)' },
-  { value: 'Product', label: 'প্রোডাক্ট (Product)' },
-  { value: 'Travel', label: 'ট্রাভেল (Travel)' },
-  { value: 'Corporate', label: 'কর্পোরেট (Corporate)' },
-  { value: 'Videography', label: 'ভিডিওগ্রাফি (Videography)' },
-];
 
 const SPOT_KIND_EMOJI: Record<string, string> = {
   beach: '🏖️',
@@ -92,11 +80,6 @@ type EnrichedReview = Review & {
 };
 
 export default function Home() {
-  const navigate = useNavigate();
-
-  const [query, setQuery] = useState('');
-  const [spot, setSpot] = useState('');
-  const [category, setCategory] = useState('');
   const [heroImgError, setHeroImgError] = useState(false);
 
   const [featured, setFeatured] = useState<Photographer[]>([]);
@@ -156,15 +139,6 @@ export default function Home() {
     };
   }, []);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    const params = new URLSearchParams();
-    if (query.trim()) params.set('q', query.trim());
-    if (spot) params.set('spot', spot);
-    if (category) params.set('cat', category);
-    navigate(`/photographers?${params.toString()}`);
-  };
-
   return (
     <div className="min-h-screen">
       {/* ═══ HERO SECTION ═══ */}
@@ -203,61 +177,9 @@ export default function Home() {
             </p>
           </Reveal>
 
-          {/* Search Bar */}
+          {/* Search Bar — প্রিমিয়াম শেয়ার্ড সার্চ প্যানেল */}
           <Reveal delay={100}>
-            <form
-              onSubmit={handleSearch}
-              className="mt-9 glass-strong rounded-xl3 p-2.5 flex flex-col lg:flex-row gap-2.5 max-w-3xl mx-auto"
-            >
-              <input
-                type="text"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="ফটোগ্রাফার বা সার্ভিস লিখুন…"
-                aria-label="ফটোগ্রাফার বা সার্ভিস খুঁজুন"
-                className="glass-input !border-transparent !bg-white/5 flex-1 min-h-[48px] w-full"
-              />
-
-              <select
-                value={spot}
-                onChange={(e) => setSpot(e.target.value)}
-                aria-label="শুটিং স্পট নির্বাচন করুন"
-                className="glass-select lg:w-52 min-h-[48px]"
-              >
-                <option value="">সব স্পট</option>
-                {COX_SPOTS.map((s) => (
-                  <option key={s.key} value={s.key}>
-                    {s.nameBn}
-                  </option>
-                ))}
-              </select>
-
-              <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                aria-label="ক্যাটাগরি নির্বাচন করুন"
-                className="glass-select lg:w-52 min-h-[48px]"
-              >
-                <option value="">সব ক্যাটাগরি</option>
-                {CATEGORY_OPTIONS.map((c) => (
-                  <option key={c.value} value={c.value}>
-                    {c.label}
-                  </option>
-                ))}
-              </select>
-
-              <button
-                type="submit"
-                aria-label="ফটোগ্রাফার সার্চ করুন"
-                className="btn-primary shrink-0 px-7 min-h-[48px] w-full lg:w-auto"
-              >
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="inline-block mr-1.5 -mt-0.5">
-                  <circle cx="11" cy="11" r="8" />
-                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                </svg>
-                খুঁজুন
-              </button>
-            </form>
+            <SearchPanel variant="hero" />
           </Reveal>
 
           {/* Stats Row */}

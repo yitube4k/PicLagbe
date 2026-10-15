@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { supabase } from '../lib/supabase';
 import { Photographer } from '../lib/types';
-import { toBn, taka } from '../lib/utils';
+import { toBn } from '../lib/utils';
 import { COX_SPOTS, SPOT_KIND_BN } from '../lib/constants';
 
 const SPOT_KIND_EMOJI: Record<string, string> = {
@@ -17,7 +16,7 @@ const SPOT_KIND_EMOJI: Record<string, string> = {
 };
 
 // Great-circle distance in km between two {lat,lng} points
-function distKm(aLat: number, aLng: number, bLat: number, bLng: number) {
+export function distKm(aLat: number, aLng: number, bLat: number, bLng: number) {
   const R = 6371;
   const dLat = ((bLat - aLat) * Math.PI) / 180;
   const dLng = ((bLng - aLng) * Math.PI) / 180;
@@ -29,22 +28,29 @@ function distKm(aLat: number, aLng: number, bLat: number, bLng: number) {
   return 2 * R * Math.asin(Math.sqrt(s));
 }
 
+/** ইউজারের লোকেশন থেকে স্পটে গুগল ম্যাপ ডিরেকশন (নতুন ট্যাবে) */
+export function openDirections(lat: number, lng: number, userLoc?: { lat: number; lng: number } | null) {
+  const dest = `${lat},${lng}`;
+  const origin = userLoc ? `&origin=${userLoc.lat},${userLoc.lng}` : '';
+  window.open(
+    `https://www.google.com/maps/dir/?api=1&destination=${dest}${origin}&travelmode=driving`,
+    '_blank',
+    'noopener,noreferrer'
+  );
+}
+
 export default function Finder() {
-  const [selectedSpotKey, setSelectedSpotKey] = useState<string>('laboni');
-  const [panelOpen, setPanelOpen] = useState(false);
-  const [photographers, setPhotographers] = useState<Photographer[]>([]);
-  const [loading, setLoading] = useState(true);
   const [spotSearch, setSpotSearch] = useState('');
   const [baseLayer, setBaseLayer] = useState<'map' | 'sat'>('map');
   const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(null);
   const [locStatus, setLocStatus] = useState<'idle' | 'loading' | 'denied' | 'error'>('idle');
+  const [photographers, setPhotographers] = useState<Photographer[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const navigate = useNavigate();
   const mapElRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markersRef = useRef<Record<string, L.Marker>>({});
   const phMarkersRef = useRef<L.Marker[]>([]);
-  const firstRenderRef = useRef(true);
 
   useEffect(() => {
     let active = true;
@@ -77,7 +83,7 @@ export default function Finder() {
     return c;
   }, [photographers]);
 
-  // Photographers grouped by home spot (for map markers + panel)
+  // Photographers grouped by home spot (for map markers)
   const photographersBySpot: Record<string, Photographer[]> = useMemo(() => {
     const g: Record<string, Photographer[]> = {};
     photographers.forEach((p) => {
@@ -102,9 +108,12 @@ export default function Finder() {
     return list;
   }, [spotSearch, userLoc]);
 
-  const selectedSpotObj = COX_SPOTS.find((s) => s.key === selectedSpotKey);
+  // স্পট ক্লিক → নতুন ট্যাবে স্পট পেজ (available ফটোগ্রাফার + ডিরেকশন)
+  const openSpotPage = useCallback((key: string) => {
+    window.open(`/spot/${key}`, '_blank', 'noopener,noreferrer');
+  }, []);
 
-  // Distance (durutto) from user's location to a spot
+  // ইউজারের লোকেশন থেকে দূরত্ব (durutto)
   const userDistTo = useCallback(
     (lat: number, lng: number) => (userLoc ? distKm(userLoc.lat, userLoc.lng, lat, lng) : null),
     [userLoc]
@@ -133,27 +142,6 @@ export default function Finder() {
     );
   };
 
-  const photographersForSelectedSpot = selectedSpotKey
-    ? photographersBySpot[selectedSpotKey] || []
-    : [];
-
-  // Nearby fallback: nearest spots that DO have approved photographers
-  const nearbySuggestions = useMemo(() => {
-    if (!selectedSpotObj || photographersForSelectedSpot.length > 0) return [];
-    return COX_SPOTS.filter((s) => s.key !== selectedSpotObj.key && (spotCounts[s.key] || 0) > 0)
-      .map((s) => ({
-        spot: s,
-        d: distKm(selectedSpotObj.lat, selectedSpotObj.lng, s.lat, s.lng),
-      }))
-      .sort((a, b) => a.d - b.d)
-      .slice(0, 2);
-  }, [selectedSpotObj, photographersForSelectedSpot.length, spotCounts]);
-
-  const openSpot = (key: string) => {
-    setSelectedSpotKey(key);
-    setPanelOpen(true);
-  };
-
   // Initialize Leaflet Map
   useEffect(() => {
     if (!mapElRef.current || mapInstanceRef.current) return;
@@ -166,8 +154,6 @@ export default function Finder() {
     });
 
     L.control.zoom({ position: 'bottomright' }).addTo(map);
-
-    // Base tile layers are managed by the baseLayer effect (map/satellite toggle)
 
     // Marine Drive polyline
     L.polyline(
@@ -254,7 +240,7 @@ export default function Finder() {
     };
   }, [userLoc]);
 
-  // Update Markers when spots, selection or photographer data change
+  // Update Markers when spots or photographer data change
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (!map) return;
@@ -267,23 +253,21 @@ export default function Finder() {
 
     COX_SPOTS.forEach((s) => {
       const count = spotCounts[s.key] || 0;
-      const isSelected = panelOpen && s.key === selectedSpotKey;
 
       const htmlContent = `
         <div style="
-          width: 32px;
-          height: 32px;
+          width: 34px;
+          height: 34px;
           border-radius: 50%;
           display: grid;
           place-items: center;
           font-weight: 700;
           font-size: 11px;
           cursor: pointer;
-          transition: all 0.3s ease;
-          background: ${isSelected ? 'linear-gradient(135deg, #f97316 0%, #fbbf24 100%)' : 'rgba(10, 14, 26, 0.88)'};
-          color: ${isSelected ? '#1A0E06' : '#FFC46B'};
-          border: 1.5px solid ${isSelected ? '#ffffff' : 'rgba(251, 191, 36, 0.65)'};
-          box-shadow: 0 0 ${isSelected ? '18px' : '12px'} rgba(${isSelected ? '249, 115, 22' : '255, 196, 107'}, 0.6);
+          background: rgba(10, 14, 26, 0.88);
+          color: #FFC46B;
+          border: 1.5px solid rgba(251, 191, 36, 0.65);
+          box-shadow: 0 0 12px rgba(255, 196, 107, 0.6);
         ">
           ${count > 0 ? toBn(count) : '•'}
         </div>
@@ -292,28 +276,26 @@ export default function Finder() {
       const customIcon = L.divIcon({
         className: '',
         html: htmlContent,
-        iconSize: [32, 32],
-        iconAnchor: [16, 16],
+        iconSize: [34, 34],
+        iconAnchor: [17, 17],
       });
 
       const marker = L.marker([s.lat, s.lng], { icon: customIcon, zIndexOffset: 500 }).addTo(map);
 
-      // Hover tooltip: spot name + live photographer count + distance
+      // Hover tooltip: spot name + live photographer count + distance + direction hint
       const d = userDistTo(s.lat, s.lng);
       marker.bindTooltip(
-        `<b>${s.nameBn}</b> · ${count > 0 ? toBn(count) + ' জন ফটোগ্রাফার' : 'খালি'}${d !== null ? ` · ~${toBn(d.toFixed(1))} কিমি` : ''}`,
-        { direction: 'top', offset: [0, -14], opacity: 0.95, className: 'spot-tip' }
+        `<b>${s.nameBn}</b> · ${count > 0 ? toBn(count) + ' জন ফটোগ্রাফার' : 'খালি'}${d !== null ? ` · ~${toBn(d.toFixed(1))} কিমি` : ''}<br/><span style="color:#8fd3ff">ক্লিক করুন → ফটোগ্রাফার ও ডিরেকশন</span>`,
+        { direction: 'top', offset: [0, -16], opacity: 0.97, className: 'spot-tip' }
       );
 
-      marker.on('click', () => {
-        openSpot(s.key);
-        map.flyTo([s.lat, s.lng], 13, { duration: 0.8 });
-      });
+      marker.on('click', () => openSpotPage(s.key));
 
       markersRef.current[s.key] = marker;
     });
 
     // Photographer markers — slight ring offset around their home spot
+    // 📷 আইকনের পাশে ফটোগ্রাফারের নাম সবসময় দেখা যায় (permanent label)
     COX_SPOTS.forEach((s) => {
       const group = photographersBySpot[s.key] || [];
       group.forEach((p, i) => {
@@ -336,31 +318,21 @@ export default function Finder() {
         `;
         const icon = L.divIcon({ className: '', html, iconSize: [26, 26], iconAnchor: [13, 13] });
         const m = L.marker([s.lat + dLat, s.lng + dLng], { icon, zIndexOffset: 800 }).addTo(map);
+
+        // নাম লেবেল — ক্যামেরা আইকনের পাশে সবসময় ভাসমান
         m.bindTooltip(
-          `<b>${p.display_name || 'ফটোগ্রাফার'}</b> · ★ ${Number(p.rating_avg || 0).toFixed(1)}`,
-          { direction: 'top', offset: [0, -12], opacity: 0.95, className: 'spot-tip' }
+          `<b>${p.display_name || 'ফটোগ্রাফার'}</b> <span style="color:#fbbf24">★${Number(p.rating_avg || 0).toFixed(1)}</span>`,
+          { permanent: true, direction: 'right', offset: [14, 0], className: 'ph-name-label', opacity: 1 }
         );
+
         m.on('click', () => {
-          if (p.id) navigate(`/photographer/${p.id}`);
+          const pid = p.id || p.slug;
+          if (pid) window.open(`/photographer/${p.id || p.slug}`, '_blank', 'noopener,noreferrer');
         });
         phMarkersRef.current.push(m);
       });
     });
-  }, [selectedSpotKey, panelOpen, spotCounts, photographersBySpot, navigate, userDistTo]);
-
-  // FlyTo when selectedSpotKey changes via left rail / marker click
-  useEffect(() => {
-    if (firstRenderRef.current) {
-      firstRenderRef.current = false;
-      return;
-    }
-    const map = mapInstanceRef.current;
-    if (!map) return;
-    const spot = COX_SPOTS.find((s) => s.key === selectedSpotKey);
-    if (spot && panelOpen) {
-      map.flyTo([spot.lat, spot.lng], 13, { duration: 0.8 });
-    }
-  }, [selectedSpotKey, panelOpen]);
+  }, [spotCounts, photographersBySpot, openSpotPage, userDistTo]);
 
   return (
     <div className="max-w-[1400px] mx-auto px-4 lg:px-6 pt-24 pb-12">
@@ -368,7 +340,7 @@ export default function Finder() {
       <div className="mb-8">
         <h2 className="section-head">🗺️ কক্সবাজার ম্যাপ ফাইন্ডার</h2>
         <p className="section-sub mt-1">
-          ১৯টি শুটিং পয়েন্ট — স্যাটেলাইট ভিউ, দূরত্ব ও ফটোগ্রাফার সার্চ (কোনো API key লাগে না)
+          ১৯টি শুটিং পয়েন্ট — স্যাটেলাইট ভিউ, দূরত্ব, ফটোগ্রাফার ও গুগল ম্যাপ ডিরেকশন (কোনো API key লাগে না)
         </p>
       </div>
 
@@ -417,23 +389,18 @@ export default function Finder() {
             <p className="text-[11px] text-amber-300 mb-2">লোকেশন পাওয়া যায়নি — আবার চেষ্টা করুন।</p>
           )}
 
-          {/* Scrollable Spot List */}
+          {/* Scrollable Spot List — ক্লিকে নতুন ট্যাব */}
           <div className="no-scrollbar overflow-y-auto space-y-2 pr-1 flex-1">
             {filteredSpots.map((s) => {
               const count = spotCounts[s.key] || 0;
-              const isSelected = panelOpen && s.key === selectedSpotKey;
               const emoji = SPOT_KIND_EMOJI[s.kind] || '📍';
 
               return (
                 <button
                   key={s.key}
                   type="button"
-                  onClick={() => openSpot(s.key)}
-                  className={`w-full text-left p-3.5 rounded-xl2 transition-all duration-200 border flex items-center justify-between gap-3 ${
-                    isSelected
-                      ? 'border-sunset-gold/60 bg-sunset-soft shadow-sunset-glow'
-                      : 'border-white/[0.08] bg-white/[0.03] hover:border-white/20 hover:bg-white/[0.06]'
-                  }`}
+                  onClick={() => openSpotPage(s.key)}
+                  className="w-full text-left p-3.5 rounded-xl2 transition-colors duration-200 border border-white/[0.08] bg-white/[0.03] hover:border-sunset-gold/40 hover:bg-white/[0.06] flex items-center justify-between gap-3"
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="w-[38px] h-[38px] glass rounded-xl2 grid place-items-center text-lg shrink-0">
@@ -446,7 +413,7 @@ export default function Finder() {
                       <span className="text-[11px] text-white/45 truncate block">
                         {userLoc
                           ? `~${toBn(distKm(userLoc.lat, userLoc.lng, s.lat, s.lng).toFixed(1))} কিমি দূরে`
-                          : s.nameEn}
+                          : SPOT_KIND_BN[s.kind] || s.nameEn}
                       </span>
                     </div>
                   </div>
@@ -467,7 +434,7 @@ export default function Finder() {
 
           <hr className="divider-glow my-3" />
           <p className="text-[11px] text-white/40 leading-relaxed">
-            💡 টিপ: মেরিন ড্রাইভে সানসেটের আগে পৌঁছান — গোল্ডেন আওয়ারের আলো সবচেয়ে সুন্দর
+            💡 যেকোনো স্পটে ক্লিক করলে নতুন ট্যাবে ফটোগ্রাফার প্রোফাইল ও গুগল ম্যাপ ডিরেকশন খুলবে
           </p>
         </aside>
 
@@ -510,129 +477,6 @@ export default function Finder() {
               {toBn(19)} পয়েন্ট · {toBn(photographers.length)} ফটোগ্রাফার
             </p>
           </div>
-
-          {/* Bottom Info Panel */}
-          {panelOpen && selectedSpotObj && (
-            <div className="absolute bottom-4 inset-x-4 z-[500] map-glass max-h-[46vh] overflow-y-auto no-scrollbar">
-              <div className="flex items-center justify-between gap-3 mb-1.5">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h4 className="font-bold text-white text-base">
-                    {selectedSpotObj.nameBn}
-                  </h4>
-                  <span className="badge text-[10px] bg-sunset-soft text-sunset-gold border-sunset-gold/30">
-                    {SPOT_KIND_BN[selectedSpotObj.kind] || selectedSpotObj.kind}
-                  </span>
-                  <span className="badge text-[10px] text-white/70">
-                    {photographersForSelectedSpot.length > 0
-                      ? `✅ ${toBn(photographersForSelectedSpot.length)} জন অ্যাভেইলেবল`
-                      : '⚠️ কেউ নেই'}
-                  </span>
-                  {userLoc && selectedSpotObj && (
-                    <span className="badge text-[10px] bg-sunset-soft text-sunset-gold border-sunset-gold/30">
-                      📏 ~{toBn(distKm(userLoc.lat, userLoc.lng, selectedSpotObj.lat, selectedSpotObj.lng).toFixed(1))} কিমি দূরে
-                    </span>
-                  )}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setPanelOpen(false)}
-                  aria-label="প্যানেল বন্ধ করুন"
-                  className="glass rounded-full w-7 h-7 flex items-center justify-center text-white/70 hover:text-white shrink-0"
-                >
-                  ✕
-                </button>
-              </div>
-
-              <p className="text-sm text-white/70 mb-3">
-                {selectedSpotObj.descBn}
-              </p>
-
-              <hr className="divider-glow my-2" />
-
-              {photographersForSelectedSpot.length === 0 ? (
-                <div className="py-2">
-                  <p className="text-sm text-white/55">
-                    এই স্পটে এখনো ফটোগ্রাফার নেই — নিকটবর্তী স্পটে পাওয়া যাচ্ছে:
-                  </p>
-                  {nearbySuggestions.map(({ spot, d }) => (
-                    <div key={spot.key} className="mt-3">
-                      <div className="flex items-center justify-between gap-2 mb-1.5">
-                        <button
-                          type="button"
-                          onClick={() => openSpot(spot.key)}
-                          className="text-sm font-semibold text-sunset-gold hover:underline"
-                        >
-                          {SPOT_KIND_EMOJI[spot.kind] || '📍'} {spot.nameBn}
-                        </button>
-                        <span className="text-[11px] text-white/45">
-                          ~{toBn(Math.round(d))} কিমি · {toBn(spotCounts[spot.key] || 0)} জন
-                        </span>
-                      </div>
-                      <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1">
-                        {(photographersBySpot[spot.key] || []).slice(0, 4).map((p) => (
-                          <Link
-                            key={p.id}
-                            to={`/photographer/${p.id}`}
-                            className="min-w-[200px] glass rounded-xl2 p-2.5 flex gap-2.5 items-center hover:border-sunset-gold/50 transition shrink-0"
-                          >
-                            {p.profile_photo_url ? (
-                              <img
-                                src={p.profile_photo_url}
-                                alt={p.display_name}
-                                className="w-9 h-9 rounded-full object-cover ring-1 ring-sunset-gold/40 shrink-0"
-                              />
-                            ) : (
-                              <div className="w-9 h-9 rounded-full bg-sunset-gradient flex items-center justify-center text-xs font-bold text-[#1A0E06] shrink-0">
-                                {(p.display_name || 'ফ').slice(0, 1)}
-                              </div>
-                            )}
-                            <div className="min-w-0">
-                              <div className="text-sm font-semibold text-white truncate">
-                                {p.display_name}
-                              </div>
-                              <div className="text-[11px] text-white/55 truncate">
-                                ★ {toBn(Number(p.rating_avg || 0).toFixed(1))} · {taka(p.starting_price || 0)}+
-                              </div>
-                            </div>
-                          </Link>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1">
-                  {photographersForSelectedSpot.map((p) => (
-                    <Link
-                      key={p.id}
-                      to={`/photographer/${p.id}`}
-                      className="min-w-[220px] glass rounded-xl2 p-2.5 flex gap-2.5 items-center hover:border-sunset-gold/50 transition shrink-0"
-                    >
-                      {p.profile_photo_url ? (
-                        <img
-                          src={p.profile_photo_url}
-                          alt={p.display_name}
-                          className="w-10 h-10 rounded-full object-cover ring-1 ring-sunset-gold/40 shrink-0"
-                        />
-                      ) : (
-                        <div className="w-10 h-10 rounded-full bg-sunset-gradient flex items-center justify-center text-xs font-bold text-[#1A0E06] shrink-0">
-                          {(p.display_name || 'ফ').slice(0, 1)}
-                        </div>
-                      )}
-                      <div className="min-w-0">
-                        <div className="text-sm font-semibold text-white truncate">
-                          {p.display_name}
-                        </div>
-                        <div className="text-[11px] text-white/55 truncate">
-                          ★ {toBn(Number(p.rating_avg || 0).toFixed(1))} · {taka(p.starting_price || 0)}+
-                        </div>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
         </div>
       </div>
     </div>

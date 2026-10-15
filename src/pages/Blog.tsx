@@ -93,7 +93,7 @@ export default function Blog() {
                     <img
                       src={featuredPost.cover_url}
                       alt={featuredPost.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition duration-700"
+                      className="w-full h-full object-cover "
                     />
                   ) : (
                     <div className="w-full h-full bg-sunset-soft" />
@@ -141,7 +141,7 @@ export default function Blog() {
                           <img
                             src={post.cover_url}
                             alt={post.title}
-                            className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
+                            className="w-full h-full object-cover "
                             loading="lazy"
                           />
                         ) : (

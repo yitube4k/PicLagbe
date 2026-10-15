@@ -369,7 +369,7 @@ export default function PhotographerProfile() {
         <button
           type="button"
           onClick={() => navigate(-1)}
-          className="absolute top-20 left-4 z-20 inline-flex items-center gap-2 rounded-full border border-[#e6ddcc] bg-white/90 px-4 py-2 text-sm font-semibold text-[#26231e] shadow-sm hover:bg-white"
+          className="absolute top-[max(5.5rem,env(safe-area-inset-top)+4.5rem)] left-4 z-20 inline-flex items-center gap-2 rounded-full border border-[#e6ddcc] bg-white/90 px-4 py-2 text-sm font-semibold text-[#26231e] shadow-sm hover:bg-white"
         >
           <span aria-hidden="true">←</span> ফিরে যান
         </button>
@@ -556,8 +556,14 @@ export default function PhotographerProfile() {
             )}
           </section>
 
-          {/* Gallery / media / reviews */}
-          <MediaReviews photographerId={photographer.id} />
+          {/* Reviews — ছবি/ভিডিও/ডেমো সেকশন বাদ (বুকিং পেজ হালকা ও দ্রুত) */}
+          <section aria-labelledby="pf-review-h">
+            <div className="mb-4">
+              <h2 id="pf-review-h" className="pf-serif text-xl font-bold text-[#26231e]">কাস্টমার রিভিউ</h2>
+              <p className="text-sm text-[#6b6357] mt-0.5">আসল গ্রাহকদের অভিজ্ঞতা — স্বচ্ছ রেটিং</p>
+            </div>
+            <MediaReviews photographerId={photographer.id} reviewsOnly />
+          </section>
 
           {/* Packages */}
           <section aria-labelledby="pf-pkg-h">
@@ -727,7 +733,7 @@ export default function PhotographerProfile() {
       {sheetOpen && (
         <div className="fixed inset-0 z-[85] lg:hidden" role="dialog" aria-modal="true" aria-label="বুকিং ফর্ম">
           <div className="absolute inset-0 bg-[#26231e]/55" onClick={() => setSheetOpen(false)} />
-          <div className="absolute inset-x-0 bottom-0 max-h-[92vh] rounded-t-[22px] bg-[#f7f3ec] border-t border-[#e6ddcc] flex flex-col">
+          <div className="absolute inset-x-0 bottom-0 max-h-[88vh] rounded-t-[22px] bg-[#f7f3ec] border-t border-[#e6ddcc] flex flex-col" style={{ maxHeight: "88dvh" }}>
             <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-[#e6ddcc] shrink-0">
               <div className="flex items-center gap-3 min-w-0">
                 {avatarSrc ? (

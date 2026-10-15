@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
 import { SITE } from '../lib/constants';
+import SearchPanel from './SearchPanel';
 
 interface NavItem {
   label: string;
@@ -70,6 +71,24 @@ export default function Navbar() {
   const location = useLocation();
   const [scrolled, setScrolled] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const searchWrapRef = useRef<HTMLDivElement | null>(null);
+
+  // সার্চ প্যানেলের বাইরে ক্লিক করলে বন্ধ
+  useEffect(() => {
+    if (!searchOpen) return;
+    const onDown = (e: MouseEvent | TouchEvent) => {
+      if (searchWrapRef.current && !searchWrapRef.current.contains(e.target as Node)) {
+        setSearchOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('touchstart', onDown, { passive: true });
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('touchstart', onDown);
+    };
+  }, [searchOpen]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -88,10 +107,11 @@ export default function Navbar() {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         setDrawerOpen(false);
+        setSearchOpen(false);
       }
     };
 
-    if (drawerOpen) {
+    if (drawerOpen || searchOpen) {
       document.body.style.overflow = 'hidden';
       window.addEventListener('keydown', handleKeyDown);
     } else {
@@ -102,7 +122,7 @@ export default function Navbar() {
       document.body.style.overflow = '';
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [drawerOpen]);
+  }, [drawerOpen, searchOpen]);
 
   const getRoleConfig = () => {
     const role = profile?.role || 'customer';
@@ -155,7 +175,7 @@ export default function Navbar() {
             : 'bg-transparent py-4'
         }`}
       >
-        <div className="max-w-7xl mx-auto px-4 flex items-center justify-between gap-4">
+        <div className="max-w-7xl mx-auto px-4 flex items-center justify-between gap-2 sm:gap-3">
           {/* Left: Brand */}
           <Link
             to="/"
@@ -172,7 +192,7 @@ export default function Navbar() {
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                className="group-hover:rotate-45 transition-transform duration-500"
+                className=""
               >
                 <defs>
                   <linearGradient id="navbar-aperture-grad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -220,6 +240,63 @@ export default function Navbar() {
               </NavLink>
             ))}
           </nav>
+
+          {/* ═══ ALWAYS-ON SEARCH (desktop pill + mobile icon) ═══ */}
+          <div ref={searchWrapRef} className="nav-search-wrap">
+            {/* Desktop trigger */}
+            <button
+              type="button"
+              onClick={() => setSearchOpen((v) => !v)}
+              aria-expanded={searchOpen}
+              aria-label="সার্চ খুলুন"
+              className={`hidden md:flex items-center gap-2.5 rounded-full border px-4 min-h-[42px] text-sm font-medium transition-colors ${
+                searchOpen
+                  ? 'border-sunset-gold/60 bg-white/[0.09] text-white'
+                  : 'border-white/[0.12] bg-white/[0.05] text-white/60 hover:text-white hover:border-white/25'
+              }`}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+              <span className="hidden xl:inline">কক্সবাজারে খুঁজুন…</span>
+              <kbd className="hidden xl:inline-flex items-center rounded border border-white/15 bg-white/[0.06] px-1.5 py-0.5 text-[10px] font-bold text-white/50">
+                /
+              </kbd>
+            </button>
+
+            {/* Mobile trigger */}
+            <button
+              type="button"
+              onClick={() => setSearchOpen((v) => !v)}
+              aria-expanded={searchOpen}
+              aria-label="সার্চ খুলুন"
+              className={`md:hidden rounded-xl2 p-2.5 border transition-colors ${
+                searchOpen
+                  ? 'border-sunset-gold/60 bg-white/[0.09] text-sunset-gold'
+                  : 'border-white/[0.12] bg-white/[0.05] text-white/80'
+              }`}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+            </button>
+
+            {/* Dropdown panel */}
+            {searchOpen && (
+              <div className="nav-search-panel glass-strong !rounded-[18px] p-2 shadow-glass-lg">
+                <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-white/45 px-2 pt-1.5 pb-2">
+                  ফটোগ্রাফার খুঁজুন
+                </p>
+                <SearchPanel
+                  variant="dropdown"
+                  autoFocus
+                  onDone={() => setSearchOpen(false)}
+                />
+              </div>
+            )}
+          </div>
 
           {/* Right Desktop Auth / User Action */}
           <div className="hidden lg:flex items-center gap-3">

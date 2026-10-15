@@ -6,6 +6,11 @@ import { cldUrl, cldSrcSet } from '../lib/cloudinary';
 
 interface MediaReviewsProps {
   photographerId: string;
+  /**
+   * true হলে শুধু রিভিউ দেখানো হয় — ছবি/ভিডিও/ডেমো ট্যাব ও portfolio কোয়েরি বাদ যায়
+   * (বুকিং পেজ হালকা ও দ্রুত রাখতে)
+   */
+  reviewsOnly?: boolean;
 }
 
 type TabType = 'photo' | 'video' | 'demo' | 'review';
@@ -56,8 +61,8 @@ const TABS: { id: TabType; label: string; icon: React.ReactNode }[] = [
  * Cloudinary URLs are delivered as auto-WebP with responsive srcSet;
  * non-Cloudinary (legacy) URLs pass through unchanged.
  */
-export default function MediaReviews({ photographerId }: MediaReviewsProps) {
-  const [tab, setTab] = useState<TabType>('photo');
+export default function MediaReviews({ photographerId, reviewsOnly = false }: MediaReviewsProps) {
+  const [tab, setTab] = useState<TabType>(reviewsOnly ? 'review' : 'photo');
   const [items, setItems] = useState<PortfolioImage[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
@@ -72,18 +77,22 @@ export default function MediaReviews({ photographerId }: MediaReviewsProps) {
     async function loadData() {
       setLoading(true);
       try {
-        const [portfolioRes, reviewsRes] = await Promise.all([
-          supabase
-            .from('portfolio_images')
-            .select('*')
-            .eq('photographer_id', photographerId)
-            .order('sort_order', { ascending: true }),
-          supabase
-            .from('reviews')
-            .select('*, profiles(full_name, avatar_url)')
-            .eq('photographer_id', photographerId)
-            .order('created_at', { ascending: false }),
-        ]);
+        const reviewsPromise = supabase
+          .from('reviews')
+          .select('*, profiles(full_name, avatar_url)')
+          .eq('photographer_id', photographerId)
+          .order('created_at', { ascending: false });
+
+        // reviewsOnly মোডে portfolio কোয়েরি চালাই না (১টি কোয়েরি কম, পেজ দ্রুত)
+        const portfolioPromise = reviewsOnly
+          ? Promise.resolve({ data: null, error: null } as { data: PortfolioImage[] | null; error: unknown })
+          : supabase
+              .from('portfolio_images')
+              .select('*')
+              .eq('photographer_id', photographerId)
+              .order('sort_order', { ascending: true });
+
+        const [portfolioRes, reviewsRes] = await Promise.all([portfolioPromise, reviewsPromise]);
 
         if (!active) return;
 
@@ -222,8 +231,8 @@ export default function MediaReviews({ photographerId }: MediaReviewsProps) {
 
   return (
     <div className="w-full space-y-6">
-      {/* ── Tab bar ── */}
-      <div className="flex justify-center">
+      {/* ── Tab bar (reviewsOnly হলে ট্যাব বাদ) ── */}
+      <div className={reviewsOnly ? 'hidden' : 'flex justify-center'}>
         <div
           role="tablist"
           aria-label="পোর্টফোলিও ট্যাব"
@@ -265,7 +274,7 @@ export default function MediaReviews({ photographerId }: MediaReviewsProps) {
       ) : (
         <>
           {/* ── PHOTO TAB (asymmetric editorial grid) ── */}
-          {tab === 'photo' && (
+          {tab === 'photo' && !reviewsOnly && (
             <div>
               {photoItems.length === 0 ? (
                 <div className="pf-card p-10 text-center">
@@ -343,7 +352,7 @@ export default function MediaReviews({ photographerId }: MediaReviewsProps) {
           )}
 
           {/* ── VIDEO TAB ── */}
-          {tab === 'video' && (
+          {tab === 'video' && !reviewsOnly && (
             <div>
               {videoItems.length === 0 ? (
                 <div className="pf-card p-10 text-center">
@@ -395,7 +404,7 @@ export default function MediaReviews({ photographerId }: MediaReviewsProps) {
           )}
 
           {/* ── DEMO TAB ── */}
-          {tab === 'demo' && (
+          {tab === 'demo' && !reviewsOnly && (
             <div className="space-y-5">
               <div className="rounded-[14px] border border-[#d9e6de] bg-[#eef5f1] p-4 flex gap-3 items-start">
                 <div className="w-10 h-10 rounded-xl bg-[#1d4d3b] text-white flex items-center justify-center shrink-0" aria-hidden="true">
