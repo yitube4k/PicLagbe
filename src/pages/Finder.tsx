@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase';
 import { Photographer } from '../lib/types';
 import { toBn } from '../lib/utils';
 import { COX_SPOTS } from '../lib/constants';
+import { openApp } from '../lib/base';
 
 const SPOT_KIND_EMOJI: Record<string, string> = {
   beach: '🏖️',
@@ -117,7 +118,7 @@ export default function Finder() {
 
   // স্পট ক্লিক → নতুন ট্যাবে স্পট পেজ (available ফটোগ্রাফার + ডিরেকশন)
   const openSpotPage = useCallback((key: string) => {
-    window.open(`/spot/${key}`, '_blank', 'noopener,noreferrer');
+    openApp(`/spot/${key}`);
   }, []);
 
   // stat টাইল ক্লিক → smooth scroll / পেজ নেভিগেশন (সব ৪টা interactive)
@@ -340,7 +341,7 @@ export default function Finder() {
 
         m.on('click', () => {
           const pid = p.id || p.slug;
-          if (pid) window.open(`/photographer/${p.id || p.slug}`, '_blank', 'noopener,noreferrer');
+          if (pid) openApp(`/photographer/${p.id || p.slug}`);
         });
 
         // নাম পিল নিজেই ক্লিকেবল — বড় ট্যাপ টার্গেট (ক্যামেরা ওভারল্যাপ হলেও প্রোফাইল খোলে)
@@ -350,7 +351,7 @@ export default function Finder() {
           tipEl.addEventListener('click', (ev) => {
             ev.stopPropagation();
             const pid = p.id || p.slug;
-            if (pid) window.open(`/photographer/${p.id || p.slug}`, '_blank', 'noopener,noreferrer');
+            if (pid) openApp(`/photographer/${p.id || p.slug}`);
           });
         }
         phMarkersRef.current.push(m);
@@ -392,7 +393,7 @@ export default function Finder() {
           {/* ২) রেজিস্টার্ড ফটোগ্রাফার → ফটোগ্রাফার লিস্ট পেজ */}
           <button
             type="button"
-            onClick={() => window.open('/photographers', '_blank', 'noopener,noreferrer')}
+            onClick={() => openApp('/photographers')}
             title="সব ফটোগ্রাফার দেখুন (নতুন ট্যাব)"
             className="glass rounded-xl2 p-4 flex items-center gap-3.5 text-left cursor-pointer hover:border-sunset-gold/50 hover:bg-white/[0.07] transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-sunset-gold/50 group"
           >

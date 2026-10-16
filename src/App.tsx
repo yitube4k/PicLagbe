@@ -1,10 +1,10 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation, Link } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation, Outlet, Navigate, Link } from 'react-router-dom';
 import { AuthProvider } from './lib/auth';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 
-// Pages
+// Site pages
 import Home from './pages/Home';
 import Search from './pages/Search';
 import PhotographerProfile from './pages/PhotographerProfile';
@@ -16,9 +16,24 @@ import BlogPost from './pages/BlogPost';
 import Auth from './pages/Auth';
 import CustomerDash from './pages/CustomerDash';
 import StudioDash from './pages/StudioDash';
-import AdminPanel from './pages/AdminPanel';
 import ChatPage from './pages/ChatPage';
 import HowItWorks from './pages/HowItWorks';
+
+// V18 modular admin — one route per file in src/admin/
+import AdminLayout from './admin/layout';
+import AdminDashboard from './admin/dashboard';
+import AdminUser from './admin/user';
+import AdminPhotographer from './admin/photographer';
+import AdminPost from './admin/post';
+import AdminBooking from './admin/booking';
+import AdminReview from './admin/review';
+import AdminBlog from './admin/blog';
+import AdminCategory from './admin/category';
+import AdminKyc from './admin/kyc';
+import AdminRequests from './admin/requests';
+import AdminChat from './admin/chat';
+import AdminAudit from './admin/audit';
+import AdminSettings from './admin/settings';
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -26,6 +41,25 @@ function ScrollToTop() {
     window.scrollTo(0, 0);
   }, [pathname]);
   return null;
+}
+
+/* Site chrome (navbar + footer) wraps everything EXCEPT /admin,
+   which is a full-screen app-like shell (V18). */
+function SiteLayout() {
+  return (
+    <div className="min-h-screen flex flex-col relative">
+      {/* Perf: .aurora এখন শুধু static radial-gradient (CSS) — blur blob spans সরানো হয়েছে (লো-এন্ড ডিভাইসে GPU ল্যাগ) */}
+      <div className="aurora" aria-hidden="true" />
+
+      <Navbar />
+
+      <main className="flex-1">
+        <Outlet />
+      </main>
+
+      <Footer />
+    </div>
+  );
 }
 
 function NotFound() {
@@ -48,34 +82,44 @@ export default function App() {
     <Router basename={import.meta.env.BASE_URL}>
       <AuthProvider>
         <ScrollToTop />
-        <div className="min-h-screen flex flex-col relative">
-          {/* Perf: .aurora এখন শুধু static radial-gradient (CSS) — blur blob spans সরানো হয়েছে (লো-এন্ড ডিভাইসে GPU ল্যাগ) */}
-          <div className="aurora" aria-hidden="true" />
+        <Routes>
+          {/* ═══ V18 modular admin — full-screen shell, own URL per section ═══ */}
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard" element={<AdminDashboard />} />
+            <Route path="user" element={<AdminUser />} />
+            <Route path="photographer" element={<AdminPhotographer />} />
+            <Route path="post" element={<AdminPost />} />
+            <Route path="booking" element={<AdminBooking />} />
+            <Route path="review" element={<AdminReview />} />
+            <Route path="blog" element={<AdminBlog />} />
+            <Route path="category" element={<AdminCategory />} />
+            <Route path="kyc" element={<AdminKyc />} />
+            <Route path="requests" element={<AdminRequests />} />
+            <Route path="chat" element={<AdminChat />} />
+            <Route path="audit" element={<AdminAudit />} />
+            <Route path="settings" element={<AdminSettings />} />
+            <Route path="*" element={<Navigate to="dashboard" replace />} />
+          </Route>
 
-          <Navbar />
-
-          <main className="flex-1">
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/photographers" element={<Search />} />
-              <Route path="/photographer/:id" element={<PhotographerProfile />} />
-              <Route path="/finder" element={<Finder />} />
-              <Route path="/spot/:key" element={<SpotPage />} />
-              <Route path="/community" element={<Community />} />
-              <Route path="/blog" element={<Blog />} />
-              <Route path="/blog/:slug" element={<BlogPost />} />
-              <Route path="/how-it-works" element={<HowItWorks />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/dashboard" element={<CustomerDash />} />
-              <Route path="/chat" element={<ChatPage />} />
-              <Route path="/studio" element={<StudioDash />} />
-              <Route path="/admin" element={<AdminPanel />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </main>
-
-          <Footer />
-        </div>
+          {/* ═══ Site pages (navbar + footer chrome) ═══ */}
+          <Route element={<SiteLayout />}>
+            <Route path="/" element={<Home />} />
+            <Route path="/photographers" element={<Search />} />
+            <Route path="/photographer/:id" element={<PhotographerProfile />} />
+            <Route path="/finder" element={<Finder />} />
+            <Route path="/spot/:key" element={<SpotPage />} />
+            <Route path="/community" element={<Community />} />
+            <Route path="/blog" element={<Blog />} />
+            <Route path="/blog/:slug" element={<BlogPost />} />
+            <Route path="/how-it-works" element={<HowItWorks />} />
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/dashboard" element={<CustomerDash />} />
+            <Route path="/chat" element={<ChatPage />} />
+            <Route path="/studio" element={<StudioDash />} />
+            <Route path="*" element={<NotFound />} />
+          </Route>
+        </Routes>
       </AuthProvider>
     </Router>
   );
