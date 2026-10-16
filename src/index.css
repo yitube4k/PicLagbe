@@ -993,6 +993,18 @@
   to { transform: rotate(360deg); }
 }
 
+/* ═══ CIRCULAR MENU — detail view enter animation (profile dashboards) ═══ */
+.circle-detail-enter {
+  animation: circleDetailEnter 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes circleDetailEnter {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .circle-detail-enter { animation: none; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .bf-spin { animation-duration: 1.6s; }
 }

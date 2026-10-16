@@ -12,11 +12,30 @@ import PostComposer from '../components/PostComposer';
 import PackageEditDialog, { videoThumb } from '../components/PackageEditDialog';
 import { ConfirmDialog } from '../components/admin/kit';
 import { AIcon } from '../admin/icons';
-import { cldUrl } from '../lib/cloudinary';
-import { waLink } from '../lib/cloudinary';
-import DashTabs, { TabIc } from '../components/DashTabs';
+import { cldUrl, waLink, uploadToCloudinary } from '../lib/cloudinary';
+import {
+  CIc,
+  CircleItem,
+  CircleMenuGrid,
+  CircleStatGrid,
+  CircleSectionTitle,
+  CircleAvatar,
+  DetailShell,
+} from '../components/CircularMenu';
 
 type StudioTab = 'overview' | 'bookings' | 'schedule' | 'posts' | 'packages' | 'portfolio' | 'profile' | 'verification';
+
+/* ডিটেইল ভিউ শিরোনাম (বৃত্তাকার মেনু থেকে খোলে) */
+const STUDIO_TITLES: Record<StudioTab, string> = {
+  overview: 'ওভারভিউ',
+  bookings: 'বুকিং রিকোয়েস্ট',
+  schedule: 'সময়সূচি',
+  posts: 'কাজের পোস্ট',
+  packages: 'প্যাকেজ ম্যানেজমেন্ট',
+  portfolio: 'পোর্টফোলিও',
+  profile: 'স্টুডিও প্রোফাইল',
+  verification: 'ভেরিফিকেশন',
+};
 
 /* V21 — detail density option lists (Argon W4) */
 const SPECIALTY_OPTIONS = ['ওয়েডিং', 'কাপল ও প্রি-ওয়েডিং', 'সলো পোর্ট্রেট', 'ফ্যামিলি ও কিডস', 'মডেলিং ও ফ্যাশন', 'ইভেন্ট', 'ড্রোন শুট', 'সিনেম্যাটিক ভিডিও'];
@@ -59,8 +78,14 @@ export default function StudioDash() {
   const useNavigateInstance = useNavigate();
 
   const [photographer, setPhotographer] = useState<Photographer | null>(null);
-  const [tab, setTab] = useState<StudioTab>('overview');
+  const [tab, setTab] = useState<StudioTab | 'home'>('home');
+  const [avatarBusy, setAvatarBusy] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  // ভিউ বদলালে উপরে স্ক্রল (হোম ↔ ডিটেইল)
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [tab]);
 
   // Tab data states
   const [bookings, setBookings] = useState<StudioBooking[]>([]);
@@ -280,6 +305,27 @@ export default function StudioDash() {
     .filter((b) => b.status === 'completed')
     .reduce((sum, b) => sum + Number(b.packages?.price || photographer.starting_price || 0), 0);
 
+  /* ── বৃত্তাকার স্ট্যাট + মেনু আইটেম (হোম ভিউ) ── */
+  const studioStats: CircleItem[] = [
+    { key: 'st-bookings', label: 'বুকিং', icon: CIc.calendar(24), tint: 'gold', stat: toBn(totalBookings), onClick: () => setTab('bookings') },
+    { key: 'st-accepted', label: 'গৃহীত', icon: CIc.checkCircle(24), tint: 'teal', stat: toBn(acceptedBookings), onClick: () => setTab('bookings') },
+    { key: 'st-done', label: 'সম্পন্ন', icon: CIc.check(24), tint: 'emerald', stat: toBn(completedBookings), onClick: () => setTab('bookings') },
+    { key: 'st-earn', label: 'মোট আয়', icon: CIc.wallet(24), tint: 'coral', stat: taka(totalEarnings), onClick: () => setTab('bookings') },
+  ];
+
+  const studioMenuItems: CircleItem[] = [
+    { key: 'overview', label: 'ওভারভিউ', icon: CIc.grid(), tint: 'gold', onClick: () => setTab('overview') },
+    { key: 'bookings', label: 'বুকিং', icon: CIc.calendar(), tint: 'teal', badge: bookings.length, onClick: () => setTab('bookings') },
+    { key: 'schedule', label: 'সময়সূচি', icon: CIc.clock(), tint: 'crimson', onClick: () => setTab('schedule') },
+    { key: 'posts', label: 'পোস্ট', icon: CIc.image(), tint: 'berry', badge: posts.length, onClick: () => setTab('posts') },
+    { key: 'packages', label: 'প্যাকেজ', icon: CIc.tag(), tint: 'gold', badge: packages.length, onClick: () => setTab('packages') },
+    { key: 'portfolio', label: 'পোর্টফোলিও', icon: CIc.camera(), tint: 'coral', badge: portfolio.length, onClick: () => setTab('portfolio') },
+    { key: 'profile', label: 'প্রোফাইল', icon: CIc.user(), tint: 'berry', onClick: () => setTab('profile') },
+    kycSub?.status === 'approved'
+      ? { key: 'verification', label: 'ভেরিফায়েড', icon: CIc.check(), tint: 'emerald' as const, onClick: () => setTab('verification') }
+      : { key: 'verification', label: 'ভেরিফিকেশন', icon: CIc.shield(), tint: 'crimson' as const, onClick: () => setTab('verification') },
+  ];
+
   // Booking status update handler
   const handleUpdateBookingStatus = async (bookingId: string, newStatus: 'pending' | 'accepted' | 'rejected' | 'cancelled' | 'completed') => {
     if (newStatus === 'rejected' || newStatus === 'cancelled') {
@@ -486,6 +532,27 @@ export default function StudioDash() {
     return parts[0].slice(0, 2).toUpperCase();
   };
 
+  /* বৃত্তাকার প্রোফাইল ছবি কুইক-আপলোড → Cloudinary → photographers.profile_photo_url */
+  const handleStudioAvatarFile = async (file: File) => {
+    if (!photographer || avatarBusy) return;
+    setAvatarBusy(true);
+    try {
+      const res = await uploadToCloudinary(file, 'piclagbe/avatars');
+      if (res?.url) {
+        setPhotographer((prev) => (prev ? { ...prev, profile_photo_url: res.url } : prev));
+        const { error } = await supabase
+          .from('photographers')
+          .update({ profile_photo_url: res.url })
+          .eq('id', photographer.id);
+        if (!error) setProfAvatar(res.url);
+      }
+    } catch (err) {
+      console.error('Studio avatar upload error:', err);
+    } finally {
+      setAvatarBusy(false);
+    }
+  };
+
   return (
     <div className="max-w-6xl mx-auto px-6 pt-28 pb-24 space-y-8">
       {/* Pending Approval Banner */}
@@ -495,6 +562,8 @@ export default function StudioDash() {
         </div>
       )}
 
+      {tab === 'home' && (
+      <>
       {/* Header Cover & Profile Bar */}
       <div className="glass rounded-xl3 overflow-hidden shadow-glass-lg border border-white/[0.12]">
         <div className="relative h-32 sm:h-40 w-full bg-twilight-800">
@@ -507,17 +576,13 @@ export default function StudioDash() {
 
         <div className="p-6 pt-0 relative flex flex-wrap items-end justify-between gap-4 -mt-10">
           <div className="flex items-end gap-4">
-            {photographer.profile_photo_url ? (
-              <img
-                src={photographer.profile_photo_url}
-                alt={photographer.display_name}
-                className="w-20 h-20 rounded-2xl ring-4 ring-twilight-900 object-cover bg-twilight-800 shadow-glass-md"
-              />
-            ) : (
-              <div className="w-20 h-20 rounded-2xl ring-4 ring-twilight-900 bg-sunset-gradient flex items-center justify-center text-xl font-extrabold text-[#1A0E06] shadow-glass-md">
-                {getInitials(photographer.display_name)}
-              </div>
-            )}
+            <CircleAvatar
+              url={photographer.profile_photo_url}
+              initials={getInitials(photographer.display_name)}
+              size={80}
+              busy={avatarBusy}
+              onFile={handleStudioAvatarFile}
+            />
             <div className="mb-1">
               <div className="flex items-center gap-2">
                 <h1 className="text-xl sm:text-2xl font-extrabold text-white">
@@ -539,25 +604,11 @@ export default function StudioDash() {
         </div>
       </div>
 
-      {/* Stats Row */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="stat-card">
-          <div className="stat-num">{toBn(totalBookings)}</div>
-          <div className="stat-label">মোট বুকিং</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-num">{toBn(acceptedBookings)}</div>
-          <div className="stat-label">গৃহীত</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-num">{toBn(completedBookings)}</div>
-          <div className="stat-label">সম্পন্ন</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-num text-lg sm:text-2xl price-tag">{taka(totalEarnings)}</div>
-          <div className="stat-label">মোট আয়</div>
-        </div>
-      </div>
+      {/* Stats — বৃত্তাকার */}
+      <section aria-label="স্ট্যাটিস">
+        <CircleSectionTitle>স্ট্যাটিস</CircleSectionTitle>
+        <CircleStatGrid items={studioStats} />
+      </section>
 
       {/* Extra Info Row */}
       <div className="flex flex-wrap gap-4 text-xs text-white/60 px-2">
@@ -568,26 +619,22 @@ export default function StudioDash() {
         <span>💬 রিভিউ সংখ্যা: <strong className="text-white">{toBn(photographer.rating_count || 0)}</strong></span>
       </div>
 
-      {/* Tabs — ক্লিন আইকন ট্যাব (মোবাইলে এক লাইন স্ক্রল) */}
-      <DashTabs<StudioTab>
-        tabs={[
-          { key: 'overview', label: 'ওভারভিউ', icon: <TabIc.grid /> },
-          { key: 'bookings', label: 'বুকিং', icon: <TabIc.calendar />, count: bookings.length },
-          { key: 'schedule', label: 'সময়সূচি', icon: <TabIc.clock /> },
-          { key: 'posts', label: 'পোস্ট', icon: <TabIc.image />, count: posts.length },
-          { key: 'packages', label: 'প্যাকেজ', icon: <TabIc.tag />, count: packages.length },
-          { key: 'portfolio', label: 'পোর্টফোলিও', icon: <TabIc.camera />, count: portfolio.length },
-          { key: 'profile', label: 'প্রোফাইল', icon: <TabIc.user /> },
-          kycSub?.status === 'approved'
-            ? { key: 'verification', label: 'ভেরিফায়েড', icon: <TabIc.check />, tone: 'gold' as const }
-            : { key: 'verification', label: 'ভেরিফিকেশন', icon: <TabIc.shield /> },
-        ]}
-        active={tab}
-        onChange={setTab}
-      />
+      {/* ── মেনু বৃত্ত (হোম ভিউ) ── */}
+      <section aria-label="মেনু">
+        <CircleSectionTitle>মেনু</CircleSectionTitle>
+        <CircleMenuGrid items={studioMenuItems} />
+      </section>
+      </>
+      )}
 
-      {/* Tab Content */}
-      <div>
+      {/* ── ডিটেইল ভিউ (বৃত্ত থেকে খোলে) ── */}
+      {tab !== 'home' && (
+      <DetailShell
+        title={STUDIO_TITLES[tab] ?? 'বিস্তারিত'}
+        subtitle={photographer.display_name}
+        onBack={() => setTab('home')}
+      >
+      <div className="circle-detail-enter">
         {/* OVERVIEW TAB */}
         {tab === 'overview' && (
           <div className="space-y-8">
@@ -1485,6 +1532,8 @@ export default function StudioDash() {
           </div>
         )}
       </div>
+      </DetailShell>
+      )}
 
       {/* V21 — প্যাকেজ এডিট ডায়ালগ + M3 ডিলিট কনফার্ম */}
       {photographer && (

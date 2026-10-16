@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
 import CldUploadField from '../components/CldUploadField';
-import { bnDate } from '../lib/utils';
+import { CIc } from './CircularMenu';
+import { bnDate, toBn } from '../lib/utils';
 
 /* ═══════════════════ ১) প্রোফাইল এডিট — নাম, ফোন, WhatsApp, অ্যাভাটার, বায়ো ═══════════════════ */
 export function ProfileEditSection() {
@@ -59,9 +60,9 @@ export function ProfileEditSection() {
       <div className="glass-card rounded-xl3 p-6 space-y-5">
         <div className="flex items-center gap-4">
           {avatar ? (
-            <img src={avatar} alt={name || 'অ্যাভাটার'} className="w-16 h-16 rounded-2xl object-cover ring-2 ring-sunset-gold/45" />
+            <img src={avatar} alt={name || 'অ্যাভাটার'} className="w-16 h-16 rounded-full object-cover ring-2 ring-sunset-gold/45 ring-offset-2 ring-offset-twilight-950" />
           ) : (
-            <div className="w-16 h-16 rounded-2xl ring-2 ring-sunset-gold/45 bg-sunset-gradient flex items-center justify-center text-xl font-bold text-[#1A0E06]">
+            <div className="w-16 h-16 rounded-full ring-2 ring-sunset-gold/45 ring-offset-2 ring-offset-twilight-950 bg-sunset-gradient flex items-center justify-center text-xl font-bold text-[#1A0E06]">
               {(name || 'ফ').slice(0, 1)}
             </div>
           )}
@@ -137,6 +138,7 @@ export function MigrationSection() {
   const [submitting, setSubmitting] = useState(false);
   const [submitErr, setSubmitErr] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+  const [step, setStep] = useState(0);
 
   useEffect(() => {
     if (!profile) return;
@@ -168,6 +170,7 @@ export function MigrationSection() {
   const handleSubmit = async () => {
     if (!displayName.trim()) {
       setSubmitErr('নাম দিন — এটি আপনার পাবলিক প্রোফাইলের নাম হবে।');
+      setStep(0);
       return;
     }
     setSubmitting(true);
@@ -196,6 +199,32 @@ export function MigrationSection() {
     }
   };
 
+  /* ধাপ যাচাই */
+  const validateStep = (s: number): string | null => {
+    if (s === 0 && !displayName.trim()) return 'পাবলিক প্রোফাইল নাম দিন।';
+    if (s === 0 && !/^01\d{9}$/.test(phone.trim())) return '১১ সংখ্যার সঠিক মোবাইল নম্বর দিন (01…)।';
+    return null;
+  };
+
+  const goNext = () => {
+    const err = validateStep(step);
+    if (err) {
+      setSubmitErr(err);
+      return;
+    }
+    setSubmitErr(null);
+    setStep((v) => Math.min(3, v + 1));
+  };
+
+  const STEP_TITLES = ['পরিচয়', 'অভিজ্ঞতা', 'যন্ত্রপাতি', 'নিশ্চিত'];
+
+  const summaryRow = (k: string, v: string | null) => (
+    <div className="flex justify-between gap-4 border-b border-white/[0.07] py-2.5 text-sm">
+      <dt className="text-white/50 shrink-0">{k}</dt>
+      <dd className="text-right font-semibold text-white/90 break-all">{v || '—'}</dd>
+    </div>
+  );
+
   /* স্ট্যাটাস কার্ড */
   if (request && !showForm) {
     const isPending = request.status === 'pending';
@@ -203,20 +232,27 @@ export function MigrationSection() {
     return (
       <div className="max-w-2xl mx-auto space-y-4">
         <div className={`glass-card rounded-xl3 p-6 space-y-3 ${isPending ? 'border-sunset-gold/40' : isRejected ? 'border-red-400/40' : 'border-emerald-400/40'}`}>
-          <h3 className="font-bold text-white text-base">
-            {isPending && '⏳ ফটোগ্রাফার আবেদন প্রক্রিয়াধীন'}
-            {isRejected && '❌ আবেদন প্রত্যাখ্যাত হয়েছে'}
-            {request.status === 'approved' && '✅ আবেদন অনুমোদিত'}
-          </h3>
+          <div className="flex items-center gap-3">
+            <span className={`grid size-12 shrink-0 place-items-center rounded-full ${isPending ? 'bg-sunset-gold/15 text-sunset-gold' : isRejected ? 'bg-red-400/15 text-red-400' : 'bg-emerald-400/15 text-emerald-300'}`}>
+              {isPending ? CIc.clock(24) : isRejected ? CIc.shield(24) : CIc.check(24)}
+            </span>
+            <div>
+              <h3 className="font-bold text-white text-base">
+                {isPending && 'আবেদন রিভিউতে আছে'}
+                {isRejected && 'আবেদন প্রত্যাখ্যাত হয়েছে'}
+                {request.status === 'approved' && 'আবেদন অনুমোদিত'}
+              </h3>
+              <p className="text-[12.5px] text-white/40">আবেদন: {bnDate(request.created_at)}</p>
+            </div>
+          </div>
           <p className="text-sm text-white/65 leading-relaxed">
             {isPending && 'আপনার আবেদন অ্যাডমিন রিভিউ করছেন। অনুমোদিত হলে নোটিফিকেশন পাবেন এবং স্টুডিও ড্যাশবোর্ড খুলে যাবে।'}
             {isRejected && `অ্যাডমিনের মন্তব্য: ${request.review_note || '—'} নিচের বাটনে ক্লিক করে আবার আবেদন করতে পারেন।`}
             {request.status === 'approved' && 'আপনার ফটোগ্রাফার অ্যাকাউন্ট তৈরি হয়ে গেছে। স্টুডিও ড্যাশবোর্ডে যান।'}
           </p>
-          <p className="text-[12.5px] text-white/40">আবেদন: {bnDate(request.created_at)}</p>
 
           {isRejected && (
-            <button type="button" onClick={() => setShowForm(true)} className="btn-primary !py-2 !px-5 !text-sm">
+            <button type="button" onClick={() => { setShowForm(true); setStep(0); }} className="btn-primary !py-2 !px-5 !text-sm">
               আবার আবেদন করুন
             </button>
           )}
@@ -235,8 +271,10 @@ export function MigrationSection() {
     return (
       <div className="max-w-2xl mx-auto">
         <div className="glass-card rounded-xl3 p-8 text-center border-sunset-gold/40">
-          <p className="text-3xl mb-3" aria-hidden="true">🎉</p>
-          <h3 className="font-bold text-white text-lg">আবেদন পাঠানো হয়েছে!</h3>
+          <span className="mx-auto grid size-14 place-items-center rounded-full bg-emerald-400/15 text-emerald-300">
+            {CIc.check(28)}
+          </span>
+          <h3 className="font-bold text-white text-lg mt-4">আবেদন পাঠানো হয়েছে!</h3>
           <p className="text-sm text-white/60 mt-2 leading-relaxed">
             অ্যাডমিন রিভিউ করার পর নোটিফিকেশন পাবেন। অনুমোদিত হলে আপনার ফটোগ্রাফার প্রোফাইল অটো-তৈরি হবে।
           </p>
@@ -245,70 +283,132 @@ export function MigrationSection() {
     );
   }
 
-  /* ফর্ম */
+  /* ফর্ম — ৪ ধাপের উইজার্ড */
   return (
     <div className="max-w-2xl mx-auto space-y-5">
-      <div className="glass-card rounded-xl3 p-6 space-y-4">
+      <div className="glass-card rounded-xl3 p-6 space-y-5">
         <div>
-          <h3 className="font-bold text-white text-base">🎬 ফটোগ্রাফার হিসেবে যুক্ত হোন</h3>
+          <h3 className="font-bold text-white text-base">ফটোগ্রাফার হিসেবে যুক্ত হোন</h3>
           <p className="text-xs text-white/55 mt-1 leading-relaxed">
-            ফর্মটি পূরণ করুন — অ্যাডমিন অনুমোদনের পর আপনার পাবলিক ফটোগ্রাফার প্রোফাইল অটো-তৈরি হবে (সার্চ ও ম্যাপে দেখা যাবে)।
+            ৪ ধাপে আবেদন করুন — অ্যাডমিন অনুমোদনের পর আপনার পাবলিক ফটোগ্রাফার প্রোফাইল অটো-তৈরি হবে (সার্চ ও ম্যাপে দেখা যাবে)।
           </p>
         </div>
 
-        <div>
-          <label className="field-label" htmlFor="mg-name">প্রোফাইল নাম (পাবলিক)</label>
-          <input id="mg-name" className="glass-input" value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="যেমন: রফিক ফটোগ্রাফি" />
-        </div>
+        {/* ধাপ নির্দেশক — বৃত্ত */}
+        <ol className="grid grid-cols-4 gap-1.5">
+          {STEP_TITLES.map((title, index) => (
+            <li key={title} className="text-center">
+              <span
+                className={`mx-auto grid size-9 place-items-center rounded-full text-sm font-extrabold transition-colors ${
+                  index < step
+                    ? 'bg-emerald-400/20 text-emerald-300 ring-1 ring-emerald-300/40'
+                    : index === step
+                      ? 'bg-sunset-gradient text-[#1A0E06] shadow-sunset-glow'
+                      : 'bg-white/[0.06] text-white/40 ring-1 ring-white/10'
+                }`}
+              >
+                {index < step ? '✓' : toBn(index + 1)}
+              </span>
+              <span className={`mt-1.5 block text-[11.5px] leading-tight ${index === step ? 'text-sunset-gold font-bold' : 'text-white/45'}`}>
+                {title}
+              </span>
+            </li>
+          ))}
+        </ol>
 
-        <div className="grid sm:grid-cols-2 gap-4">
-          <div>
-            <label className="field-label" htmlFor="mg-phone">ফোন নম্বর</label>
-            <input id="mg-phone" className="glass-input" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="01XXXXXXXXX" inputMode="tel" />
-          </div>
-          <div>
-            <label className="field-label" htmlFor="mg-wa">WhatsApp নম্বর</label>
-            <input id="mg-wa" className="glass-input" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} placeholder="01XXXXXXXXX" inputMode="tel" />
-          </div>
-        </div>
+        <div className="space-y-4">
+          {step === 0 && (
+            <>
+              <div>
+                <label className="field-label" htmlFor="mg-name">প্রোফাইল নাম (পাবলিক) *</label>
+                <input id="mg-name" className="glass-input" value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="যেমন: রফিক ফটোগ্রাফি" />
+              </div>
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="field-label" htmlFor="mg-phone">ফোন নম্বর *</label>
+                  <input id="mg-phone" className="glass-input" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="01XXXXXXXXX" inputMode="tel" />
+                </div>
+                <div>
+                  <label className="field-label" htmlFor="mg-wa">WhatsApp নম্বর</label>
+                  <input id="mg-wa" className="glass-input" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} placeholder="01XXXXXXXXX" inputMode="tel" />
+                </div>
+              </div>
+              <div>
+                <label className="field-label" htmlFor="mg-city">কাজের এলাকা / শহর</label>
+                <input id="mg-city" className="glass-input" value={city} onChange={(e) => setCity(e.target.value)} placeholder="যেমন: কক্সবাজার সদর" />
+              </div>
+            </>
+          )}
 
-        <div className="grid sm:grid-cols-2 gap-4">
-          <div>
-            <label className="field-label" htmlFor="mg-city">কাজের এলাকা / শহর</label>
-            <input id="mg-city" className="glass-input" value={city} onChange={(e) => setCity(e.target.value)} placeholder="যেমন: কক্সবাজার সদর" />
-          </div>
-          <div>
-            <label className="field-label" htmlFor="mg-exp">অভিজ্ঞতা (বছর)</label>
-            <input id="mg-exp" className="glass-input" value={exp} onChange={(e) => setExp(e.target.value.replace(/\D/g, ''))} placeholder="যেমন: 3" inputMode="numeric" />
-          </div>
-        </div>
+          {step === 1 && (
+            <>
+              <div>
+                <label className="field-label" htmlFor="mg-exp">অভিজ্ঞতা (বছর)</label>
+                <input id="mg-exp" className="glass-input" value={exp} onChange={(e) => setExp(e.target.value.replace(/\D/g, ''))} placeholder="যেমন: 3" inputMode="numeric" />
+              </div>
+              <div>
+                <label className="field-label" htmlFor="mg-port">পোর্টফোলিও লিঙ্ক (Facebook/Instagram/Drive)</label>
+                <input id="mg-port" className="glass-input" value={portfolioUrl} onChange={(e) => setPortfolioUrl(e.target.value)} placeholder="https://…" inputMode="url" />
+              </div>
+              <p className="text-[12.5px] text-white/45 leading-relaxed">
+                আগের কাজের লিঙ্ক দিলে অনুমোদন দ্রুত হয়। পোর্টফোলিও পরে স্টুডিও ড্যাশবোর্ড থেকেও যোগ করা যাবে।
+              </p>
+            </>
+          )}
 
-        <div>
-          <label className="field-label" htmlFor="mg-eq">যন্ত্রপাতি (ক্যামেরা/লেন্স)</label>
-          <input id="mg-eq" className="glass-input" value={equipment} onChange={(e) => setEquipment(e.target.value)} placeholder="যেমন: Canon R6, 24-70mm f/2.8, DJI Air 3" />
-        </div>
+          {step === 2 && (
+            <>
+              <div>
+                <label className="field-label" htmlFor="mg-eq">যন্ত্রপাতি (ক্যামেরা/লেন্স)</label>
+                <input id="mg-eq" className="glass-input" value={equipment} onChange={(e) => setEquipment(e.target.value)} placeholder="যেমন: Canon R6, 24-70mm f/2.8, DJI Air 3" />
+              </div>
+              <div>
+                <label className="field-label" htmlFor="mg-note">অ্যাডমিনের জন্য নোট</label>
+                <textarea id="mg-note" rows={3} className="glass-input resize-none" value={note} onChange={(e) => setNote(e.target.value)} placeholder="আপনার অভিজ্ঞতা, বিশেষত্ব বা যেকোনো তথ্য…" />
+              </div>
+            </>
+          )}
 
-        <div>
-          <label className="field-label" htmlFor="mg-port">পোর্টফোলিও লিঙ্ক (Facebook/Instagram/Drive)</label>
-          <input id="mg-port" className="glass-input" value={portfolioUrl} onChange={(e) => setPortfolioUrl(e.target.value)} placeholder="https://…" inputMode="url" />
-        </div>
+          {step === 3 && (
+            <dl>
+              {summaryRow('নাম', displayName.trim())}
+              {summaryRow('ফোন', phone.trim())}
+              {summaryRow('WhatsApp', whatsapp.trim())}
+              {summaryRow('এলাকা', city.trim())}
+              {summaryRow('অভিজ্ঞতা', exp ? `${toBn(exp)} বছর` : null)}
+              {summaryRow('যন্ত্রপাতি', equipment.trim())}
+              {summaryRow('পোর্টফোলিও', portfolioUrl.trim())}
+              {summaryRow('নোট', note.trim())}
+            </dl>
+          )}
 
-        <div>
-          <label className="field-label" htmlFor="mg-note">অ্যাডমিনের জন্য নোট</label>
-          <textarea id="mg-note" rows={3} className="glass-input resize-none" value={note} onChange={(e) => setNote(e.target.value)} placeholder="আপনার অভিজ্ঞতা, বিশেষত্ব বা যেকোনো তথ্য…" />
+          {submitErr && <p className="text-xs text-red-400">{submitErr}</p>}
         </div>
-
-        {submitErr && <p className="text-xs text-red-400">{submitErr}</p>}
 
         <div className="flex gap-3">
-          {request && request.status === 'rejected' && (
-            <button type="button" onClick={() => setShowForm(false)} className="btn-ghost">
-              ফিরে যান
+          {step > 0 && (
+            <button
+              type="button"
+              onClick={() => { setSubmitErr(null); setStep((v) => v - 1); }}
+              className="btn-ghost !py-2.5 !px-5 !text-sm"
+            >
+              আগে
             </button>
           )}
-          <button type="button" onClick={handleSubmit} disabled={submitting} className="btn-primary flex-1 justify-center">
-            {submitting ? 'পাঠানো হচ্ছে…' : 'আবেদন জমা দিন'}
-          </button>
+          {step < 3 ? (
+            <button type="button" onClick={goNext} className="btn-primary flex-1 justify-center !py-2.5 !text-sm">
+              পরের ধাপ
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={submitting}
+              className="btn-primary flex-1 justify-center !py-2.5 !text-sm"
+            >
+              {submitting ? 'পাঠানো হচ্ছে…' : 'আবেদন জমা দিন'}
+            </button>
+          )}
         </div>
       </div>
       <HelpCard />
