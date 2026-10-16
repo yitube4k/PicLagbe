@@ -118,14 +118,14 @@ export default function RoleRequestsPanel() {
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <h4 className="font-bold text-white text-base">👤 {r.display_name}</h4>
-                  <p className="text-[11px] text-white/45 mt-0.5">আবেদন: {bnDate(r.created_at)}</p>
+                  <p className="text-[12.5px] text-white/45 mt-0.5">আবেদন: {bnDate(r.created_at)}</p>
                 </div>
-                <span className="text-[10px] font-bold border border-sunset-gold/40 text-sunset-gold rounded-full px-2.5 py-1">
+                <span className="text-[11.5px] font-bold border border-sunset-gold/40 text-sunset-gold rounded-full px-2.5 py-1">
                   অপেক্ষমাণ
                 </span>
               </div>
 
-              <div className="grid sm:grid-cols-2 gap-2 text-[13px]">
+              <div className="grid sm:grid-cols-2 gap-2 text-[14.5px]">
                 <Info label="📞 ফোন" value={r.phone} />
                 <Info label="💬 WhatsApp" value={r.whatsapp} />
                 <Info label="📍 এলাকা" value={r.city} />
@@ -139,7 +139,7 @@ export default function RoleRequestsPanel() {
               </div>
 
               {r.note && (
-                <p className="text-[13px] text-white/70 bg-white/[0.03] p-3 rounded-xl2 leading-relaxed">
+                <p className="text-[14.5px] text-white/70 bg-white/[0.03] p-3 rounded-xl2 leading-relaxed">
                   📝 {r.note}
                 </p>
               )}
@@ -184,12 +184,12 @@ export default function RoleRequestsPanel() {
           <h4 className="font-bold text-white text-sm mb-3">🗂️ আগের সিদ্ধান্ত</h4>
           <div className="space-y-2">
             {history.map((r) => (
-              <div key={r.id} className="glass rounded-xl2 p-3 flex flex-wrap items-center justify-between gap-2 text-[13px]">
+              <div key={r.id} className="glass rounded-xl2 p-3 flex flex-wrap items-center justify-between gap-2 text-[14.5px]">
                 <span className="font-semibold text-white">{r.display_name}</span>
-                <span className={`text-[10px] font-bold border rounded-full px-2 py-0.5 ${r.status === 'approved' ? 'border-emerald-400/40 text-emerald-400' : 'border-red-400/40 text-red-400'}`}>
+                <span className={`text-[11.5px] font-bold border rounded-full px-2 py-0.5 ${r.status === 'approved' ? 'border-emerald-400/40 text-emerald-400' : 'border-red-400/40 text-red-400'}`}>
                   {r.status === 'approved' ? 'অনুমোদিত' : 'প্রত্যাখ্যাত'}
                 </span>
-                {r.review_note && <span className="text-[11px] text-white/50 basis-full">💬 {r.review_note}</span>}
+                {r.review_note && <span className="text-[12.5px] text-white/50 basis-full">💬 {r.review_note}</span>}
               </div>
             ))}
           </div>
@@ -200,7 +200,7 @@ export default function RoleRequestsPanel() {
 }
 
 function Info({ label, value, link }: { label: string; value: string | null; link?: string }) {
-  if (!value) return <span className="text-white/35 text-[12px]">{label}: —</span>;
+  if (!value) return <span className="text-white/35 text-[13.5px]">{label}: —</span>;
   return (
     <span className="text-white/75 truncate">
       {label}:{' '}

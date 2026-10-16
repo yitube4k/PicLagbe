@@ -15,7 +15,7 @@ import PostCard from '../components/PostCard';
 function VerifiedBadge() {
   return (
     <span
-      className="inline-flex items-center gap-1 rounded-full border border-[#bfd8cb] bg-[#e6efe9] px-2.5 py-0.5 text-[11px] font-bold text-[#1d4d3b]"
+      className="inline-flex items-center gap-1 rounded-full border border-[#bfd8cb] bg-[#e6efe9] px-2.5 py-0.5 text-[12.5px] font-bold text-[#1d4d3b]"
       title="KYC-ভেরিফায়েড ফটোগ্রাফার"
     >
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -52,9 +52,56 @@ function StatBlock({ label, value, sub }: { label: string; value: string; sub?: 
   return (
     <div className="rounded-[12px] border border-[#e6ddcc] bg-[#faf7f0] px-3 py-3 text-center">
       <div className="pf-serif text-lg font-bold text-[#26231e] leading-tight">{value}</div>
-      <div className="text-[11px] font-semibold text-[#6b6357] mt-0.5">{label}</div>
-      {sub && <div className="text-[10px] text-[#8a8172]">{sub}</div>}
+      <div className="text-[12.5px] font-semibold text-[#6b6357] mt-0.5">{label}</div>
+      {sub && <div className="text-[11.5px] text-[#8a8172]">{sub}</div>}
     </div>
+  );
+}
+
+/* ── WhatsApp নম্বর কার্ড — বুকিংয়ের আগেই সরাসরি নম্বর দেখা যায়, ক্লিকে WhatsApp অ্যাপ ── */
+function WhatsAppContactCard({ number, waHref }: { number: string; waHref: string }) {
+  const telHref = `tel:${number.replace(/[^\d+]/g, '')}`;
+  return (
+    <section
+      className="rounded-[18px] border-2 border-[#128c4b]/30 bg-gradient-to-br from-[#e6f4ec] via-[#eef6f1] to-[#f7f3ec] p-5"
+      aria-label="সরাসরি WhatsApp যোগাযোগ"
+    >
+      <div className="flex items-start gap-3.5">
+        <div
+          className="w-12 h-12 rounded-[14px] bg-[#25d366] grid place-items-center shrink-0 text-white"
+          style={{ boxShadow: '0 4px 12px rgba(37, 211, 102, 0.35)' }}
+          aria-hidden="true"
+        >
+          <WhatsAppIcon size={24} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <h2 className="pf-serif font-bold text-[#143528] text-[16.5px] leading-tight">WhatsApp-এ সরাসরি কথা বলুন</h2>
+          <p className="text-[13.5px] text-[#3f5c50] mt-1 leading-relaxed">বুকিংয়ের আগেই দাম ও সময় জেনে নিন — ক্লিক করলেই WhatsApp অ্যাপ খুলবে</p>
+          <p
+            dir="ltr"
+            className="pf-serif text-[22px] font-bold text-[#1d4d3b] mt-2 tracking-wide select-all leading-none"
+          >
+            {number}
+          </p>
+          <div className="flex flex-wrap gap-2 mt-3.5">
+            <a
+              href={waHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-[12px] bg-[#128c4b] hover:bg-[#0f7a40] text-white px-4 py-2.5 text-sm font-bold transition-colors"
+            >
+              <WhatsAppIcon /> মেসেজ করুন
+            </a>
+            <a
+              href={telHref}
+              className="inline-flex items-center gap-1.5 rounded-[12px] border border-[#128c4b]/40 bg-white px-4 py-2.5 text-sm font-bold text-[#128c4b] hover:bg-[#e6f4ec] transition-colors"
+            >
+              📞 কল করুন
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -456,7 +503,7 @@ export default function PhotographerProfile() {
               {categories.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 mt-3">
                   {categories.map((c, i) => (
-                    <span key={i} className="pf-chip !text-[11px] !py-1">{c}</span>
+                    <span key={i} className="pf-chip !text-[12.5px] !py-1">{c}</span>
                   ))}
                 </div>
               )}
@@ -475,7 +522,7 @@ export default function PhotographerProfile() {
             {/* Desktop CTA */}
             <div className="hidden lg:flex flex-col items-end gap-2 shrink-0">
               <div className="text-right">
-                <span className="text-[11px] font-semibold text-[#8a8172] block">শুরু প্যাকেজ</span>
+                <span className="text-[12.5px] font-semibold text-[#8a8172] block">শুরু প্যাকেজ</span>
                 <span className="pf-serif text-2xl font-bold text-[#1d4d3b]">{taka(minPrice)}</span>
               </div>
               <button type="button" onClick={() => bookNow()} className="pf-btn-primary">
@@ -513,10 +560,17 @@ export default function PhotographerProfile() {
       <div className="max-w-6xl mx-auto px-4 py-8 grid lg:grid-cols-[1fr_360px] gap-6 items-start">
         {/* ── MAIN ── */}
         <main className="space-y-6 min-w-0">
+          {/* মোবাইলে সবার আগে — WhatsApp নম্বর কার্ড (বুকিংয়ের আগে) */}
+          {waHref && photographer.phone && (
+            <div className="lg:hidden">
+              <WhatsAppContactCard number={photographer.phone} waHref={waHref} />
+            </div>
+          )}
+
           {/* About */}
           <section className="pf-card p-6" aria-labelledby="pf-about-h">
             <h2 id="pf-about-h" className="pf-serif text-lg font-bold text-[#26231e] mb-3">নিজের সম্পর্কে</h2>
-            <p className="text-[15px] leading-[1.85] text-[#4d463c]">
+            <p className="text-[16.5px] leading-[1.85] text-[#4d463c]">
               {photographer.bio?.trim() ||
                 `${spotNameBn} এলাকার প্রফেশনাল ফটোগ্রাফার। প্রি-ওয়েডিং, বিয়ে, ট্রাভেল ও ফ্যামিলি শুটের জন্য আমার সাথে যোগাযোগ করতে পারেন — প্রাকৃতিক আলোয় জীবন্ত ও আবেগময় ফ্রেম আমার বিশেষত্ব।`}
             </p>
@@ -525,20 +579,20 @@ export default function PhotographerProfile() {
               <div className="grid sm:grid-cols-2 gap-4 mt-5 pt-5 border-t border-[#e6ddcc]">
                 {languages.length > 0 && (
                   <div>
-                    <span className="text-[11px] font-bold uppercase tracking-wide text-[#8a8172] block mb-2">ভাষাসমূহ</span>
+                    <span className="text-[12.5px] font-bold uppercase tracking-wide text-[#8a8172] block mb-2">ভাষাসমূহ</span>
                     <div className="flex flex-wrap gap-1.5">
                       {languages.map((lang, i) => (
-                        <span key={i} className="pf-chip !text-[11px] !py-1">{lang}</span>
+                        <span key={i} className="pf-chip !text-[12.5px] !py-1">{lang}</span>
                       ))}
                     </div>
                   </div>
                 )}
                 {equipment.length > 0 && (
                   <div>
-                    <span className="text-[11px] font-bold uppercase tracking-wide text-[#8a8172] block mb-2">যন্ত্রপাতি</span>
+                    <span className="text-[12.5px] font-bold uppercase tracking-wide text-[#8a8172] block mb-2">যন্ত্রপাতি</span>
                     <div className="flex flex-wrap gap-1.5">
                       {equipment.map((eq, i) => (
-                        <span key={i} className="pf-chip !text-[11px] !py-1">{eq}</span>
+                        <span key={i} className="pf-chip !text-[12.5px] !py-1">{eq}</span>
                       ))}
                     </div>
                   </div>
@@ -625,7 +679,7 @@ export default function PhotographerProfile() {
                       className={`pf-card p-5 flex flex-col relative ${isPopular ? '!border-[#b08d57]' : ''}`}
                     >
                       {isPopular && (
-                        <span className="absolute -top-2.5 right-4 rounded-full bg-[#b08d57] px-3 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
+                        <span className="absolute -top-2.5 right-4 rounded-full bg-[#b08d57] px-3 py-0.5 text-[11.5px] font-bold uppercase tracking-wide text-white">
                           জনপ্রিয়
                         </span>
                       )}
@@ -639,7 +693,7 @@ export default function PhotographerProfile() {
                       {pkg.features && pkg.features.length > 0 && (
                         <ul className="mt-3 space-y-1.5 flex-1">
                           {pkg.features.map((feat, fIdx) => (
-                            <li key={fIdx} className="flex items-start gap-2 text-[13px] text-[#4d463c]">
+                            <li key={fIdx} className="flex items-start gap-2 text-[14.5px] text-[#4d463c]">
                               <svg className="shrink-0 mt-[3px]" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#1d4d3b" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                                 <polyline points="20 6 9 17 4 12" />
                               </svg>
@@ -678,12 +732,19 @@ export default function PhotographerProfile() {
           </section>
         </main>
 
-        {/* ── DESKTOP BOOKING RAIL (navbar-এর নিচে sticky — কখনো লুকায় না) ── */}
+        {/* ── DESKTOP BOOKING RAIL (WhatsApp কার্ড আগে, বুকিং কার্ড sticky) ── */}
         <aside
           id="pf-booking"
-          className="hidden lg:block lg:sticky lg:top-24 scroll-mt-24"
+          className="hidden lg:block"
           aria-label="বুকিং কার্ড"
         >
+          {waHref && photographer.phone && (
+            <div className="mb-5">
+              <WhatsAppContactCard number={photographer.phone} waHref={waHref} />
+            </div>
+          )}
+
+          <div className="lg:sticky lg:top-24 scroll-mt-24">
           <div className="pf-card p-6 !border-[#cfc4ac]">
             <div className="flex items-baseline justify-between mb-1">
               <h2 className="pf-serif text-lg font-bold text-[#26231e]">বুকিং</h2>
@@ -727,13 +788,14 @@ export default function PhotographerProfile() {
               )}
             </div>
           </div>
+          </div>
         </aside>
       </div>
 
       {/* ═══ MOBILE STICKY CTA ═══ */}
       <div className="fixed bottom-0 inset-x-0 z-40 lg:hidden border-t border-[#e6ddcc] bg-white/95 backdrop-blur-md px-4 py-3 flex items-center gap-3">
         <div className="min-w-0">
-          <span className="text-[10px] font-semibold text-[#8a8172] block leading-none">শুরু প্যাকেজ</span>
+          <span className="text-[11.5px] font-semibold text-[#8a8172] block leading-none">শুরু প্যাকেজ</span>
           <span className="pf-serif text-lg font-bold text-[#1d4d3b] leading-tight">{taka(minPrice)}</span>
         </div>
         {waHref && (
@@ -781,7 +843,7 @@ export default function PhotographerProfile() {
                 )}
                 <div className="min-w-0">
                   <h3 className="pf-serif font-bold text-[#26231e] text-sm truncate">{photographer.display_name}</h3>
-                  <p className="text-[11px] text-[#8a8172]">বুকিং রিকোয়েস্ট</p>
+                  <p className="text-[12.5px] text-[#8a8172]">বুকিং রিকোয়েস্ট</p>
                 </div>
               </div>
               <button

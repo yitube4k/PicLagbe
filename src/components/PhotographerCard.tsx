@@ -124,7 +124,7 @@ export default function PhotographerCard({ p }: PhotographerCardProps) {
           </div>
 
           <div className="shrink-0 text-right">
-            <span className="text-[11px] text-white/45 mr-1">শুরু</span>
+            <span className="text-[12.5px] text-white/45 mr-1">শুরু</span>
             <span className="price-tag">৳{formattedPrice}</span>
           </div>
         </div>

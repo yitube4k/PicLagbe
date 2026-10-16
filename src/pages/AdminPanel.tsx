@@ -10,6 +10,7 @@ import AdminPosts from '../components/admin/AdminPosts';
 import { AdminBlog, AdminCategories, AdminReviews } from '../components/admin/AdminContent';
 import { AdminBookings, AdminKyc, AdminChats } from '../components/admin/AdminOps';
 import AdminAudit from '../components/admin/AdminAudit';
+import AdminSettings from '../components/admin/AdminSettings';
 
 type AdminSection =
   | 'overview'
@@ -23,7 +24,8 @@ type AdminSection =
   | 'kyc'
   | 'requests'
   | 'chats'
-  | 'audit';
+  | 'audit'
+  | 'settings';
 
 const SECTIONS: { key: AdminSection; label: string; icon: string }[] = [
   { key: 'overview', label: 'ওভারভিউ', icon: '📊' },
@@ -38,6 +40,7 @@ const SECTIONS: { key: AdminSection; label: string; icon: string }[] = [
   { key: 'requests', label: 'রোল রিকোয়েস্ট', icon: '🔄' },
   { key: 'chats', label: 'চ্যাট', icon: '💬' },
   { key: 'audit', label: 'অডিট রিপোর্ট', icon: '🧾' },
+  { key: 'settings', label: 'সাইট সেটিংস', icon: '⚙️' },
 ];
 
 type Counts = {
@@ -132,14 +135,14 @@ export default function AdminPanel() {
               <p className="text-xs font-bold uppercase tracking-[0.14em] text-sunset-gold">
                 অ্যাডমিন বানানোর নিয়ম (একবারই করতে হয়)
               </p>
-              <ol className="text-[13px] text-white/70 space-y-2 list-decimal list-inside leading-relaxed">
+              <ol className="text-[14.5px] text-white/70 space-y-2 list-decimal list-inside leading-relaxed">
                 <li>Supabase Dashboard খুলুন → আপনার প্রজেক্ট → <span className="text-white/90 font-semibold">SQL Editor</span></li>
                 <li>নিচের SQL রান করুন (আপনার ইমেইল বসিয়ে):</li>
               </ol>
-              <pre className="text-[11px] leading-relaxed bg-twilight-950/80 border border-white/[0.08] rounded-lg p-3 overflow-x-auto text-emerald-300 whitespace-pre">{`update public.profiles
+              <pre className="text-[12.5px] leading-relaxed bg-twilight-950/80 border border-white/[0.08] rounded-lg p-3 overflow-x-auto text-emerald-300 whitespace-pre">{`update public.profiles
    set role = 'admin'
  where email = 'আপনার-ইমেইল@gmail.com';`}</pre>
-              <ol className="text-[13px] text-white/70 space-y-2 list-decimal list-inside leading-relaxed" start={3}>
+              <ol className="text-[14.5px] text-white/70 space-y-2 list-decimal list-inside leading-relaxed" start={3}>
                 <li>এই পেজ <span className="text-white/90 font-semibold">Reload</span> দিন — তারপর হেডারে অ্যাভাটারে ক্লিক করলে <span className="text-sunset-gold font-semibold">🛡️ অ্যাডমিন প্যানেল</span> মেনু দেখাবে, অথবা সরাসরি <span className="text-white/90 font-semibold">/admin</span> ঠিকানায় যান।</li>
               </ol>
             </div>
@@ -182,7 +185,7 @@ export default function AdminPanel() {
           <p className="text-sm text-white/55 mt-1">
             পুরো সাইটের সম্পূর্ণ নিয়ন্ত্রণ — সবকিছু দেখা, এডিট, যোগ ও মডারেট করার ক্ষমতা
             {pendingAlerts > 0 && (
-              <span className="ml-2 inline-flex items-center rounded-full border border-amber-400/40 bg-amber-400/10 px-2.5 py-0.5 text-[11px] font-bold text-amber-300">
+              <span className="ml-2 inline-flex items-center rounded-full border border-amber-400/40 bg-amber-400/10 px-2.5 py-0.5 text-[12.5px] font-bold text-amber-300">
                 ⏳ {toBn(pendingAlerts)} টি রিভিউ অপেক্ষমাণ
               </span>
             )}
@@ -209,7 +212,7 @@ export default function AdminPanel() {
                     <span>{s.icon}</span>
                     <span className="flex-1">{s.label}</span>
                     {badge > 0 && (
-                      <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1 rounded-full bg-sunset-coral text-white text-[10px] font-extrabold">
+                      <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1 rounded-full bg-sunset-coral text-white text-[11.5px] font-extrabold">
                         {toBn(badge)}
                       </span>
                     )}
@@ -236,7 +239,7 @@ export default function AdminPanel() {
                     }`}
                   >
                     {s.icon} {s.label}
-                    {badge > 0 && <span className="ml-1.5 text-[10px] font-extrabold text-sunset-coral">{toBn(badge)}</span>}
+                    {badge > 0 && <span className="ml-1.5 text-[11.5px] font-extrabold text-sunset-coral">{toBn(badge)}</span>}
                   </button>
                 );
               })}
@@ -299,7 +302,7 @@ export default function AdminPanel() {
                   </div>
                 </div>
 
-                <p className="text-[11px] text-white/40 px-1">
+                <p className="text-[12.5px] text-white/40 px-1">
                   💡 সব সেকশনে সম্পূর্ণ এডিট/যোগ/ডিলিট ক্ষমতা আছে। কোনো সেকশনে ডেটা বদলালে ওভারভিউয়ের সংখ্যা অটো-আপডেট হবে।
                 </p>
               </div>
@@ -316,6 +319,7 @@ export default function AdminPanel() {
             {section === 'requests' && <RoleRequestsPanel />}
             {section === 'chats' && <AdminChats />}
             {section === 'audit' && <AdminAudit />}
+            {section === 'settings' && <AdminSettings />}
           </main>
         </div>
       </div>

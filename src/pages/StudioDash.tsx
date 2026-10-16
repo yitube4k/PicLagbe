@@ -734,7 +734,7 @@ export default function StudioDash() {
 
                 {/* নোট: অ্যাপ্রুভড পোস্ট এডিট করা যায় না */}
                 {posts.some((p) => p.status === 'approved') && (
-                  <p className="text-[11px] text-white/45 px-1">
+                  <p className="text-[12.5px] text-white/45 px-1">
                     ℹ️ অনুমোদিত পোস্ট এডিট করা যায় না — বদলাতে চাইলে ডিলিট করে নতুন পোস্ট দিন।
                   </p>
                 )}
@@ -967,7 +967,7 @@ export default function StudioDash() {
                       <span className="price-tag text-xl">{taka(pkg.price)}</span>
                     </div>
                     <p className="text-xs text-white/60 mb-3">{pkg.description || 'বিবরণ নেই'}</p>
-                    <span className="text-[11px] text-white/50 block mb-3">
+                    <span className="text-[12.5px] text-white/50 block mb-3">
                       ⏱ {toBn(pkg.duration_hours || 2)} ঘণ্টা
                     </span>
                     {pkg.features && pkg.features.length > 0 && (
@@ -1011,7 +1011,7 @@ export default function StudioDash() {
             {/* Add Portfolio Form — Cloudinary hosting (f_auto → WebP) */}
             <form onSubmit={handleAddPortfolio} className="glass-card p-5 rounded-xl3 space-y-4">
               <h4 className="font-bold text-white text-sm">নতুন কাজ বা ছবি যোগ করুন</h4>
-              <p className="text-[11px] text-white/50 -mt-2">
+              <p className="text-[12.5px] text-white/50 -mt-2">
                 ফাইল আপলোড করলে Cloudinary-তে হোস্ট হবে — স্বয়ংক্রিয়ভাবে WebP-তে কনভার্ট হয়ে মোবাইলে দ্রুত লোড হবে।
               </p>
               <div className="grid sm:grid-cols-2 gap-3">
@@ -1199,7 +1199,7 @@ export default function StudioDash() {
                   placeholder="01XXXXXXXXX"
                   className="glass-input"
                 />
-                <p className="text-[11px] text-white/45 mt-1">দিলে প্রোফাইলে WhatsApp-এ মেসেজ বাটন দেখা যাবে।</p>
+                <p className="text-[12.5px] text-white/45 mt-1">দিলে প্রোফাইলে WhatsApp-এ মেসেজ বাটন দেখা যাবে।</p>
               </div>
               <div>
                 <label className="field-label">সার্ভিস এরিয়া (কমা দিয়ে আলাদা করুন)</label>

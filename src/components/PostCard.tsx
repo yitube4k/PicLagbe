@@ -10,20 +10,20 @@ import { useAuth } from '../lib/auth';
 export function PostStatusBadge({ status }: { status: Post['status'] }) {
   if (status === 'approved') {
     return (
-      <span className="inline-flex items-center gap-1 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2.5 py-0.5 text-[11px] font-bold text-emerald-300">
+      <span className="inline-flex items-center gap-1 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2.5 py-0.5 text-[12.5px] font-bold text-emerald-300">
         ✓ অনুমোদিত
       </span>
     );
   }
   if (status === 'pending') {
     return (
-      <span className="inline-flex items-center gap-1 rounded-full border border-amber-400/30 bg-amber-400/10 px-2.5 py-0.5 text-[11px] font-bold text-amber-300">
+      <span className="inline-flex items-center gap-1 rounded-full border border-amber-400/30 bg-amber-400/10 px-2.5 py-0.5 text-[12.5px] font-bold text-amber-300">
         ⏳ রিভিউতে আছে
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center gap-1 rounded-full border border-rose-400/30 bg-rose-400/10 px-2.5 py-0.5 text-[11px] font-bold text-rose-300">
+    <span className="inline-flex items-center gap-1 rounded-full border border-rose-400/30 bg-rose-400/10 px-2.5 py-0.5 text-[12.5px] font-bold text-rose-300">
       ✕ বাতিল
     </span>
   );
@@ -33,20 +33,20 @@ export function PostStatusBadge({ status }: { status: Post['status'] }) {
 export function PostStatusBadgeLight({ status }: { status: Post['status'] }) {
   if (status === 'approved') {
     return (
-      <span className="inline-flex items-center gap-1 rounded-full border border-[#bfd8cb] bg-[#e6efe9] px-2.5 py-0.5 text-[11px] font-bold text-[#1d4d3b]">
+      <span className="inline-flex items-center gap-1 rounded-full border border-[#bfd8cb] bg-[#e6efe9] px-2.5 py-0.5 text-[12.5px] font-bold text-[#1d4d3b]">
         ✓ অনুমোদিত
       </span>
     );
   }
   if (status === 'pending') {
     return (
-      <span className="inline-flex items-center gap-1 rounded-full border border-[#e8d9b5] bg-[#f7efdc] px-2.5 py-0.5 text-[11px] font-bold text-[#8a6d1f]">
+      <span className="inline-flex items-center gap-1 rounded-full border border-[#e8d9b5] bg-[#f7efdc] px-2.5 py-0.5 text-[12.5px] font-bold text-[#8a6d1f]">
         ⏳ রিভিউতে আছে
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center gap-1 rounded-full border border-[#eecdc9] bg-[#f9e8e6] px-2.5 py-0.5 text-[11px] font-bold text-[#a13c34]">
+    <span className="inline-flex items-center gap-1 rounded-full border border-[#eecdc9] bg-[#f9e8e6] px-2.5 py-0.5 text-[12.5px] font-bold text-[#a13c34]">
       ✕ বাতিল
     </span>
   );
@@ -219,14 +219,14 @@ export default function PostCard({ post, onEdit, onDelete, showStatus, tone = 'd
           ) : (
             <span className={`text-sm font-bold truncate block ${light ? 'text-[#26231e]' : 'text-white'}`}>{ph?.display_name || 'ফটোগ্রাফার'}</span>
           )}
-          <span className={`text-[11px] ${light ? 'text-[#8a8172]' : 'text-white/45'}`}>{bnDate(post.created_at)}</span>
+          <span className={`text-[12.5px] ${light ? 'text-[#8a8172]' : 'text-white/45'}`}>{bnDate(post.created_at)}</span>
         </div>
         {showStatus && (light ? <PostStatusBadgeLight status={post.status} /> : <PostStatusBadge status={post.status} />)}
       </div>
 
       {/* title + body + price */}
       <div className="px-4 pb-3">
-        <h3 className={`font-bold text-[15px] leading-snug ${light ? 'text-[#26231e]' : 'text-white'}`}>{post.title}</h3>
+        <h3 className={`font-bold text-[16.5px] leading-snug ${light ? 'text-[#26231e]' : 'text-white'}`}>{post.title}</h3>
         {post.body && (
           <p className={`text-sm mt-1.5 whitespace-pre-line leading-relaxed ${light ? 'text-[#4d463c]' : 'text-white/65'}`}>{post.body}</p>
         )}
@@ -276,7 +276,7 @@ export default function PostCard({ post, onEdit, onDelete, showStatus, tone = 'd
 
       {/* admin rejection note (owner view) */}
       {post.status === 'rejected' && post.review_note && (
-        <p className={`mx-3 mb-3 rounded-lg px-3 py-2 text-[12px] ${light ? 'bg-[#f9e8e6] border border-[#eecdc9] text-[#a13c34]' : 'bg-rose-500/10 border border-rose-400/20 text-rose-300'}`}>
+        <p className={`mx-3 mb-3 rounded-lg px-3 py-2 text-[13.5px] ${light ? 'bg-[#f9e8e6] border border-[#eecdc9] text-[#a13c34]' : 'bg-rose-500/10 border border-rose-400/20 text-rose-300'}`}>
           অ্যাডমিন নোট: {post.review_note}
         </p>
       )}

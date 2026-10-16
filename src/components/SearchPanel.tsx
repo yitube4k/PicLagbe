@@ -162,7 +162,7 @@ export default function SearchPanel({ initial, autoFocus: autoFocusProp, onDone 
         >
           <SlidersIcon size={15} />
           {activeFilters > 0 && (
-            <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-sunset-coral text-white text-[9px] font-extrabold flex items-center justify-center">
+            <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-sunset-coral text-white text-[10.5px] font-extrabold flex items-center justify-center">
               {activeFilters}
             </span>
           )}
@@ -173,7 +173,7 @@ export default function SearchPanel({ initial, autoFocus: autoFocusProp, onDone 
           type="submit"
           aria-label="ফটোগ্রাফার সার্চ করুন"
           title="খুঁজুন"
-          className="btn-sunset shrink-0 px-4 min-h-[38px] text-[13px] font-bold flex items-center justify-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset-gold/50"
+          className="btn-sunset shrink-0 px-4 min-h-[38px] text-[14.5px] font-bold flex items-center justify-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset-gold/50"
         >
           <SearchIcon size={15} />
           <span className="hidden sm:inline">খুঁজুন</span>
@@ -186,11 +186,11 @@ export default function SearchPanel({ initial, autoFocus: autoFocusProp, onDone 
           id="sp-filter-menu"
           className="absolute right-0 top-[calc(100%+10px)] z-50 w-full glass-strong !rounded-[16px] shadow-glass-lg p-3.5"
         >
-          <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-white/45 px-1 pb-2.5">
+          <p className="text-[12.5px] font-bold uppercase tracking-[0.14em] text-white/45 px-1 pb-2.5">
             ফিল্টার অপশন
           </p>
 
-          <label htmlFor="sp-filter-spot" className="field-label !text-[11px]">
+          <label htmlFor="sp-filter-spot" className="field-label !text-[12.5px]">
             📍 স্পট
           </label>
           <select
@@ -198,7 +198,7 @@ export default function SearchPanel({ initial, autoFocus: autoFocusProp, onDone 
             value={spot}
             onChange={(e) => setSpot(e.target.value)}
             aria-label="শুটিং স্পট নির্বাচন করুন"
-            className="sp-select w-full !min-h-[42px] !text-[13px] mb-3"
+            className="sp-select w-full !min-h-[42px] !text-[14.5px] mb-3"
           >
             <option value="">সব স্পট</option>
             {COX_SPOTS.map((s) => (
@@ -208,7 +208,7 @@ export default function SearchPanel({ initial, autoFocus: autoFocusProp, onDone 
             ))}
           </select>
 
-          <label htmlFor="sp-filter-cat" className="field-label !text-[11px]">
+          <label htmlFor="sp-filter-cat" className="field-label !text-[12.5px]">
             📷 ক্যাটাগরি
           </label>
           <select
@@ -216,7 +216,7 @@ export default function SearchPanel({ initial, autoFocus: autoFocusProp, onDone 
             value={cat}
             onChange={(e) => setCat(e.target.value)}
             aria-label="ক্যাটাগরি নির্বাচন করুন"
-            className="sp-select w-full !min-h-[42px] !text-[13px]"
+            className="sp-select w-full !min-h-[42px] !text-[14.5px]"
           >
             <option value="">সব ক্যাটাগরি</option>
             {SEARCH_CATEGORIES.map((c) => (

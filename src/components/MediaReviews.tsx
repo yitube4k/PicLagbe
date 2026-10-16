@@ -257,7 +257,7 @@ export default function MediaReviews({ photographerId, reviewsOnly = false }: Me
               >
                 {t.icon}
                 {t.label}
-                {count !== undefined && <span className="text-[11px] opacity-75">({toBn(count)})</span>}
+                {count !== undefined && <span className="text-[12.5px] opacity-75">({toBn(count)})</span>}
               </button>
             );
           })}
@@ -315,7 +315,7 @@ export default function MediaReviews({ photographerId, reviewsOnly = false }: Me
                               <circle cx="8.5" cy="8.5" r="1.5" />
                               <polyline points="21 15 16 10 5 21" />
                             </svg>
-                            <span className="text-[11px] font-semibold">ছবি লোড হয়নি</span>
+                            <span className="text-[12.5px] font-semibold">ছবি লোড হয়নি</span>
                           </div>
                         ) : (
                           <>
@@ -329,7 +329,7 @@ export default function MediaReviews({ photographerId, reviewsOnly = false }: Me
                               onError={() => markBroken(img.id)}
                             />
                             {img.caption && (
-                              <figcaption className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#26231e]/75 to-transparent px-3 pt-6 pb-2.5 text-[11px] font-semibold text-white/95 truncate opacity-0 focus-within:opacity-100 md:hover:opacity-100 transition-opacity">
+                              <figcaption className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#26231e]/75 to-transparent px-3 pt-6 pb-2.5 text-[12.5px] font-semibold text-white/95 truncate opacity-0 focus-within:opacity-100 md:hover:opacity-100 transition-opacity">
                                 {img.caption}
                               </figcaption>
                             )}
@@ -391,7 +391,7 @@ export default function MediaReviews({ photographerId, reviewsOnly = false }: Me
                         </div>
                         <div className="p-4 flex items-center justify-between gap-3">
                           <span className="font-bold text-[#26231e] text-sm truncate">{v.caption || 'রিয়েল শুট ফুটেজ'}</span>
-                          <span className="shrink-0 rounded-full border border-[#e3d5b8] bg-[#f1e8d8] px-2.5 py-0.5 text-[10px] font-bold text-[#8a6d3b]">
+                          <span className="shrink-0 rounded-full border border-[#e3d5b8] bg-[#f1e8d8] px-2.5 py-0.5 text-[11.5px] font-bold text-[#8a6d3b]">
                             রিয়েল শুট ফুটেজ
                           </span>
                         </div>
@@ -414,7 +414,7 @@ export default function MediaReviews({ photographerId, reviewsOnly = false }: Me
                 </div>
                 <div>
                   <h3 className="pf-serif font-bold text-[#143528] text-sm">ডেমো শুট — কী পাবেন</h3>
-                  <p className="text-[13px] text-[#3f5c50] mt-0.5 leading-relaxed">
+                  <p className="text-[14.5px] text-[#3f5c50] mt-0.5 leading-relaxed">
                     প্রথমবারের কাস্টমারদের জন্য ছোট ট্রায়াল সেশন — ফুল বুকিংয়ের আগে ফটোগ্রাফারের স্টাইল ও দক্ষতা দেখে নিন।
                   </p>
                 </div>
@@ -448,7 +448,7 @@ export default function MediaReviews({ photographerId, reviewsOnly = false }: Me
                       </div>
                       <div className="p-4 flex items-center justify-between gap-3">
                         <span className="font-bold text-[#26231e] text-sm truncate">{demo.caption || 'ডেমো শুট'}</span>
-                        <span className="shrink-0 rounded-full border border-[#e3d5b8] bg-[#f1e8d8] px-2.5 py-0.5 text-[10px] font-bold text-[#8a6d3b]">
+                        <span className="shrink-0 rounded-full border border-[#e3d5b8] bg-[#f1e8d8] px-2.5 py-0.5 text-[11.5px] font-bold text-[#8a6d3b]">
                           ডেমো
                         </span>
                       </div>
@@ -486,7 +486,7 @@ export default function MediaReviews({ photographerId, reviewsOnly = false }: Me
                         </svg>
                       ))}
                     </div>
-                    <p className="text-[13px] text-[#6b6357] font-semibold">
+                    <p className="text-[14.5px] text-[#6b6357] font-semibold">
                       {toBn(reviewCount)}টি রিভিউ প্রাপ্ত
                     </p>
                   </div>
@@ -498,7 +498,7 @@ export default function MediaReviews({ photographerId, reviewsOnly = false }: Me
                     const count = ratingDist[stars] || 0;
                     const pct = reviewCount > 0 ? (count / reviewCount) * 100 : 0;
                     return (
-                      <div key={stars} className="flex items-center gap-3 text-[11px] font-semibold">
+                      <div key={stars} className="flex items-center gap-3 text-[12.5px] font-semibold">
                         <span className="text-[#6b6357] w-7">{toBn(stars)}★</span>
                         <div className="flex-1 h-2 rounded-full bg-[#ece5d8] overflow-hidden">
                           <div className="h-full rounded-full bg-[#b08d57]" style={{ width: `${pct}%` }} />
@@ -540,7 +540,7 @@ export default function MediaReviews({ photographerId, reviewsOnly = false }: Me
                             )}
                             <div className="min-w-0">
                               <h4 className="font-bold text-[#26231e] text-sm truncate">{reviewerName}</h4>
-                              <p className="text-[11px] text-[#8a8172]">{bnDate(r.created_at)}</p>
+                              <p className="text-[12.5px] text-[#8a8172]">{bnDate(r.created_at)}</p>
                             </div>
                           </div>
 
@@ -631,7 +631,7 @@ export default function MediaReviews({ photographerId, reviewsOnly = false }: Me
                 {photoItems[lightboxIndex].caption}
               </figcaption>
             )}
-            <span className="mt-2 text-[11px] text-white/45 font-semibold">
+            <span className="mt-2 text-[12.5px] text-white/45 font-semibold">
               {toBn(lightboxIndex + 1)} / {toBn(photoItems.length)}
             </span>
           </figure>

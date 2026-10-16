@@ -105,7 +105,7 @@ export function ProfileEditSection() {
         </button>
       </div>
 
-      <p className="text-[11px] text-white/40 text-center">
+      <p className="text-[12.5px] text-white/40 text-center">
         ফোন ও WhatsApp নম্বর শুধু আপনার ডিল করা ফটোগ্রাফার/গ্রাহককে দেখানো হয়।
       </p>
     </div>
@@ -213,7 +213,7 @@ export function MigrationSection() {
             {isRejected && `অ্যাডমিনের মন্তব্য: ${request.review_note || '—'} নিচের বাটনে ক্লিক করে আবার আবেদন করতে পারেন।`}
             {request.status === 'approved' && 'আপনার ফটোগ্রাফার অ্যাকাউন্ট তৈরি হয়ে গেছে। স্টুডিও ড্যাশবোর্ডে যান।'}
           </p>
-          <p className="text-[11px] text-white/40">আবেদন: {bnDate(request.created_at)}</p>
+          <p className="text-[12.5px] text-white/40">আবেদন: {bnDate(request.created_at)}</p>
 
           {isRejected && (
             <button type="button" onClick={() => setShowForm(true)} className="btn-primary !py-2 !px-5 !text-sm">
@@ -319,7 +319,7 @@ export function MigrationSection() {
 function HelpCard() {
   return (
     <div className="glass rounded-xl3 p-4">
-      <p className="text-[12px] text-white/60 leading-relaxed">
+      <p className="text-[13.5px] text-white/60 leading-relaxed">
         💡 <b className="text-white/80">প্রক্রিয়া:</b> আবেদন → অ্যাডমিন রিভিউ → অনুমোদন → স্টুডিও ড্যাশবোর্ড আনলক →
         প্যাকেজ/পোর্টফোলিও যোগ করুন → KYC ভেরিফিকেশনে <b className="text-sunset-gold">✔ ভেরিফায়েড ব্যাজ</b> নিন।
       </p>
@@ -454,7 +454,7 @@ export function KycSection() {
               {kyc.status === 'pending' && '⏳ রিভিউয়ের অপেক্ষায়'}
               {kyc.status === 'rejected' && '❌ প্রত্যাখ্যাত — ঠিক করে আবার জমা দিন'}
             </h3>
-            <span className="text-[11px] text-white/40">{bnDate(kyc.created_at)}</span>
+            <span className="text-[12.5px] text-white/40">{bnDate(kyc.created_at)}</span>
           </div>
           {kyc.review_note && (
             <p className="text-xs text-white/60 mt-2">অ্যাডমিনের মন্তব্য: {kyc.review_note}</p>

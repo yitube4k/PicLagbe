@@ -132,11 +132,11 @@ export default function Blog() {
                     </div>
                   )}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent pointer-events-none" />
-                  <span className="absolute top-3 left-3 chip !text-[10px] !py-0.5 !px-2 bg-black/40">
+                  <span className="absolute top-3 left-3 chip !text-[11.5px] !py-0.5 !px-2 bg-black/40">
                     {SPOT_KIND_EMOJI[spot.kind]} {SPOT_KIND_BN[spot.kind] || spot.kind}
                   </span>
                   {guide && (
-                    <span className="absolute bottom-3 right-3 text-[10px] font-bold text-white bg-black/45 rounded-full px-2.5 py-1">
+                    <span className="absolute bottom-3 right-3 text-[11.5px] font-bold text-white bg-black/45 rounded-full px-2.5 py-1">
                       ⏱ {toBn(Math.ceil(guide.intro.length / 120))} মিনিটে পড়ুন
                     </span>
                   )}
@@ -147,14 +147,14 @@ export default function Blog() {
                     <h4 className="font-bold text-white text-base group-hover:text-sunset-gold transition leading-snug">
                       {spot.nameBn}
                     </h4>
-                    <p className="text-[11px] text-white/45 mt-0.5">{spot.nameEn}</p>
+                    <p className="text-[12.5px] text-white/45 mt-0.5">{spot.nameEn}</p>
                     <p className="text-sm text-white/60 line-clamp-2 mt-2 leading-relaxed">
                       {guide ? guide.intro : spot.descBn}
                     </p>
                   </div>
 
                   {/* ভাড়া + টিকিট summary */}
-                  <div className="pt-4 mt-4 border-t border-white/[0.08] flex items-center justify-between gap-2 text-[11px]">
+                  <div className="pt-4 mt-4 border-t border-white/[0.08] flex items-center justify-between gap-2 text-[12.5px]">
                     <span className="text-white/55 truncate">🛺 {cost.vara}</span>
                     <span className="text-white/55 truncate">🎟️ {cost.ticket}</span>
                     <span className="text-sunset-gold font-bold whitespace-nowrap">গাইড →</span>
@@ -262,7 +262,7 @@ export default function Blog() {
                             {tags.length > 0 && (
                               <div className="flex flex-wrap gap-1.5 mb-2">
                                 {tags.slice(0, 2).map((t, tIdx) => (
-                                  <span key={tIdx} className="chip !text-[10px] !py-0.5 !px-2">
+                                  <span key={tIdx} className="chip !text-[11.5px] !py-0.5 !px-2">
                                     {t}
                                   </span>
                                 ))}
@@ -276,7 +276,7 @@ export default function Blog() {
                             </p>
                           </div>
 
-                          <div className="pt-4 mt-4 border-t border-white/[0.08] flex items-center justify-between text-[11px] text-white/45">
+                          <div className="pt-4 mt-4 border-t border-white/[0.08] flex items-center justify-between text-[12.5px] text-white/45">
                             <span>{bnDate(post.created_at)}</span>
                             <span>{toBn(readMin)} মিনিট</span>
                           </div>

@@ -255,7 +255,7 @@ export default function AdminPhotographers({ onChanged }: { onChanged?: () => vo
                   </Link>
                   <StatusPill status={p.profile_status} />
                   {p.verified && (
-                    <span className="inline-flex items-center rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2 py-0.5 text-[10px] font-bold text-emerald-300">
+                    <span className="inline-flex items-center rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2 py-0.5 text-[11.5px] font-bold text-emerald-300">
                       ✓ KYC
                     </span>
                   )}
@@ -405,7 +405,7 @@ export default function AdminPhotographers({ onChanged }: { onChanged?: () => vo
           <Field label="বায়ো">
             <textarea value={a.bio} onChange={(e) => setA({ ...a, bio: e.target.value })} rows={2} className="glass-input resize-y" />
           </Field>
-          <p className="text-[11px] text-white/45">ম্যানুয়াল যোগ করা প্রোফাইল সরাসরি অ্যাপ্রুভড অবস্থায় যাবে।</p>
+          <p className="text-[12.5px] text-white/45">ম্যানুয়াল যোগ করা প্রোফাইল সরাসরি অ্যাপ্রুভড অবস্থায় যাবে।</p>
           {err && <p className="text-xs text-rose-400">{err}</p>}
           <div className="flex gap-3">
             <button type="button" onClick={addManual} disabled={saving} className="btn-primary flex-1">

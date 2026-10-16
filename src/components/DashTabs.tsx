@@ -61,7 +61,7 @@ export default function DashTabs<T extends string>({
                 type="button"
                 onClick={() => onChange(t.key)}
                 aria-pressed={isActive}
-                className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-[13px] font-semibold whitespace-nowrap transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset-gold/50 ${
+                className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-[14.5px] font-semibold whitespace-nowrap transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset-gold/50 ${
                   isActive
                     ? 'chip-active'
                     : t.tone === 'gold'
@@ -72,7 +72,7 @@ export default function DashTabs<T extends string>({
                 <span className={`shrink-0 ${isActive ? '' : 'opacity-80'}`}>{t.icon}</span>
                 {t.label}
                 {typeof t.count === 'number' && t.count > 0 && (
-                  <span className="ml-0.5 rounded-full bg-sunset-coral/90 px-1.5 py-px text-[10px] font-extrabold leading-4 text-white">
+                  <span className="ml-0.5 rounded-full bg-sunset-coral/90 px-1.5 py-px text-[11.5px] font-extrabold leading-4 text-white">
                     {toBn(t.count)}
                   </span>
                 )}

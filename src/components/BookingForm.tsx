@@ -136,10 +136,10 @@ export default function BookingForm({ p, packages, selectedPkgId, onPackageChang
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="flex items-baseline justify-between gap-2">
-                      <b className="pf-serif text-[15px] text-[#26231e] truncate">{pkg.name}</b>
+                      <b className="pf-serif text-[16.5px] text-[#26231e] truncate">{pkg.name}</b>
                       <span className="pf-serif font-bold text-[#1d4d3b] whitespace-nowrap">{taka(pkg.price)}</span>
                     </span>
-                    <span className="block text-[11px] text-[#8a8172] mt-0.5">
+                    <span className="block text-[12.5px] text-[#8a8172] mt-0.5">
                       ⏱ {toBn(pkg.duration_hours || 0)} ঘণ্টা{pkg.description ? ` · ${pkg.description}` : ''}
                     </span>
                   </span>
@@ -168,10 +168,10 @@ export default function BookingForm({ p, packages, selectedPkgId, onPackageChang
               onChange={(e) => setEventDate(e.target.value)}
               className="pf-input !pl-11"
             />
-            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[15px] pointer-events-none" aria-hidden="true">📅</span>
+            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[16.5px] pointer-events-none" aria-hidden="true">📅</span>
           </div>
           {prettyDate && (
-            <p className="text-[11px] text-[#8a8172] mt-1.5">সিলেক্টেড: {prettyDate}</p>
+            <p className="text-[12.5px] text-[#8a8172] mt-1.5">সিলেক্টেড: {prettyDate}</p>
           )}
         </div>
 
@@ -195,8 +195,8 @@ export default function BookingForm({ p, packages, selectedPkgId, onPackageChang
                   />
                   <span aria-hidden="true" className="text-base leading-none">{slot.icon}</span>
                   <span className="min-w-0">
-                    <b className="block text-[12.5px] leading-tight">{slot.label}</b>
-                    <span className="block text-[10.5px] opacity-75 leading-tight mt-0.5">{slot.time}</span>
+                    <b className="block text-[14px] leading-tight">{slot.label}</b>
+                    <span className="block text-[12px] opacity-75 leading-tight mt-0.5">{slot.time}</span>
                   </span>
                 </label>
               );
@@ -238,14 +238,14 @@ export default function BookingForm({ p, packages, selectedPkgId, onPackageChang
       <div className="bf-summary">
         <div className="flex items-center justify-between gap-3 py-1.5">
           <span className="text-xs font-semibold text-[#6b6357]">প্যাকেজ</span>
-          <span className="pf-serif font-bold text-[13.5px] text-[#26231e] text-right">
+          <span className="pf-serif font-bold text-[15px] text-[#26231e] text-right">
             {selectedPackage ? selectedPackage.name : 'কাস্টম বুকিং'}
           </span>
         </div>
         {eventDate && (
           <div className="flex items-center justify-between gap-3 py-1.5 border-t border-[#e6ddcc]/70">
             <span className="text-xs font-semibold text-[#6b6357]">তারিখ</span>
-            <span className="text-[13px] font-semibold text-[#26231e] text-right">{prettyDate}</span>
+            <span className="text-[14.5px] font-semibold text-[#26231e] text-right">{prettyDate}</span>
           </div>
         )}
         <div className="flex items-center justify-between gap-3 py-2 border-t border-[#e6ddcc]/70">
@@ -254,7 +254,7 @@ export default function BookingForm({ p, packages, selectedPkgId, onPackageChang
             {selectedPackage ? taka(selectedPackage.price) : 'আলোচনা সাপেক্ষ'}
           </span>
         </div>
-        <p className="text-[10.5px] text-[#8a8172] leading-relaxed pt-2 border-t border-[#e6ddcc]/70 flex items-center gap-1.5">
+        <p className="text-[12px] text-[#8a8172] leading-relaxed pt-2 border-t border-[#e6ddcc]/70 flex items-center gap-1.5">
           <span aria-hidden="true">🛡️</span>
           কোনো অগ্রিম পেমেন্ট লাগবে না — ফটোগ্রাফার গ্রহণ করলে কনফার্ম হবে
         </p>

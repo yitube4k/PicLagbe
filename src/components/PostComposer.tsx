@@ -103,7 +103,7 @@ export default function PostComposer({ photographerId, editing, onDone, onCancel
       </div>
 
       {!editing && (
-        <p className="rounded-lg bg-amber-400/10 border border-amber-400/20 px-3 py-2 text-[12px] text-amber-300/90 leading-relaxed">
+        <p className="rounded-lg bg-amber-400/10 border border-amber-400/20 px-3 py-2 text-[13.5px] text-amber-300/90 leading-relaxed">
           পোস্টটি প্রথমে অ্যাডমিন রিভিউতে যাবে (⏳ রিভিউতে আছে)। অনুমোদনের পর আপনার প্রোফাইলে সবাই দেখতে পাবে।
         </p>
       )}
@@ -169,12 +169,12 @@ export default function PostComposer({ photographerId, editing, onDone, onCancel
                     type="button"
                     aria-label="মুছে ফেলুন"
                     onClick={() => setMedia((prev) => prev.filter((_, j) => j !== i))}
-                    className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/70 text-white text-[10px] flex items-center justify-center hover:bg-rose-600"
+                    className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/70 text-white text-[11.5px] flex items-center justify-center hover:bg-rose-600"
                   >
                     ✕
                   </button>
                   {isVideo && (
-                    <span className="absolute bottom-1 left-1 text-[9px] bg-black/70 rounded px-1 text-white">ভিডিও</span>
+                    <span className="absolute bottom-1 left-1 text-[10.5px] bg-black/70 rounded px-1 text-white">ভিডিও</span>
                   )}
                 </div>
               );
@@ -208,7 +208,7 @@ export default function PostComposer({ photographerId, editing, onDone, onCancel
         </div>
 
         {!cldConfigured() && (
-          <p className="text-[11px] text-amber-400/80 mt-1.5">Cloudinary কনফিগার না থাকলে "লিংক যোগ" দিয়ে URL পেস্ট করুন।</p>
+          <p className="text-[12.5px] text-amber-400/80 mt-1.5">Cloudinary কনফিগার না থাকলে "লিংক যোগ" দিয়ে URL পেস্ট করুন।</p>
         )}
       </div>
 

@@ -252,7 +252,7 @@ export default function ChatPage() {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-sm font-bold text-white truncate">{peerName(c)}</span>
-                      <span className="text-[10px] text-white/40 shrink-0">{bnDate(c.last_message_at)}</span>
+                      <span className="text-[11.5px] text-white/40 shrink-0">{bnDate(c.last_message_at)}</span>
                     </div>
                     <span className="text-xs text-white/50 block truncate">
                       {role === 'customer' ? 'ফটোগ্রাফার' : 'গ্রাহক'} · {c.created_at.slice(0, 10)}
@@ -308,7 +308,7 @@ export default function ChatPage() {
                     )}
                     <div className="min-w-0">
                       <span className="text-sm font-bold text-white truncate block">{peerName(activeConv)}</span>
-                      <span className="text-[11px] text-white/45">
+                      <span className="text-[12.5px] text-white/45">
                         {role === 'customer' ? 'ভেরিফায়েড ফটোগ্রাফার' : 'সম্মানিত গ্রাহক'}
                       </span>
                     </div>
@@ -335,7 +335,7 @@ export default function ChatPage() {
                           }`}
                         >
                           <p className="whitespace-pre-wrap break-words">{m.body}</p>
-                          <span className={`text-[10px] mt-1 block ${mine ? 'text-[#1A0E06]/60' : 'text-white/40'}`}>
+                          <span className={`text-[11.5px] mt-1 block ${mine ? 'text-[#1A0E06]/60' : 'text-white/40'}`}>
                             {bnDate(m.created_at)}
                             {mine && (m.read_at ? ' · পড়া হয়েছে' : ' · পাঠানো হয়েছে')}
                           </span>

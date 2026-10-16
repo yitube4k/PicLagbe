@@ -101,10 +101,10 @@ function HeroSlider() {
 
       {/* স্লাইড ক্যাপশন + কাউন্টার */}
       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-3 z-10">
-        <span className="chip !py-1 !text-[11px] bg-black/40 backdrop-blur-sm">
+        <span className="chip !py-1 !text-[12.5px] bg-black/40 backdrop-blur-sm">
           📍 {cur?.name} · {SPOT_KIND_BN[SPOT_BY_KEY(cur?.key || '')?.kind || 'beach'] || ''}
         </span>
-        <span className="text-[11px] text-white/60 font-medium tabular-nums">
+        <span className="text-[12.5px] text-white/60 font-medium tabular-nums">
           {toBn(idx + 1)}/{toBn(slides.length)}
         </span>
       </div>
@@ -257,7 +257,7 @@ export default function Home() {
                       </div>
                     )}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent pointer-events-none" />
-                    <span className="absolute top-3 left-3 chip !text-[10px] !py-0.5 !px-2 bg-black/40">
+                    <span className="absolute top-3 left-3 chip !text-[11.5px] !py-0.5 !px-2 bg-black/40">
                       {SPOT_KIND_EMOJI[spot.kind]} {SPOT_KIND_BN[spot.kind] || spot.kind}
                     </span>
                   </div>
@@ -267,13 +267,13 @@ export default function Home() {
                       <h3 className="font-bold text-white text-lg group-hover:text-sunset-gold transition leading-snug">
                         {spot.nameBn}
                       </h3>
-                      <p className="text-[11px] text-white/45 mt-0.5">{spot.nameEn}</p>
+                      <p className="text-[12.5px] text-white/45 mt-0.5">{spot.nameEn}</p>
                       <p className="text-sm text-white/60 line-clamp-2 mt-2 leading-relaxed">
                         {guide ? guide.intro : spot.descBn}
                       </p>
                     </div>
 
-                    <div className="pt-4 mt-4 border-t border-white/[0.08] flex items-center justify-between gap-2 text-[11px]">
+                    <div className="pt-4 mt-4 border-t border-white/[0.08] flex items-center justify-between gap-2 text-[12.5px]">
                       <span className="text-white/55 truncate">🛺 {cost.vara}</span>
                       <span className="text-white/55 truncate">🎟️ {cost.ticket}</span>
                       <span className="text-sunset-gold font-bold whitespace-nowrap">গাইড →</span>
@@ -326,7 +326,7 @@ export default function Home() {
                     </span>
                   )}
                 </span>
-                <span className="text-[11px] sm:text-xs font-semibold text-white/75 group-hover:text-sunset-gold transition-colors text-center leading-tight">
+                <span className="text-[12.5px] sm:text-xs font-semibold text-white/75 group-hover:text-sunset-gold transition-colors text-center leading-tight">
                   {s.nameBn}
                 </span>
               </Link>

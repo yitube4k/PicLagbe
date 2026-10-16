@@ -137,7 +137,7 @@ export default function AdminPosts({ onChanged }: { onChanged?: () => void }) {
                   <span className="absolute inset-0 flex items-center justify-center text-3xl">🖼</span>
                 )}
                 {(p.media || []).length > 1 && (
-                  <span className="absolute top-2 right-2 rounded-full bg-black/60 text-white text-[10px] font-bold px-2 py-0.5">
+                  <span className="absolute top-2 right-2 rounded-full bg-black/60 text-white text-[11.5px] font-bold px-2 py-0.5">
                     {toBn((p.media || []).length)} মিডিয়া
                   </span>
                 )}
@@ -146,7 +146,7 @@ export default function AdminPosts({ onChanged }: { onChanged?: () => void }) {
               <div className="p-4 flex-1 flex flex-col gap-2">
                 <div className="flex items-center justify-between gap-2">
                   <StatusPill status={p.status} />
-                  <span className="text-[11px] text-white/45">{bnDate(p.created_at)}</span>
+                  <span className="text-[12.5px] text-white/45">{bnDate(p.created_at)}</span>
                 </div>
 
                 <h3 className="font-bold text-white text-sm leading-snug line-clamp-2">{p.title}</h3>
@@ -164,13 +164,13 @@ export default function AdminPosts({ onChanged }: { onChanged?: () => void }) {
                   )}
                 </div>
 
-                <div className="flex items-center gap-2 text-[11px] text-white/50">
+                <div className="flex items-center gap-2 text-[12.5px] text-white/50">
                   {p.price != null && p.price > 0 && <span>🏷️ {toBn(p.price)} ৳</span>}
                   <span>❤️ {toBn(p.like_count || 0)}</span>
                 </div>
 
                 {p.status === 'rejected' && p.review_note && (
-                  <p className="text-[11px] text-rose-300/90 line-clamp-2">নোট: {p.review_note}</p>
+                  <p className="text-[12.5px] text-rose-300/90 line-clamp-2">নোট: {p.review_note}</p>
                 )}
 
                 <div className="flex items-center gap-2 pt-2 mt-auto flex-wrap">

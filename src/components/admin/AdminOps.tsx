@@ -381,7 +381,7 @@ export function AdminChats() {
                   <span className="text-sm font-bold text-white truncate block">
                     {c.customers?.full_name || 'ইউজার'} ↔ {c.photographers?.display_name || 'ফটোগ্রাফার'}
                   </span>
-                  <span className="text-[11px] text-white/45">{bnDate(c.last_message_at)}</span>
+                  <span className="text-[12.5px] text-white/45">{bnDate(c.last_message_at)}</span>
                 </div>
               </button>
             ))}
@@ -396,7 +396,7 @@ export function AdminChats() {
                   {msgs.map((m) => (
                     <div key={m.id} className="glass rounded-xl2 px-3 py-2">
                       <p className="text-sm text-white/85 whitespace-pre-line">{m.body}</p>
-                      <span className="text-[10px] text-white/40">{bnDate(m.created_at)}</span>
+                      <span className="text-[11.5px] text-white/40">{bnDate(m.created_at)}</span>
                     </div>
                   ))}
                 </div>

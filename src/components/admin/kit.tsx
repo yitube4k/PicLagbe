@@ -63,7 +63,7 @@ export function Field({ label, children, hint }: { label: string; children: Reac
     <div>
       <label className="field-label">{label}</label>
       {children}
-      {hint && <p className="text-[11px] text-white/40 mt-1">{hint}</p>}
+      {hint && <p className="text-[12.5px] text-white/40 mt-1">{hint}</p>}
     </div>
   );
 }
@@ -99,7 +99,7 @@ const PILL_BN: Record<string, string> = {
 export function StatusPill({ status }: { status: string }) {
   return (
     <span
-      className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-bold ${
+      className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[12.5px] font-bold ${
         PILL_STYLES[status] || 'border-white/20 bg-white/5 text-white/60'
       }`}
     >

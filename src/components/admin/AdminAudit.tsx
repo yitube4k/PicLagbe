@@ -176,7 +176,7 @@ export default function AdminAudit() {
               : 'border-white/10 bg-white/[0.04] text-white/70'
           }`}
         >
-          📜 লগ দেখুন {logs.length > 0 && <span className="text-[10px] text-white/50">({toBn(logs.length)})</span>}
+          📜 লগ দেখুন {logs.length > 0 && <span className="text-[11.5px] text-white/50">({toBn(logs.length)})</span>}
         </button>
         <button
           type="button"
@@ -187,7 +187,7 @@ export default function AdminAudit() {
               : 'border-white/10 bg-white/[0.04] text-white/70'
           }`}
         >
-          🧾 সেভ করা রিপোর্ট {reports.length > 0 && <span className="text-[10px] text-white/50">({toBn(reports.length)})</span>}
+          🧾 সেভ করা রিপোর্ট {reports.length > 0 && <span className="text-[11.5px] text-white/50">({toBn(reports.length)})</span>}
         </button>
       </div>
 
@@ -229,11 +229,11 @@ export default function AdminAudit() {
             </div>
             <div className="flex flex-wrap gap-2 items-end">
               <div>
-                <label className="field-label !text-[10px]">শুরুর তারিখ</label>
+                <label className="field-label !text-[11.5px]">শুরুর তারিখ</label>
                 <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="glass-input !py-1.5 !text-xs" />
               </div>
               <div>
-                <label className="field-label !text-[10px]">শেষ তারিখ</label>
+                <label className="field-label !text-[11.5px]">শেষ তারিখ</label>
                 <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="glass-input !py-1.5 !text-xs" />
               </div>
               {(q || entityF || actionF || dateFrom || dateTo) && (
@@ -285,17 +285,17 @@ export default function AdminAudit() {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-bold text-white text-sm">{l.title || '—'}</span>
-                      <span className="rounded-full border border-sunset-gold/30 bg-sunset-soft text-sunset-gold text-[10px] font-bold px-2 py-0.5">
+                      <span className="rounded-full border border-sunset-gold/30 bg-sunset-soft text-sunset-gold text-[11.5px] font-bold px-2 py-0.5">
                         {actionLabel(l.action)}
                       </span>
-                      <span className="text-[10px] font-semibold text-white/45 border border-white/10 rounded-full px-2 py-0.5">
+                      <span className="text-[11.5px] font-semibold text-white/45 border border-white/10 rounded-full px-2 py-0.5">
                         {entityLabel(l.entity)}
                       </span>
                     </div>
                     <p className="text-xs text-white/60 mt-1 leading-relaxed">
                       {l.details?.note || '—'}
                     </p>
-                    <p className="text-[10px] text-white/35 mt-1">
+                    <p className="text-[11.5px] text-white/35 mt-1">
                       {bnDateTime(l.created_at)} · {l.actor_email || 'অজানা'}
                     </p>
                   </div>
@@ -333,11 +333,11 @@ export default function AdminAudit() {
                     <span className="w-10 h-10 rounded-xl2 glass grid place-items-center text-lg shrink-0" aria-hidden="true">🧾</span>
                     <div className="min-w-0 flex-1">
                       <p className="font-bold text-white text-sm truncate">{r.title}</p>
-                      <p className="text-[11px] text-white/50 mt-0.5">
+                      <p className="text-[12.5px] text-white/50 mt-0.5">
                         {toBn(r.entry_count)} টি এন্ট্রি · সেভ {bnDateTime(r.created_at)}
                         {per && <span className="hidden sm:inline"> · সময়সীমা: {per}</span>}
                       </p>
-                      <p className="text-[10px] text-white/35 mt-0.5">সেভ করেছেন: {r.actor_email || '—'}</p>
+                      <p className="text-[11.5px] text-white/35 mt-0.5">সেভ করেছেন: {r.actor_email || '—'}</p>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       <button
@@ -381,7 +381,7 @@ export default function AdminAudit() {
                   autoFocus
                 />
               </div>
-              <div className="bg-black/30 border border-white/[0.08] rounded-xl2 p-3 text-[11px] text-white/55 space-y-1">
+              <div className="bg-black/30 border border-white/[0.08] rounded-xl2 p-3 text-[12.5px] text-white/55 space-y-1">
                 <p>• ধরন: {entityF ? entityLabel(entityF) : 'সব'}</p>
                 <p>• কাজ: {actionF ? actionLabel(actionF) : 'সব'}</p>
                 <p>• সময়: {dateFrom || 'শুরু নেই'} → {dateTo || 'আজ পর্যন্ত'}</p>

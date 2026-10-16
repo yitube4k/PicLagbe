@@ -152,7 +152,7 @@ export default function Community() {
               <p className="text-xs text-white/50">{toBn(messages.length)} মেসেজ</p>
             </div>
           </div>
-          <span className="chip !text-[11px] !py-1 pointer-events-none">
+          <span className="chip !text-[12.5px] !py-1 pointer-events-none">
             নিয়ম মেনে চ্যাট করুন
           </span>
         </div>
@@ -201,16 +201,16 @@ export default function Community() {
                   {/* Bubble Container */}
                   <div className={`max-w-[78%] flex flex-col ${isOwn ? 'items-end' : 'items-start'}`}>
                     <div className="flex items-center gap-2 mb-1 px-1">
-                      <span className="text-[11px] font-semibold text-white/55">
+                      <span className="text-[12.5px] font-semibold text-white/55">
                         {senderName}
                       </span>
-                      <span className="text-[10px] text-white/35">
+                      <span className="text-[11.5px] text-white/35">
                         {formatTime(msg.created_at)}
                       </span>
                     </div>
 
                     <div
-                      className={`px-4 py-2.5 text-[15px] leading-relaxed break-words whitespace-pre-wrap shadow-glass-sm ${
+                      className={`px-4 py-2.5 text-[16.5px] leading-relaxed break-words whitespace-pre-wrap shadow-glass-sm ${
                         isOwn
                           ? 'bg-sunset-gradient text-[#1A0E06] font-medium rounded-2xl rounded-br-md'
                           : 'glass rounded-2xl rounded-bl-md text-white/90 border border-white/[0.1]'
@@ -247,7 +247,7 @@ export default function Community() {
                   className="glass-input !py-3 pr-16"
                 />
                 {text.length > 800 && (
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-white/40">
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11.5px] text-white/40">
                     {toBn(1000 - text.length)}
                   </span>
                 )}

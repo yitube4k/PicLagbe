@@ -24,12 +24,12 @@ export default function SpotGuideSection({ spotKey }: { spotKey: string }) {
 
       {/* Intro + Highlights */}
       <div className="glass-card rounded-xl3 p-5 sm:p-6 mt-6">
-        <p className="text-white/80 leading-[1.9] text-[15px] sm:text-base">{guide.intro}</p>
+        <p className="text-white/80 leading-[1.9] text-[16.5px] sm:text-base">{guide.intro}</p>
         <div className="flex flex-wrap gap-2 mt-4">
           {guide.highlights.map((h, i) => (
-            <span key={i} className="chip !text-[11px]">✦ {h}</span>
+            <span key={i} className="chip !text-[12.5px]">✦ {h}</span>
           ))}
-          <span className="chip !text-[11px] !border-sunset-gold/40 !text-sunset-gold">⏰ সেরা সময়: {guide.bestTime}</span>
+          <span className="chip !text-[12.5px] !border-sunset-gold/40 !text-sunset-gold">⏰ সেরা সময়: {guide.bestTime}</span>
         </div>
       </div>
 
@@ -52,7 +52,7 @@ export default function SpotGuideSection({ spotKey }: { spotKey: string }) {
                 loading="lazy"
                 className="w-full aspect-[16/10] object-cover"
               />
-              <span className="absolute bottom-2 right-2 glass-strong rounded-full px-2.5 py-1 text-[10px] text-white/85">
+              <span className="absolute bottom-2 right-2 glass-strong rounded-full px-2.5 py-1 text-[11.5px] text-white/85">
                 🔍 জুম
               </span>
             </button>
@@ -77,7 +77,7 @@ export default function SpotGuideSection({ spotKey }: { spotKey: string }) {
         <InfoCard icon="🍽️" title="খাওয়া — কী খাবেন">
           <ul className="space-y-1.5">
             {guide.food.map((f, i) => (
-              <li key={i} className="text-[13px] text-white/70 leading-relaxed flex gap-1.5">
+              <li key={i} className="text-[14.5px] text-white/70 leading-relaxed flex gap-1.5">
                 <span aria-hidden="true" className="text-sunset-gold/80 shrink-0">•</span>
                 <span>{f}</span>
               </li>
@@ -88,7 +88,7 @@ export default function SpotGuideSection({ spotKey }: { spotKey: string }) {
         <InfoCard icon="📸" title="ফটোগ্রাফি পয়েন্ট">
           <ul className="space-y-1.5">
             {guide.photoPoints.map((p, i) => (
-              <li key={i} className="text-[13px] text-white/70 leading-relaxed flex gap-1.5">
+              <li key={i} className="text-[14.5px] text-white/70 leading-relaxed flex gap-1.5">
                 <span aria-hidden="true" className="text-sunset-gold/80 shrink-0">★</span>
                 <span>{p}</span>
               </li>
@@ -110,13 +110,13 @@ export default function SpotGuideSection({ spotKey }: { spotKey: string }) {
                   {r.mode}
                 </span>
                 <span className="text-sm font-bold text-white">৳{r.fare.startsWith('৳') || r.fare.includes('৳') ? r.fare : r.fare}</span>
-                <span className="text-[11px] text-white/50">⏱ {r.time}</span>
+                <span className="text-[12.5px] text-white/50">⏱ {r.time}</span>
               </div>
-              <p className="text-[13px] text-white/65 mt-1.5 leading-relaxed">{r.detail}</p>
+              <p className="text-[14.5px] text-white/65 mt-1.5 leading-relaxed">{r.detail}</p>
             </div>
           ))}
         </div>
-        <p className="text-[11px] text-white/40 mt-3">
+        <p className="text-[12.5px] text-white/40 mt-3">
           * ভাড়া ও ফি মোটামুটি আনুমানিক (২০২৫) — সিজন, দরদাম ও সময়ভেদে কম-বেশি হয়।
         </p>
       </div>
@@ -148,7 +148,7 @@ export default function SpotGuideSection({ spotKey }: { spotKey: string }) {
 function InfoCard({ icon, title, children }: { icon: string; title: string; children: React.ReactNode }) {
   return (
     <div className="glass-card rounded-xl3 p-5">
-      <h3 className="font-bold text-white text-[15px] flex items-center gap-2 mb-3.5">
+      <h3 className="font-bold text-white text-[16.5px] flex items-center gap-2 mb-3.5">
         <span aria-hidden="true">{icon}</span>
         {title}
       </h3>
@@ -160,8 +160,8 @@ function InfoCard({ icon, title, children }: { icon: string; title: string; chil
 function Row({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
   return (
     <div className="flex items-center justify-between gap-3 py-1.5 border-b border-white/[0.05] last:border-0">
-      <span className="text-[13px] text-white/70 leading-snug">{label}</span>
-      <span className={`text-[13px] font-bold whitespace-nowrap ${highlight ? 'text-emerald-400' : 'text-sunset-gold'}`}>
+      <span className="text-[14.5px] text-white/70 leading-snug">{label}</span>
+      <span className={`text-[14.5px] font-bold whitespace-nowrap ${highlight ? 'text-emerald-400' : 'text-sunset-gold'}`}>
         {value}
       </span>
     </div>

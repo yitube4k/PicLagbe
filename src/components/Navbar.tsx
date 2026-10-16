@@ -297,7 +297,7 @@ export default function Navbar() {
               <span className="text-lg font-bold grad-text leading-tight tracking-tight">
                 {SITE.name}
               </span>
-              <span className="text-[10px] tracking-[0.22em] uppercase text-white/50 font-semibold leading-none mt-0.5">
+              <span className="text-[11.5px] tracking-[0.22em] uppercase text-white/50 font-semibold leading-none mt-0.5">
                 {SITE.nameEn || 'PHOTOLAGBE'}
               </span>
             </div>
@@ -344,7 +344,7 @@ export default function Navbar() {
                 <line x1="21" y1="21" x2="16.65" y2="16.65" />
               </svg>
               <span className="hidden xl:inline">কক্সবাজারে খুঁজুন…</span>
-              <kbd className="hidden xl:inline-flex items-center rounded border border-white/15 bg-white/[0.06] px-1.5 py-0.5 text-[10px] font-bold text-white/50">
+              <kbd className="hidden xl:inline-flex items-center rounded border border-white/15 bg-white/[0.06] px-1.5 py-0.5 text-[11.5px] font-bold text-white/50">
                 /
               </kbd>
             </button>
@@ -370,7 +370,7 @@ export default function Navbar() {
             {/* Dropdown panel */}
             {searchOpen && (
               <div className="nav-search-panel glass-strong !rounded-[18px] p-2 shadow-glass-lg">
-                <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-white/45 px-2 pt-1.5 pb-2">
+                <p className="text-[12.5px] font-bold uppercase tracking-[0.14em] text-white/45 px-2 pt-1.5 pb-2">
                   ফটোগ্রাফার খুঁজুন
                 </p>
                 <SearchPanel
@@ -439,7 +439,7 @@ export default function Navbar() {
                           <span className="text-sm font-bold text-white truncate block">
                             {profile?.full_name || 'ব্যবহারকারী'}
                           </span>
-                          <span className="text-[11px] text-white/50 truncate block mt-0.5">
+                          <span className="text-[12.5px] text-white/50 truncate block mt-0.5">
                             {profile?.email || ''}
                           </span>
                         </div>
@@ -448,7 +448,7 @@ export default function Navbar() {
                       {/* রোল ব্যাজ */}
                       <div className="px-4 pb-3">
                         <span
-                          className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.12em] ${
+                          className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11.5px] font-extrabold uppercase tracking-[0.12em] ${
                             profile?.role === 'admin'
                               ? 'bg-sunset-gradient text-[#1A0E06]'
                               : profile?.role === 'photographer'
@@ -479,7 +479,7 @@ export default function Navbar() {
                           </span>
                           <span className="flex-1">
                             প্রোফাইল ড্যাশবোর্ড
-                            <span className="block text-[10.5px] text-white/45 font-normal mt-0.5">বুকিং, প্রিয়, রিভিউ ও এডিট</span>
+                            <span className="block text-[12px] text-white/45 font-normal mt-0.5">বুকিং, প্রিয়, রিভিউ ও এডিট</span>
                           </span>
                         </Link>
 
@@ -494,7 +494,7 @@ export default function Navbar() {
                             </span>
                             <span className="flex-1">
                               মাই স্টুডিও
-                              <span className="block text-[10.5px] text-white/45 font-normal mt-0.5">পোস্ট, প্যাকেজ, শিডিউল ও বুকিং</span>
+                              <span className="block text-[12px] text-white/45 font-normal mt-0.5">পোস্ট, প্যাকেজ, শিডিউল ও বুকিং</span>
                             </span>
                           </Link>
                         )}
@@ -510,7 +510,7 @@ export default function Navbar() {
                             </span>
                             <span className="flex-1">
                               অ্যাডমিন প্যানেল
-                              <span className="block text-[10.5px] text-white/45 font-normal mt-0.5">সব কন্ট্রোল, এডিট ও অনুমোদন</span>
+                              <span className="block text-[12px] text-white/45 font-normal mt-0.5">সব কন্ট্রোল, এডিট ও অনুমোদন</span>
                             </span>
                           </Link>
                         )}
@@ -525,7 +525,7 @@ export default function Navbar() {
                           </span>
                           <span className="flex-1">
                             মেসেজ ইনবক্স
-                            <span className="block text-[10.5px] text-white/45 font-normal mt-0.5">user ↔ ফটোগ্রাফার চ্যাট</span>
+                            <span className="block text-[12px] text-white/45 font-normal mt-0.5">user ↔ ফটোগ্রাফার চ্যাট</span>
                           </span>
                         </Link>
 

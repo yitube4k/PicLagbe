@@ -124,9 +124,9 @@ export function AdminBlog() {
                 <div className="flex items-center gap-2">
                   <span className="font-bold text-white text-sm truncate">{b.title}</span>
                   {b.published ? (
-                    <span className="inline-flex items-center rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2 py-0.5 text-[10px] font-bold text-emerald-300">পাবলিশড</span>
+                    <span className="inline-flex items-center rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2 py-0.5 text-[11.5px] font-bold text-emerald-300">পাবলিশড</span>
                   ) : (
-                    <span className="inline-flex items-center rounded-full border border-white/20 bg-white/5 px-2 py-0.5 text-[10px] font-bold text-white/60">ড্রাফট</span>
+                    <span className="inline-flex items-center rounded-full border border-white/20 bg-white/5 px-2 py-0.5 text-[11.5px] font-bold text-white/60">ড্রাফট</span>
                   )}
                 </div>
                 <span className="text-xs text-white/50 truncate block">{b.slug} · {bnDate(b.created_at)}</span>
@@ -165,7 +165,7 @@ export function AdminBlog() {
             <textarea value={f.excerpt} onChange={(e) => setF({ ...f, excerpt: e.target.value })} rows={2} className="glass-input resize-y" />
           </Field>
           <Field label="কনটেন্ট *">
-            <textarea value={f.content} onChange={(e) => setF({ ...f, content: e.target.value })} rows={8} className="glass-input resize-y font-mono !text-[13px]" />
+            <textarea value={f.content} onChange={(e) => setF({ ...f, content: e.target.value })} rows={8} className="glass-input resize-y font-mono !text-[14.5px]" />
           </Field>
           <div className="grid sm:grid-cols-2 gap-3 items-end">
             <Field label="ট্যাগ" hint="কমা দিয়ে আলাদা করুন">
@@ -298,7 +298,7 @@ export function AdminCategories() {
                 <>
                   <span className="text-sm">{c.icon}</span>
                   <span className="text-xs font-semibold text-white/85">{c.name}</span>
-                  <button type="button" onClick={() => { setEditId(c.id); setEditName(c.name); }} className="text-[10px] text-sunset-gold font-bold" title="নাম বদলান">✏️</button>
+                  <button type="button" onClick={() => { setEditId(c.id); setEditName(c.name); }} className="text-[11.5px] text-sunset-gold font-bold" title="নাম বদলান">✏️</button>
                   <DangerConfirm onConfirm={() => del(c)} label="" message={`"${c.name}" ক্যাটাগরি ডিলিট করবেন?`} />
                 </>
               )}
@@ -374,7 +374,7 @@ export function AdminReviews() {
               <span className="text-sunset-gold font-bold text-sm shrink-0">{toBn(r.rating)}★</span>
               <div className="min-w-0 flex-1">
                 <p className="text-sm text-white/80 line-clamp-2">{r.comment || '—'}</p>
-                <span className="text-[11px] text-white/45 block mt-0.5">
+                <span className="text-[12.5px] text-white/45 block mt-0.5">
                   {r.profiles?.full_name || 'গ্রাহক'} → {r.photographers?.display_name || 'ফটোগ্রাফার'} · {bnDate(r.created_at)}
                 </span>
               </div>

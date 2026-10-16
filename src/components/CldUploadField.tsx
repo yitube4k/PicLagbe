@@ -136,7 +136,7 @@ export default function CldUploadField({
 
       {err && <p className="text-xs text-rose-400 mt-1.5">{err}</p>}
       {!configured && (
-        <p className="text-[11px] text-amber-400/80 mt-1.5 leading-relaxed">
+        <p className="text-[12.5px] text-amber-400/80 mt-1.5 leading-relaxed">
           ফাইল আপলোডের জন্য Cloudinary সেটআপ লাগবে (.env-এ VITE_CLOUDINARY_CLOUD_NAME ও VITE_CLOUDINARY_UPLOAD_PRESET) — না থাকলে লিংক পেস্ট করুন।
         </p>
       )}

@@ -44,7 +44,7 @@ function LocationCard({ spotKey, stat }: { spotKey: string; stat?: SpotStat }) {
           <span className="text-sm font-bold text-white">
             📍 {spot.nameBn}
           </span>
-          <span className="text-[11px] text-white/70 ml-2">{spot.nameEn} · {SPOT_KIND_BN[spot.kind] || spot.kind}</span>
+          <span className="text-[12.5px] text-white/70 ml-2">{spot.nameEn} · {SPOT_KIND_BN[spot.kind] || spot.kind}</span>
         </figcaption>
       </div>
 
@@ -59,10 +59,10 @@ function LocationCard({ spotKey, stat }: { spotKey: string; stat?: SpotStat }) {
         >
           <span aria-hidden="true" className="text-lg shrink-0">📷</span>
           <span className="min-w-0">
-            <b className="block text-[12.5px] text-white leading-tight">
+            <b className="block text-[14px] text-white leading-tight">
               {hasPgs ? `${toBn(stat!.count)} জন ফটোগ্রাফার` : 'ফটোগ্রাফার খুঁজুন'}
             </b>
-            <span className="block text-[10.5px] text-white/55 leading-tight mt-0.5">
+            <span className="block text-[12px] text-white/55 leading-tight mt-0.5">
               {hasPgs && stat!.minPrice ? `শুরু ৳${toBn(Number(stat!.minPrice).toLocaleString('en-IN'))}` : 'কাছের স্পট দেখুন'}
             </span>
           </span>
@@ -73,8 +73,8 @@ function LocationCard({ spotKey, stat }: { spotKey: string; stat?: SpotStat }) {
         <div className="glass rounded-xl2 p-3 flex items-center gap-2.5">
           <span aria-hidden="true" className="text-lg shrink-0">💡</span>
           <span className="min-w-0">
-            <b className="block text-[12.5px] text-white leading-tight">গাইডলাইন</b>
-            <span className="block text-[10.5px] text-white/55 leading-snug mt-0.5 line-clamp-2">
+            <b className="block text-[14px] text-white leading-tight">গাইডলাইন</b>
+            <span className="block text-[12px] text-white/55 leading-snug mt-0.5 line-clamp-2">
               {spot.descBn}
             </span>
           </span>
@@ -88,8 +88,8 @@ function LocationCard({ spotKey, stat }: { spotKey: string; stat?: SpotStat }) {
         >
           <span aria-hidden="true" className="text-lg shrink-0">🧭</span>
           <span className="min-w-0">
-            <b className="block text-[12.5px] text-white leading-tight">গুগল ম্যাপ ডিরেকশন</b>
-            <span className="block text-[10.5px] text-white/55 leading-tight mt-0.5">
+            <b className="block text-[14px] text-white leading-tight">গুগল ম্যাপ ডিরেকশন</b>
+            <span className="block text-[12px] text-white/55 leading-tight mt-0.5">
               ক্লিকে নতুন ট্যাবে রাস্তা দেখুন
             </span>
           </span>
@@ -435,7 +435,7 @@ export default function BlogPostPage() {
                     <h4 className="font-semibold text-sm text-white group-hover:text-sunset-gold transition line-clamp-2">
                       {rel.title}
                     </h4>
-                    <span className="text-[11px] text-white/45 mt-2 block">
+                    <span className="text-[12.5px] text-white/45 mt-2 block">
                       {bnDate(rel.created_at)}
                     </span>
                   </div>

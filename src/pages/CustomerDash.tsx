@@ -529,7 +529,7 @@ export default function CustomerDash() {
                         <p className="text-sm text-white/80 leading-relaxed">
                           {r.comment || 'কোনো মন্তব্য নেই'}
                         </p>
-                        <span className="text-[11px] text-white/40 mt-3 block">
+                        <span className="text-[12.5px] text-white/40 mt-3 block">
                           {bnDate(r.created_at)}
                         </span>
                       </div>
@@ -574,7 +574,7 @@ export default function CustomerDash() {
                         )}
                         <div className="flex-1 min-w-0">
                           <p className="text-sm text-white/90 leading-relaxed">{n.message}</p>
-                          <span className="text-[11px] text-white/45 mt-1 block">
+                          <span className="text-[12.5px] text-white/45 mt-1 block">
                             {bnDate(n.created_at)}
                           </span>
                         </div>

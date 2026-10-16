@@ -265,7 +265,7 @@ export default function Auth() {
               <p className="text-xs text-white/70 italic leading-relaxed">
                 “লাবণী পয়েন্টের সূর্যাস্ত আর আমাদের বিয়ের মুহূর্তগুলো চিরস্মরণীয় হয়ে আছে ফটোলাগবে-এর বদৌলতে।”
               </p>
-              <span className="text-[11px] text-sunset-gold mt-2 block font-semibold">
+              <span className="text-[12.5px] text-sunset-gold mt-2 block font-semibold">
                 — তানভীর ও বৃষ্টি, ঢাকা
               </span>
             </div>
@@ -499,7 +499,7 @@ export default function Auth() {
               <>
                 <div className="flex items-center gap-3 pt-1">
                   <span className="h-px flex-1 bg-white/[0.12]" />
-                  <span className="text-[11px] text-white/45 font-semibold">অথবা</span>
+                  <span className="text-[12.5px] text-white/45 font-semibold">অথবা</span>
                   <span className="h-px flex-1 bg-white/[0.12]" />
                 </div>
                 <button

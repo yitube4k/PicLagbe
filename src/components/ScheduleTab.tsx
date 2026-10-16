@@ -182,7 +182,7 @@ export default function ScheduleTab({ photographerId, bookings }: { photographer
         {/* Weekday header */}
         <div className="grid grid-cols-7 gap-1 mb-1.5">
           {WEEKDAYS.map((w) => (
-            <div key={w} className="text-center text-[10px] sm:text-[11px] font-bold text-white/45 py-1">
+            <div key={w} className="text-center text-[11.5px] sm:text-[12.5px] font-bold text-white/45 py-1">
               {w}
             </div>
           ))}
@@ -218,7 +218,7 @@ export default function ScheduleTab({ photographerId, bookings }: { photographer
                       : 'border-white/[0.07] hover:border-sunset-gold/40'
                   }`}
                 >
-                  <span className={`text-[12px] sm:text-[13px] font-semibold ${isToday ? 'text-sunset-gold' : 'text-white/80'}`}>
+                  <span className={`text-[13.5px] sm:text-[14.5px] font-semibold ${isToday ? 'text-sunset-gold' : 'text-white/80'}`}>
                     {toBn(d.getDate())}
                   </span>
                   <span className="absolute bottom-1.5 left-0 right-0 flex items-center justify-center gap-1">
@@ -233,7 +233,7 @@ export default function ScheduleTab({ photographerId, bookings }: { photographer
         )}
 
         {/* Legend */}
-        <div className="flex flex-wrap items-center gap-4 mt-4 text-[11px] text-white/55">
+        <div className="flex flex-wrap items-center gap-4 mt-4 text-[12.5px] text-white/55">
           <span className="flex items-center gap-1.5"><span className={`w-2 h-2 rounded-full ${STATUS_META.available.dot}`} /> ফ্রি স্লট</span>
           <span className="flex items-center gap-1.5"><span className={`w-2 h-2 rounded-full ${STATUS_META.booked.dot}`} /> বুকড / শুট</span>
           <span className="flex items-center gap-1.5"><span className={`w-2 h-2 rounded-full ${STATUS_META.unavailable.dot}`} /> ছুটি</span>
@@ -254,12 +254,12 @@ export default function ScheduleTab({ photographerId, bookings }: { photographer
                     <span className="text-sm font-bold text-white tabular-nums">
                       {toBn(s.start_time)} – {toBn(s.end_time)}
                     </span>
-                    <span className={`text-[10px] font-bold border rounded-full px-2 py-0.5 ml-2 ${STATUS_META[s.status].chip}`}>
+                    <span className={`text-[11.5px] font-bold border rounded-full px-2 py-0.5 ml-2 ${STATUS_META[s.status].chip}`}>
                       {STATUS_META[s.status].label}
                     </span>
-                    {s.note && <p className="text-[12px] text-white/60 mt-0.5 truncate">📝 {s.note}</p>}
+                    {s.note && <p className="text-[13.5px] text-white/60 mt-0.5 truncate">📝 {s.note}</p>}
                   </div>
-                  <button type="button" onClick={() => deleteSlot(s.id)} className="btn-danger !py-1 !px-2.5 !text-[11px] shrink-0" aria-label="স্লট মুছুন">
+                  <button type="button" onClick={() => deleteSlot(s.id)} className="btn-danger !py-1 !px-2.5 !text-[12.5px] shrink-0" aria-label="স্লট মুছুন">
                     মুছুন
                   </button>
                 </div>
@@ -270,13 +270,13 @@ export default function ScheduleTab({ photographerId, bookings }: { photographer
           {/* Booked bookings that day */}
           {selBookings.length > 0 && (
             <div className="space-y-2">
-              <p className="text-[12px] font-bold text-white/70">📌 এই দিনের বুকিং:</p>
+              <p className="text-[13.5px] font-bold text-white/70">📌 এই দিনের বুকিং:</p>
               {selBookings.map((b) => (
                 <div key={b.id} className="glass rounded-xl2 p-3 flex items-center justify-between gap-3">
                   <span className="text-sm text-white/85 truncate">
                     {b.profiles?.full_name || 'গ্রাহক'} {b.event_time ? `· ${toBn(b.event_time)}` : ''}
                   </span>
-                  <span className="text-[10px] font-bold border border-sunset-gold/40 text-sunset-gold rounded-full px-2 py-0.5">
+                  <span className="text-[11.5px] font-bold border border-sunset-gold/40 text-sunset-gold rounded-full px-2 py-0.5">
                     {b.status === 'accepted' ? 'গৃহীত' : b.status === 'completed' ? 'সম্পন্ন' : 'অপেক্ষমাণ'}
                   </span>
                 </div>
@@ -286,7 +286,7 @@ export default function ScheduleTab({ photographerId, bookings }: { photographer
 
           {/* Add form */}
           <div className="border-t border-white/[0.07] pt-4 space-y-3">
-            <p className="text-[12px] font-bold text-white/70">➕ নতুন স্লট যোগ করুন</p>
+            <p className="text-[13.5px] font-bold text-white/70">➕ নতুন স্লট যোগ করুন</p>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div>
                 <label className="field-label" htmlFor="sl-start">শুরু</label>
@@ -325,16 +325,16 @@ export default function ScheduleTab({ photographerId, bookings }: { photographer
             {upcoming.map((s) => (
               <div key={s.id} className="glass rounded-xl2 p-3 flex flex-wrap items-center justify-between gap-2">
                 <span className="text-sm font-semibold text-white">{bnDate(s.slot_date)}</span>
-                <span className="text-[13px] text-white/75 tabular-nums">{toBn(s.start_time)}–{toBn(s.end_time)}</span>
-                <span className={`text-[10px] font-bold border rounded-full px-2 py-0.5 ${STATUS_META[s.status].chip}`}>{STATUS_META[s.status].label}</span>
-                {s.note && <span className="text-[12px] text-white/55 basis-full sm:basis-auto truncate">📝 {s.note}</span>}
+                <span className="text-[14.5px] text-white/75 tabular-nums">{toBn(s.start_time)}–{toBn(s.end_time)}</span>
+                <span className={`text-[11.5px] font-bold border rounded-full px-2 py-0.5 ${STATUS_META[s.status].chip}`}>{STATUS_META[s.status].label}</span>
+                {s.note && <span className="text-[13.5px] text-white/55 basis-full sm:basis-auto truncate">📝 {s.note}</span>}
               </div>
             ))}
           </div>
         </div>
       )}
 
-      <p className="text-[11px] text-white/40 text-center">
+      <p className="text-[12.5px] text-white/40 text-center">
         যে দিনে কাজ করবেন না — স্ট্যাটাস <b className="text-red-400">ছুটি</b> দিন; গ্রাহক বুক করার আগে আপনার ফ্রি সময় দেখতে পাবে।
       </p>
     </div>

@@ -4,7 +4,7 @@ import 'leaflet/dist/leaflet.css';
 import { supabase } from '../lib/supabase';
 import { Photographer } from '../lib/types';
 import { toBn } from '../lib/utils';
-import { COX_SPOTS, SPOT_KIND_BN } from '../lib/constants';
+import { COX_SPOTS } from '../lib/constants';
 
 const SPOT_KIND_EMOJI: Record<string, string> = {
   beach: '🏖️',
@@ -108,9 +108,21 @@ export default function Finder() {
     return list;
   }, [spotSearch, userLoc]);
 
+  // চিপ ক্লাউডের ক্রম: ফটোগ্রাফার-আছে স্পট আগে (বেশি সংখ্যা আগে), খালি স্পট পরে;
+  // ইউজার লোকেশন দিলে দূরত্ব-সাজানো ক্রমই থাকে
+  const sortedSpots = useMemo(() => {
+    if (userLoc) return filteredSpots;
+    return [...filteredSpots].sort((a, b) => (spotCounts[b.key] || 0) - (spotCounts[a.key] || 0));
+  }, [filteredSpots, spotCounts, userLoc]);
+
   // স্পট ক্লিক → নতুন ট্যাবে স্পট পেজ (available ফটোগ্রাফার + ডিরেকশন)
   const openSpotPage = useCallback((key: string) => {
     window.open(`/spot/${key}`, '_blank', 'noopener,noreferrer');
+  }, []);
+
+  // stat টাইল ক্লিক → smooth scroll / পেজ নেভিগেশন (সব ৪টা interactive)
+  const scrollToId = useCallback((id: string) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, []);
 
   // ইউজারের লোকেশন থেকে দূরত্ব (durutto)
@@ -362,49 +374,73 @@ export default function Finder() {
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-sunset-gold/60 to-transparent" />
 
         <div className="relative z-10 grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          {/* ১) ট্যুর পয়েন্ট */}
-          <div className="glass rounded-xl2 p-4 flex items-center gap-3.5">
-            <span className="w-11 h-11 rounded-xl2 bg-sunset-soft grid place-items-center text-xl shrink-0" aria-hidden="true">📍</span>
+          {/* ১) ট্যুর পয়েন্ট → নিচের স্পট লিস্টে স্ক্রল */}
+          <button
+            type="button"
+            onClick={() => scrollToId('spots-grid')}
+            title="নিচের স্পট লিস্টে যান"
+            className="glass rounded-xl2 p-4 flex items-center gap-3.5 text-left cursor-pointer hover:border-sunset-gold/50 hover:bg-white/[0.07] transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-sunset-gold/50 group"
+          >
+            <span className="w-11 h-11 rounded-xl2 bg-sunset-soft grid place-items-center text-xl shrink-0 group-hover:scale-105 transition-transform" aria-hidden="true">📍</span>
             <div className="min-w-0">
               <div className="stat-num !text-[26px] leading-none">{toBn(COX_SPOTS.length)}</div>
-              <div className="stat-label !text-[11px] mt-1">ট্যুর পয়েন্ট</div>
+              <div className="stat-label !text-[12.5px] mt-1">ট্যুর পয়েন্ট</div>
             </div>
-          </div>
+            <span className="ml-auto text-white/25 group-hover:text-sunset-gold text-base transition-colors shrink-0" aria-hidden="true">↓</span>
+          </button>
 
-          {/* ২) রেজিস্টার্ড ফটোগ্রাফার */}
-          <div className="glass rounded-xl2 p-4 flex items-center gap-3.5">
-            <span className="w-11 h-11 rounded-xl2 bg-sunset-soft grid place-items-center text-xl shrink-0" aria-hidden="true">📷</span>
+          {/* ২) রেজিস্টার্ড ফটোগ্রাফার → ফটোগ্রাফার লিস্ট পেজ */}
+          <button
+            type="button"
+            onClick={() => window.open('/photographers', '_blank', 'noopener,noreferrer')}
+            title="সব ফটোগ্রাফার দেখুন (নতুন ট্যাব)"
+            className="glass rounded-xl2 p-4 flex items-center gap-3.5 text-left cursor-pointer hover:border-sunset-gold/50 hover:bg-white/[0.07] transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-sunset-gold/50 group"
+          >
+            <span className="w-11 h-11 rounded-xl2 bg-sunset-soft grid place-items-center text-xl shrink-0 group-hover:scale-105 transition-transform" aria-hidden="true">📷</span>
             <div className="min-w-0">
               <div className="stat-num !text-[26px] leading-none">
                 {loading ? '…' : toBn(photographers.length)}
               </div>
-              <div className="stat-label !text-[11px] mt-1">রেজিস্টার্ড ফটোগ্রাফার</div>
+              <div className="stat-label !text-[12.5px] mt-1">রেজিস্টার্ড ফটোগ্রাফার</div>
             </div>
-          </div>
+            <span className="ml-auto text-white/25 group-hover:text-sunset-gold text-base transition-colors shrink-0" aria-hidden="true">↗</span>
+          </button>
 
-          {/* ৩) সার্ভিস স্পট */}
-          <div className="glass rounded-xl2 p-4 flex items-center gap-3.5">
-            <span className="w-11 h-11 rounded-xl2 bg-sunset-soft grid place-items-center text-xl shrink-0" aria-hidden="true">✅</span>
+          {/* ৩) সার্ভিস স্পট → স্পট লিস্টে স্ক্রল (কোন স্পটে কয়জন সেখানে দেখা যায়) */}
+          <button
+            type="button"
+            onClick={() => scrollToId('spots-grid')}
+            title="কোন স্পটে ফটোগ্রাফার আছে দেখুন"
+            className="glass rounded-xl2 p-4 flex items-center gap-3.5 text-left cursor-pointer hover:border-sunset-gold/50 hover:bg-white/[0.07] transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-sunset-gold/50 group"
+          >
+            <span className="w-11 h-11 rounded-xl2 bg-sunset-soft grid place-items-center text-xl shrink-0 group-hover:scale-105 transition-transform" aria-hidden="true">✅</span>
             <div className="min-w-0">
               <div className="stat-num !text-[26px] leading-none">
                 {loading ? '…' : toBn(Object.keys(spotCounts).filter((k) => spotCounts[k] > 0).length)}
               </div>
-              <div className="stat-label !text-[11px] mt-1">স্পটে ফটোগ্রাফার আছে</div>
+              <div className="stat-label !text-[12.5px] mt-1">স্পটে ফটোগ্রাফার আছে</div>
             </div>
-          </div>
+            <span className="ml-auto text-white/25 group-hover:text-sunset-gold text-base transition-colors shrink-0" aria-hidden="true">↓</span>
+          </button>
 
-          {/* ৪) ভিউ ও ডিরেকশন */}
-          <div className="glass rounded-xl2 p-4 flex items-center gap-3.5">
-            <span className="w-11 h-11 rounded-xl2 bg-sunset-soft grid place-items-center text-xl shrink-0" aria-hidden="true">🛰️</span>
+          {/* ৪) ভিউ ও ডিরেকশন → নিচের ম্যাপে স্ক্রল */}
+          <button
+            type="button"
+            onClick={() => scrollToId('map-section')}
+            title="নিচের ম্যাপে যান — স্যাটেলাইট ও ডিরেকশন"
+            className="glass rounded-xl2 p-4 flex items-center gap-3.5 text-left cursor-pointer hover:border-sunset-gold/50 hover:bg-white/[0.07] transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-sunset-gold/50 group"
+          >
+            <span className="w-11 h-11 rounded-xl2 bg-sunset-soft grid place-items-center text-xl shrink-0 group-hover:scale-105 transition-transform" aria-hidden="true">🛰️</span>
             <div className="min-w-0">
               <div className="stat-num !text-[16px] leading-tight">স্যাটেলাইট + ডিরেকশন</div>
-              <div className="stat-label !text-[11px] mt-1">নিচের ম্যাপে চালু আছে</div>
+              <div className="stat-label !text-[12.5px] mt-1">নিচের ম্যাপে চালু আছে</div>
             </div>
-          </div>
+            <span className="ml-auto text-white/25 group-hover:text-sunset-gold text-base transition-colors shrink-0" aria-hidden="true">↓</span>
+          </button>
         </div>
 
         {/* লোকেশন নোট */}
-        <p className="relative z-10 text-[11px] text-white/40 mt-4 px-1 leading-relaxed">
+        <p className="relative z-10 text-[12.5px] text-white/40 mt-4 px-1 leading-relaxed">
           📍 সব স্পট কক্সবাজার জেলায় — "আমার লোকেশন নিন" দিলে প্রতিটি স্পট আপনার থেকে কত কিমি দূরে সেটাও দেখা যাবে।
         </p>
       </div>
@@ -440,55 +476,77 @@ export default function Finder() {
         )}
       </div>
       {locStatus === 'denied' && (
-        <p className="text-[11px] text-rose-300 mb-4 leading-relaxed -mt-2">
+        <p className="text-[12.5px] text-rose-300 mb-4 leading-relaxed -mt-2">
           লোকেশন পারমিশন দেওয়া হয়নি — ব্রাউজার সেটিংস থেকে অনুমতি দিন।
         </p>
       )}
       {locStatus === 'error' && (
-        <p className="text-[11px] text-amber-300 mb-4 -mt-2">লোকেশন পাওয়া যায়নি — আবার চেষ্টা করুন।</p>
+        <p className="text-[12.5px] text-amber-300 mb-4 -mt-2">লোকেশন পাওয়া যায়নি — আবার চেষ্টা করুন।</p>
       )}
 
-      {/* ══ স্পট কার্ড গ্রিড — কনটেন্ট আগে ══ */}
-      <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-3 mb-10">
-        {filteredSpots.map((s) => {
-          const count = spotCounts[s.key] || 0;
-          const emoji = SPOT_KIND_EMOJI[s.kind] || '📍';
+      {/* ══ স্পট চিপ ক্লাউড — কমপ্যাক্ট প্রিমিয়াম (১৯ লাইনের লম্বা লিস্ট নয়) ══ */}
+      <div id="spots-grid" className="scroll-mt-24 mb-10">
+        <div className="flex items-end justify-between gap-3 mb-3.5 flex-wrap">
+          <div>
+            <h3 className="text-lg sm:text-xl font-bold text-white">📍 স্পট বাছাই করুন</h3>
+            <p className="text-xs sm:text-sm text-white/50 mt-1">
+              সোনালি চিপে ফটোগ্রাফার আছে · ক্লিক করলে স্পটের ফটোগ্রাফার, গাইড ও ডিরেকশন খুলবে (নতুন ট্যাব)
+            </p>
+          </div>
+          {userLoc && (
+            <span className="badge bg-sunset-soft text-sunset-gold border-sunset-gold/30">📏 কাছের স্পট আগে</span>
+          )}
+        </div>
 
-          return (
-            <button
-              key={s.key}
-              type="button"
-              onClick={() => openSpotPage(s.key)}
-              className="w-full text-left p-4 rounded-xl2 transition-colors duration-200 border border-white/[0.08] bg-white/[0.03] hover:border-sunset-gold/40 hover:bg-white/[0.06] flex items-center justify-between gap-3"
-            >
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="w-[42px] h-[42px] glass rounded-xl2 grid place-items-center text-xl shrink-0">
-                  {emoji}
-                </div>
-                <div className="min-w-0">
-                  <h4 className="font-semibold text-sm text-white truncate">
-                    {s.nameBn}
-                  </h4>
-                  <span className="text-[11px] text-white/45 truncate block">
-                    {userLoc
-                      ? `~${toBn(distKm(userLoc.lat, userLoc.lng, s.lat, s.lng).toFixed(1))} কিমি দূরে`
-                      : SPOT_KIND_BN[s.kind] || s.nameEn}
-                  </span>
-                </div>
-              </div>
+        <div className="flex flex-wrap gap-2">
+          {sortedSpots.map((s) => {
+            const count = spotCounts[s.key] || 0;
+            const emoji = SPOT_KIND_EMOJI[s.kind] || '📍';
+            const d = userDistTo(s.lat, s.lng);
 
-              <span
-                className={
+            return (
+              <button
+                key={s.key}
+                type="button"
+                onClick={() => openSpotPage(s.key)}
+                title={`${s.nameBn} (${s.nameEn}) — ${count > 0 ? `${toBn(count)} জন ফটোগ্রাফার` : 'এখনো খালি'}`}
+                className={`group inline-flex items-center gap-2 pl-2 pr-2.5 py-[7px] rounded-full border transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-sunset-gold/50 cursor-pointer ${
                   count > 0
-                    ? 'badge bg-sunset-soft text-sunset-gold border-sunset-gold/30 shrink-0'
-                    : 'badge text-white/40 shrink-0'
-                }
+                    ? 'border-sunset-gold/30 bg-sunset-soft/50 hover:border-sunset-gold/70 hover:bg-sunset-soft'
+                    : 'border-white/[0.09] bg-white/[0.03] text-white/60 hover:border-white/25 hover:text-white/85'
+                }`}
               >
-                {count > 0 ? `${toBn(count)} জন` : '০'}
-              </span>
-            </button>
-          );
-        })}
+                <span
+                  aria-hidden="true"
+                  className={`w-7 h-7 rounded-full grid place-items-center text-[15px] shrink-0 ${
+                    count > 0 ? 'bg-sunset-gradient/90' : 'bg-white/[0.07]'
+                  }`}
+                >
+                  {emoji}
+                </span>
+                <span className={`font-semibold text-[15.5px] leading-none whitespace-nowrap ${count > 0 ? 'text-white' : ''}`}>
+                  {s.nameBn}
+                </span>
+                {d !== null && (
+                  <span className="text-[12.5px] text-bay-teal leading-none whitespace-nowrap">~{toBn(d.toFixed(1))} কিমি</span>
+                )}
+                <span
+                  className={`min-w-[24px] h-[22px] px-1.5 rounded-full grid place-items-center text-[13px] font-bold leading-none ${
+                    count > 0
+                      ? 'bg-sunset-gradient text-[#1A0E06] shadow-[0_0_10px_rgba(251,191,36,0.35)]'
+                      : 'bg-white/[0.08] text-white/45'
+                  }`}
+                >
+                  {toBn(count)}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {filteredSpots.length === 0 && (
+          <p className="text-sm text-white/45 mt-3">কোনো স্পট মেলেনি — অন্য নাম দিয়ে খুঁজুন।</p>
+        )}
       </div>
 
       {/* ══ ম্যাপ — পেজের শেষে (নিচে) ══ */}

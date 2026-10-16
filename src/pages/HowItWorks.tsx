@@ -227,10 +227,10 @@ export default function HowItWorks() {
             {FAQS.map((f, i) => (
               <details key={i} className="glass rounded-xl2 p-5 group">
                 <summary className="flex items-center justify-between gap-3 cursor-pointer list-none">
-                  <span className="font-bold text-white text-[15px] leading-snug">{f.q}</span>
+                  <span className="font-bold text-white text-[16.5px] leading-snug">{f.q}</span>
                   <span className="text-sunset-gold text-lg shrink-0 group-open:rotate-45 transition-transform">＋</span>
                 </summary>
-                <p className="text-white/70 text-[15px] leading-[1.85] mt-3">{f.a}</p>
+                <p className="text-white/70 text-[16.5px] leading-[1.85] mt-3">{f.a}</p>
               </details>
             ))}
           </div>

@@ -11,6 +11,7 @@ import { cldUrl } from '../lib/cloudinary';
 import { distKm, openDirections } from './Finder';
 import PhotographerCard from '../components/PhotographerCard';
 import SpotGuideSection from '../components/SpotGuideSection';
+import { useSiteSettings, isOn } from '../lib/settings';
 
 const SPOT_KIND_EMOJI: Record<string, string> = {
   beach: '🏖️',
@@ -38,6 +39,10 @@ export default function SpotPage() {
 
   const mapElRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
+
+  // admin সেটিং: ডিরেকশনের নিচের মিনি ম্যাপ (ডিফল্ট লুকানো)
+  const { settings } = useSiteSettings();
+  const showMiniMap = isOn(settings['spot_minimap'], 'off');
 
   // ফটোগ্রাফার লোড
   useEffect(() => {
@@ -98,7 +103,7 @@ export default function SpotPage() {
       map.remove();
       mapInstanceRef.current = null;
     };
-  }, [spot]);
+  }, [spot, showMiniMap]);
 
   const handleGetDirections = () => {
     if (!spot) return;
@@ -222,12 +227,14 @@ export default function SpotPage() {
         </div>
       </div>
 
-      {/* ═══ মিনি স্যাটেলাইট ম্যাপ ═══ */}
-      <div className="max-w-6xl mx-auto px-4 lg:px-6 mt-6">
-        <div className="glass rounded-xl3 p-1.5">
-          <div ref={mapElRef} className="w-full h-[240px] rounded-[14px] z-0" />
+      {/* ═══ মিনি স্যাটেলাইট ম্যাপ — admin সেটিংস থেকে চালু/বন্ধ (ডিফল্ট লুকানো) ═══ */}
+      {showMiniMap && (
+        <div className="max-w-6xl mx-auto px-4 lg:px-6 mt-6">
+          <div className="glass rounded-xl3 p-1.5">
+            <div ref={mapElRef} className="w-full h-[240px] rounded-[14px] z-0" />
+          </div>
         </div>
-      </div>
+      )}
 
       {/* ═══ সম্পূর্ণ গাইড — ভাড়া+টিকিট+খাওয়া+ঢাকা রুট+ফটো পয়েন্ট ═══ */}
       <SpotGuideSection spotKey={key || ''} />
@@ -279,7 +286,7 @@ export default function SpotPage() {
                       <span className="text-xl">{SPOT_KIND_EMOJI[s.kind] || '📍'}</span>
                       <div className="min-w-0">
                         <div className="font-bold text-white text-sm truncate">{s.nameBn}</div>
-                        <div className="text-[11px] text-white/50">
+                        <div className="text-[12.5px] text-white/50">
                           ~{toBn(Math.round(d))} কিমি · {cnt > 0 ? `${toBn(cnt)} জন` : 'খালি'}
                         </div>
                       </div>

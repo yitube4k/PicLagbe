@@ -252,7 +252,7 @@ export default function Search() {
               onChange={(e) => setQ(e.target.value)}
               placeholder="ফটোগ্রাফার, সার্ভিস বা স্পট লিখুন…"
               aria-label="ফটোগ্রাফার খুঁজুন"
-              className="sp-input flex-1 min-w-0 !border-0 !bg-transparent !shadow-none px-1 min-h-[50px] text-[15px]"
+              className="sp-input flex-1 min-w-0 !border-0 !bg-transparent !shadow-none px-1 min-h-[50px] text-[16.5px]"
             />
 
             {/* ফিল্টার টগল */}
@@ -270,7 +270,7 @@ export default function Search() {
               >
                 <SlidersIcon size={18} />
                 {activeFilterCount > 0 && (
-                  <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-sunset-coral text-white text-[9px] font-extrabold flex items-center justify-center">
+                  <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-sunset-coral text-white text-[10.5px] font-extrabold flex items-center justify-center">
                     {toBn(activeFilterCount)}
                   </span>
                 )}
@@ -279,11 +279,11 @@ export default function Search() {
               {/* অপশন মেনু — সব ফিল্টার এক জায়গায় */}
               {filtersOpen && (
                 <div className="absolute right-0 top-[52px] z-[60] glass-strong !rounded-[18px] shadow-glass-lg p-4 w-[300px] max-h-[70vh] overflow-y-auto">
-                  <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-white/45 px-1 pb-3">
+                  <p className="text-[12.5px] font-bold uppercase tracking-[0.14em] text-white/45 px-1 pb-3">
                     ফিল্টার অপশন
                   </p>
 
-                  <label className="field-label !text-[11px]">📍 স্পট</label>
+                  <label className="field-label !text-[12.5px]">📍 স্পট</label>
                   <select
                     value={spot}
                     onChange={(e) => setSpot(e.target.value)}
@@ -297,7 +297,7 @@ export default function Search() {
                     ))}
                   </select>
 
-                  <label className="field-label !text-[11px]">📷 ক্যাটাগরি</label>
+                  <label className="field-label !text-[12.5px]">📷 ক্যাটাগরি</label>
                   <select
                     value={cat}
                     onChange={(e) => setCat(e.target.value)}
@@ -311,7 +311,7 @@ export default function Search() {
                     ))}
                   </select>
 
-                  <label className="field-label !text-[11px]">💰 বাজেট (৳)</label>
+                  <label className="field-label !text-[12.5px]">💰 বাজেট (৳)</label>
                   <div className="flex gap-2 mb-3">
                     <input
                       type="number"
@@ -329,7 +329,7 @@ export default function Search() {
                     />
                   </div>
 
-                  <label className="field-label !text-[11px]">⭐ রেটিং</label>
+                  <label className="field-label !text-[12.5px]">⭐ রেটিং</label>
                   <div className="flex flex-wrap gap-2 mb-3">
                     {[
                       { label: 'সব', val: 0 },
@@ -348,7 +348,7 @@ export default function Search() {
                     ))}
                   </div>
 
-                  <label className="field-label !text-[11px]">↕️ সাজান</label>
+                  <label className="field-label !text-[12.5px]">↕️ সাজান</label>
                   <select
                     value={sort}
                     onChange={(e) => setSort(e.target.value)}
@@ -379,7 +379,7 @@ export default function Search() {
             <button
               type="submit"
               aria-label="সার্চ করুন"
-              className="btn-sunset shrink-0 flex items-center justify-center gap-2 px-5 min-h-[42px] text-[14px]"
+              className="btn-sunset shrink-0 flex items-center justify-center gap-2 px-5 min-h-[42px] text-[15.5px]"
             >
               খুঁজুন
             </button>

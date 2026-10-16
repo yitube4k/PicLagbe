@@ -30,6 +30,8 @@
     scroll-behavior: smooth;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    /* V17: পুরো সাইটের লেখা বড় — বাংলা ফন্ট ছোট দেখায়, ১৭.৫px বেস আরামদায়ক */
+    font-size: 17.5px;
   }
 
   body {
@@ -191,7 +193,7 @@
 
 .field-label {
   display: block;
-  font-size: 0.8rem;
+  font-size: 0.9rem;
   font-weight: 600;
   color: rgba(255, 255, 255, 0.75);
   margin-bottom: 6px;
@@ -239,7 +241,7 @@
   align-items: center;
   gap: 6px;
   padding: 6px 14px;
-  font-size: 0.82rem;
+  font-size: 0.92rem;
   font-weight: 500;
   color: rgba(244, 247, 255, 0.78);
   background: rgba(255, 255, 255, 0.07);
@@ -267,7 +269,7 @@
   align-items: center;
   gap: 6px;
   padding: 6px 14px;
-  font-size: 0.82rem;
+  font-size: 0.92rem;
   font-weight: 700;
   color: #fbbf24;
   background:
@@ -285,7 +287,7 @@
   align-items: center;
   gap: 5px;
   padding: 3px 10px;
-  font-size: 0.72rem;
+  font-size: 0.82rem;
   font-weight: 600;
   letter-spacing: 0.02em;
   border-radius: 9999px;
@@ -300,7 +302,7 @@
   align-items: center;
   gap: 5px;
   padding: 4px 11px;
-  font-size: 0.74rem;
+  font-size: 0.82rem;
   font-weight: 600;
   border-radius: 9999px;
   background: rgba(245, 158, 11, 0.15);
@@ -314,7 +316,7 @@
   align-items: center;
   gap: 5px;
   padding: 4px 11px;
-  font-size: 0.74rem;
+  font-size: 0.82rem;
   font-weight: 600;
   border-radius: 9999px;
   background: rgba(16, 185, 129, 0.16);
@@ -328,7 +330,7 @@
   align-items: center;
   gap: 5px;
   padding: 4px 11px;
-  font-size: 0.74rem;
+  font-size: 0.82rem;
   font-weight: 600;
   border-radius: 9999px;
   background: rgba(225, 29, 72, 0.16);
@@ -342,7 +344,7 @@
   align-items: center;
   gap: 5px;
   padding: 4px 11px;
-  font-size: 0.74rem;
+  font-size: 0.82rem;
   font-weight: 600;
   border-radius: 9999px;
   background: rgba(100, 116, 139, 0.18);
@@ -355,7 +357,7 @@
   align-items: center;
   gap: 5px;
   padding: 4px 11px;
-  font-size: 0.74rem;
+  font-size: 0.82rem;
   font-weight: 600;
   border-radius: 9999px;
   background: rgba(59, 130, 246, 0.16);
@@ -464,7 +466,7 @@
 }
 
 .section-sub {
-  font-size: 1rem;
+  font-size: 1.1rem;
   color: rgba(255, 255, 255, 0.6);
   line-height: 1.65;
 }
@@ -497,7 +499,7 @@
 }
 
 .stat-label {
-  font-size: 0.9rem;
+  font-size: 0.98rem;
   color: rgba(255, 255, 255, 0.65);
   margin-top: 4px;
   font-weight: 500;
@@ -619,7 +621,7 @@
   border: 1px solid rgba(251, 191, 36, 0.45) !important;
   border-radius: 10px !important;
   box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45) !important;
-  font-size: 12px !important;
+  font-size: 13.5px !important;
   padding: 4px 10px !important;
   pointer-events: none;
 }
@@ -736,7 +738,7 @@
   align-items: center;
   gap: 6px;
   padding: 5px 13px;
-  font-size: 0.8rem;
+  font-size: 0.9rem;
   font-weight: 600;
   color: #57503f;
   background: var(--pf-gold-soft);
@@ -773,7 +775,7 @@
 
 .pf-label {
   display: block;
-  font-size: 0.8rem;
+  font-size: 0.9rem;
   font-weight: 700;
   color: var(--pf-muted);
   margin-bottom: 6px;
@@ -906,7 +908,7 @@
   border: 1px solid rgba(251, 191, 36, 0.5) !important;
   border-radius: 8px !important;
   box-shadow: 0 3px 12px rgba(0, 0, 0, 0.5) !important;
-  font-size: 11px !important;
+  font-size: 12.5px !important;
   font-weight: 700;
   padding: 2px 8px !important;
   white-space: nowrap;
