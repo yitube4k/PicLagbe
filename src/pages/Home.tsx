@@ -1,12 +1,12 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { Photographer, Review } from '../lib/types';
-import { toBn } from '../lib/utils';
+import { Photographer } from '../lib/types';
 import { COX_SPOTS, SPOT_BY_KEY, SPOT_KIND_BN } from '../lib/constants';
-import { SPOT_PHOTOS, HERO_SLIDE_KEYS } from '../lib/spotPhotos';
+import { SPOT_PHOTOS } from '../lib/spotPhotos';
 import { SPOT_GUIDES, spotCostSummary } from '../lib/spotGuides';
 import { cldUrl } from '../lib/cloudinary';
+import { HERO_SCENIC, GALLERY_SCENIC, scenicUrl } from '../lib/scenicPhotos';
 import Reveal from '../components/Reveal';
 import PhotographerCard from '../components/PhotographerCard';
 
@@ -22,29 +22,12 @@ const SPOT_KIND_EMOJI: Record<string, string> = {
 /* হোমের গাইড সেকশনে দেখানো হাইলাইট স্পট (প্রথম ভিউতে) */
 const HOME_GUIDE_KEYS = ['inani', 'saintmartin', 'himchari', 'marine', 'laboni', 'maheshkhali'];
 
-/* কীভাবে কাজ করে — এখন আলাদা পেজে (/how-it-works); হোমে শুধু ছোট টিজার */
+const SLIDE_MS = 6000;
 
-type EnrichedReview = Review & {
-  profiles?: {
-    full_name?: string | null;
-    avatar_url?: string | null;
-  } | null;
-  photographers?: {
-    display_name?: string | null;
-    slug?: string | null;
-  } | null;
-};
-
-const SLIDE_MS = 5500;
-
-/* ═══ HERO AUTO-SLIDER — ২-লেয়ার ক্রসফেড (১৯ ছবি একসাথে লোড হয় না; প্রতি স্লাইডে ২টা) ═══ */
+/* ═══ HERO AUTO-SLIDER — সিনিক ছবি (সমুদ্র/পাহাড়/নৌকা/ঢেউ/আকাশ) — ২-লেয়ার ক্রসফেড,
+       প্রতিবারে সর্বোচ্চ ২টা <img>; শুধু পরের স্লাইড প্রিলোড হয়; স্পট-ক্যাপশন নেই ═══ */
 function HeroSlider() {
-  const slides = HERO_SLIDE_KEYS.map((k) => ({
-    key: k,
-    img: SPOT_PHOTOS[k],
-    name: SPOT_BY_KEY(k)?.nameBn || k,
-  })).filter((s) => s.img);
-
+  const slides = HERO_SCENIC;
   const [idx, setIdx] = useState(0);
   const [layerA, setLayerA] = useState(0); // কোন লেয়ার সামনে
   const [reduced, setReduced] = useState(false);
@@ -55,13 +38,13 @@ function HeroSlider() {
     setReduced(mq.matches);
   }, []);
 
-  // পরের স্লাইডের ছবি আগে থেকে লোড
+  // পরের স্লাইডের ছবি আগে থেকে লোড (একবারই)
   useEffect(() => {
     const next = slides[(idx + 1) % slides.length];
-    if (next && !preloaded.current.has(next.img)) {
+    if (next && !preloaded.current.has(next)) {
       const im = new Image();
-      im.src = cldUrl(next.img, { w: 1200, c: 'fill' });
-      preloaded.current.add(next.img);
+      im.src = scenicUrl(next, 1600);
+      preloaded.current.add(next);
     }
   }, [idx, slides]);
 
@@ -77,7 +60,7 @@ function HeroSlider() {
 
   const cur = slides[idx];
   const nxt = slides[(idx + 1) % slides.length];
-  const srcFor = (s: typeof cur) => (s ? cldUrl(s.img, { w: 1200, c: 'fill' }) : '');
+  const srcFor = (s: string) => scenicUrl(s, 1600);
 
   return (
     <>
@@ -87,28 +70,127 @@ function HeroSlider() {
         alt=""
         aria-hidden="true"
         fetchPriority="high"
-        className="absolute inset-0 w-full h-full object-cover transition-opacity duration-[1200ms] ease-in-out"
-        style={{ opacity: layerA === 0 ? 0.6 : 0 }}
+        className="absolute inset-0 w-full h-full object-cover transition-opacity duration-[1400ms] ease-in-out"
+        style={{ opacity: layerA === 0 ? 0.72 : 0 }}
       />
       {/* Layer B */}
       <img
         src={srcFor(layerA === 1 ? cur : nxt)}
         alt=""
         aria-hidden="true"
-        className="absolute inset-0 w-full h-full object-cover transition-opacity duration-[1200ms] ease-in-out"
-        style={{ opacity: layerA === 1 ? 0.6 : 0 }}
+        className="absolute inset-0 w-full h-full object-cover transition-opacity duration-[1400ms] ease-in-out"
+        style={{ opacity: layerA === 1 ? 0.72 : 0 }}
       />
-
-      {/* স্লাইড ক্যাপশন + কাউন্টার */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-3 z-10">
-        <span className="chip !py-1 !text-[12.5px] bg-black/40 backdrop-blur-sm">
-          📍 {cur?.name} · {SPOT_KIND_BN[SPOT_BY_KEY(cur?.key || '')?.kind || 'beach'] || ''}
-        </span>
-        <span className="text-[12.5px] text-white/60 font-medium tabular-nums">
-          {toBn(idx + 1)}/{toBn(slides.length)}
-        </span>
-      </div>
     </>
+  );
+}
+
+/* ═══ ফটো গ্যালারি — অনুভূমিক স্ক্রল-স্ন্যাপ + দৃশ্যমান prev/next বৃত্তাকার বাটন ═══ */
+function PhotoGallery() {
+  const trackRef = useRef<HTMLDivElement | null>(null);
+  const [canL, setCanL] = useState(false);
+  const [canR, setCanR] = useState(true);
+
+  const update = useCallback(() => {
+    const el = trackRef.current;
+    if (!el) return;
+    setCanL(el.scrollLeft > 4);
+    setCanR(el.scrollLeft < el.scrollWidth - el.clientWidth - 4);
+  }, []);
+
+  useEffect(() => {
+    const el = trackRef.current;
+    if (!el) return;
+    update();
+    el.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update);
+    return () => {
+      el.removeEventListener('scroll', update);
+      window.removeEventListener('resize', update);
+    };
+  }, [update]);
+
+  const go = (dir: 'L' | 'R') => {
+    const el = trackRef.current;
+    if (!el) return;
+    el.scrollBy({ left: dir === 'L' ? -el.clientWidth * 0.8 : el.clientWidth * 0.8, behavior: 'smooth' });
+  };
+
+  return (
+    <section aria-label="ফটো গ্যালারি" className="py-16 sm:py-20 overflow-hidden">
+      <div className="max-w-7xl mx-auto px-6 flex items-end justify-between gap-4 mb-8">
+        <Reveal>
+          <h2 className="section-head !mb-1">ফটো গ্যালারি</h2>
+          <p className="section-sub">কক্সবাজারের সমুদ্র, পাহাড় আর নৌকা — ভ্রমণের মুহূর্ত</p>
+        </Reveal>
+        <div className="hidden sm:flex items-center gap-2.5 shrink-0">
+          <GalleryBtn dir="L" enabled={canL} onClick={go} />
+          <GalleryBtn dir="R" enabled={canR} onClick={go} />
+        </div>
+      </div>
+
+      <div className="relative">
+        {/* মোবাইলে পুরো জুড়ে — বাম-ডান এজ পর্যন্ত ব্লিড */}
+        <div
+          ref={trackRef}
+          className="no-scrollbar flex gap-4 overflow-x-auto snap-x snap-mandatory scroll-smooth px-4 sm:px-6 lg:px-[max(1.5rem,calc((100vw-80rem)/2+1.5rem))] pb-2"
+        >
+          {GALLERY_SCENIC.map((g, i) => (
+            <figure
+              key={g.key}
+              className={`relative shrink-0 snap-center overflow-hidden rounded-xl3 bg-twilight-800 ring-1 ring-white/10 group ${
+                g.portrait
+                  ? 'w-[62vw] max-w-[300px] h-[240px] sm:h-[300px]'
+                  : 'w-[82vw] max-w-[460px] h-[240px] sm:h-[300px]'
+              }`}
+            >
+              <img
+                src={scenicUrl(g.url, g.portrait ? 700 : 900)}
+                alt={g.cap}
+                loading={i < 2 ? 'eager' : 'lazy'}
+                decoding="async"
+                onError={(e) => { e.currentTarget.style.opacity = '0'; }}
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-transparent pointer-events-none" />
+              <figcaption className="absolute bottom-3 left-3 right-3 flex items-center justify-between gap-2">
+                <span className="chip !py-1 !text-[12px] bg-black/45 backdrop-blur-sm">{g.cap}</span>
+                {g.portrait && <span className="text-[11px] text-white/60">লম্বা</span>}
+              </figcaption>
+            </figure>
+          ))}
+        </div>
+
+        {/* মোবাইলে বাটন ফ্লোট করে — দৃশ্যমান prev/next */}
+        <div className="sm:hidden flex justify-center gap-3 mt-5">
+          <GalleryBtn dir="L" enabled={canL} onClick={go} />
+          <GalleryBtn dir="R" enabled={canR} onClick={go} />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* গ্যালারির গোল prev/next বাটন — গ্লাস + রিং, disabled এ ডিম */
+function GalleryBtn({ dir, enabled, onClick }: { dir: 'L' | 'R'; enabled: boolean; onClick: (d: 'L' | 'R') => void }) {
+  return (
+    <button
+      type="button"
+      onClick={() => enabled && onClick(dir)}
+      aria-label={dir === 'L' ? 'আগের ছবি' : 'পরের ছবি'}
+      disabled={!enabled}
+      className={`grid size-11 place-items-center rounded-full bg-black/45 backdrop-blur-md ring-1 ring-white/25 text-white shadow-glass-sm transition-all duration-200 ${
+        enabled ? 'hover:bg-black/60 hover:ring-sunset-gold/60 active:scale-90' : 'opacity-35 cursor-default'
+      }`}
+    >
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        {dir === 'L' ? (
+          <><line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" /></>
+        ) : (
+          <><line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" /></>
+        )}
+      </svg>
+    </button>
   );
 }
 
@@ -116,76 +198,61 @@ export default function Home() {
   const [featured, setFeatured] = useState<Photographer[]>([]);
   const [loadingFeatured, setLoadingFeatured] = useState(true);
 
-  const [reviews, setReviews] = useState<EnrichedReview[]>([]);
-  const [loadingReviews, setLoadingReviews] = useState(true);
-
   useEffect(() => {
     let active = true;
 
-    async function loadHomeData() {
+    async function loadFeatured() {
       try {
-        const [photographersRes, reviewsRes] = await Promise.all([
-          supabase
-            .from('photographers')
-            .select('*, photographer_categories(category_id, categories(name, slug, icon))')
-            .eq('profile_status', 'approved')
-            .order('rating_avg', { ascending: false })
-            .limit(6),
-          supabase
-            .from('reviews')
-            .select('*, profiles(full_name, avatar_url), photographers(display_name, slug)')
-            .order('created_at', { ascending: false })
-            .limit(3),
-        ]);
+        const res = await supabase
+          .from('photographers')
+          .select('*, photographer_categories(category_id, categories(name, slug, icon))')
+          .eq('profile_status', 'approved')
+          .order('rating_avg', { ascending: false })
+          .limit(10);
 
         if (!active) return;
 
-        if (photographersRes.error) {
-          console.error('Featured photographers fetch error:', photographersRes.error);
+        if (res.error) {
+          console.error('Featured photographers fetch error:', res.error);
         } else {
-          setFeatured((photographersRes.data as Photographer[]) || []);
-        }
-
-        if (reviewsRes.error) {
-          console.error('Reviews fetch error:', reviewsRes.error);
-        } else {
-          setReviews((reviewsRes.data as EnrichedReview[]) || []);
+          setFeatured((res.data as Photographer[]) || []);
         }
       } catch (err) {
-        if (active) {
-          console.error('Home data load error:', err);
-        }
+        if (active) console.error('Home data load error:', err);
       } finally {
-        if (active) {
-          setLoadingFeatured(false);
-          setLoadingReviews(false);
-        }
+        if (active) setLoadingFeatured(false);
       }
     }
 
-    loadHomeData();
-
+    loadFeatured();
     return () => {
       active = false;
     };
   }, []);
 
-  const onImgErr = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
-    e.currentTarget.style.opacity = '0';
-  }, []);
+  /* গাইড কার্ডের ডেটা — একবারই মেমোইজ */
+  const guideCards = useMemo(
+    () =>
+      HOME_GUIDE_KEYS.map((key) => {
+        const spot = SPOT_BY_KEY(key);
+        if (!spot) return null;
+        return { spot, photo: SPOT_PHOTOS[key], guide: SPOT_GUIDES[key], cost: spotCostSummary(key) };
+      }).filter(Boolean) as { spot: (typeof COX_SPOTS)[number]; photo?: string; guide?: (typeof SPOT_GUIDES)[string]; cost: { vara: string; ticket: string } }[],
+    []
+  );
 
   return (
     <div className="min-h-screen">
-      {/* ═══ HERO SECTION — সব ট্যুর পয়েন্টের সুন্দর ছবিতে অটো-স্লাইড ═══ */}
-      <section className="relative min-h-[92vh] flex items-center overflow-hidden pt-24 pb-16">
-        {/* Background — auto-sliding tour point photos */}
+      {/* ═══ HERO — ১০০% ফুল-স্ক্রিন (সব ডিভাইসে), ফিক্সড নেভবারের নিচে এজ-টু-এজ ═══ */}
+      <section className="relative h-[100svh] min-h-[560px] flex items-center overflow-hidden">
+        {/* Background — scenic auto-slider (সমুদ্র/পাহাড়/নৌকা/ঢেউ/আকাশ) */}
         <div className="absolute inset-0 bg-sunset-soft">
           <HeroSlider />
         </div>
 
         {/* Gradient & Radial Glow Overlays */}
-        <div className="absolute inset-0 bg-gradient-to-b from-twilight-950/70 via-twilight-950/40 to-twilight-950 pointer-events-none" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_85%_15%,rgba(251,191,36,0.22),transparent_50%)] pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-b from-twilight-950/75 via-twilight-950/45 to-twilight-950 pointer-events-none" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_85%_15%,rgba(251,191,36,0.20),transparent_50%)] pointer-events-none" />
 
         {/* Hero Content */}
         <div className="max-w-7xl mx-auto px-6 relative z-10 w-full text-center">
@@ -204,7 +271,6 @@ export default function Home() {
               লাবণী থেকে সেন্ট মার্টিন — ভেরিফায়েড ফটোগ্রাফার, স্বচ্ছ বাজেট, রিয়েল রিভিউ। প্রি-ওয়েডিং, বিয়ে, ফ্যামিলি বা ট্রাভেল শুট — ফটোলাগবে-ই যথেষ্ট।
             </p>
 
-            {/* সার্চ এখন হেডারে (অপশন মেনুর পাশে) — হোমপেজে বড় ফর্ম নেই */}
             <div className="flex flex-wrap items-center justify-center gap-4 mt-8">
               <Link to="/photographers" className="btn-primary px-8">
                 ফটোগ্রাফার খুঁজুন
@@ -215,85 +281,18 @@ export default function Home() {
             </div>
           </Reveal>
         </div>
-      </section>
 
-      {/* ═══ ট্যুর পয়েন্ট গাইড — ব্লগ-স্টাইল প্রিমিয়াম কার্ড ═══ */}
-      <section className="max-w-7xl mx-auto px-6 py-20">
-        <Reveal className="text-center mb-12">
-          <h2 className="section-head">🧭 ট্যুর পয়েন্ট গাইড</h2>
-          <p className="section-sub mt-2">
-            প্রতিটি স্পটের আসল ছবি, ভাড়া, টিকিট, খাওয়া আর ঢাকা থেকে যাওয়ার পুরো রুট
-          </p>
-        </Reveal>
-
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {HOME_GUIDE_KEYS.map((key, i) => {
-            const spot = SPOT_BY_KEY(key);
-            const photo = SPOT_PHOTOS[key];
-            const guide = SPOT_GUIDES[key];
-            const cost = spotCostSummary(key);
-            if (!spot) return null;
-
-            return (
-              <Reveal key={key} delay={i * 60}>
-                <Link
-                  to={`/spot/${key}`}
-                  className="glass-card overflow-hidden flex flex-col rounded-xl3 group h-full"
-                >
-                  <div className="relative h-48 w-full bg-twilight-800 overflow-hidden">
-                    {photo ? (
-                      <img
-                        src={cldUrl(photo, { w: 640, c: 'fill' })}
-                        srcSet={[480, 640].map((w) => `${cldUrl(photo, { w, c: 'fill' })} ${w}w`).join(', ')}
-                        sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-                        alt={`${spot.nameBn} — ${spot.nameEn}`}
-                        loading={i < 2 ? 'eager' : 'lazy'}
-                        onError={onImgErr}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-sunset-soft flex items-center justify-center text-4xl">
-                        {SPOT_KIND_EMOJI[spot.kind] || '📍'}
-                      </div>
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent pointer-events-none" />
-                    <span className="absolute top-3 left-3 chip !text-[11.5px] !py-0.5 !px-2 bg-black/40">
-                      {SPOT_KIND_EMOJI[spot.kind]} {SPOT_KIND_BN[spot.kind] || spot.kind}
-                    </span>
-                  </div>
-
-                  <div className="p-5 flex-1 flex flex-col justify-between">
-                    <div>
-                      <h3 className="font-bold text-white text-lg group-hover:text-sunset-gold transition leading-snug">
-                        {spot.nameBn}
-                      </h3>
-                      <p className="text-[12.5px] text-white/45 mt-0.5">{spot.nameEn}</p>
-                      <p className="text-sm text-white/60 line-clamp-2 mt-2 leading-relaxed">
-                        {guide ? guide.intro : spot.descBn}
-                      </p>
-                    </div>
-
-                    <div className="pt-4 mt-4 border-t border-white/[0.08] flex items-center justify-between gap-2 text-[12.5px]">
-                      <span className="text-white/55 truncate">🛺 {cost.vara}</span>
-                      <span className="text-white/55 truncate">🎟️ {cost.ticket}</span>
-                      <span className="text-sunset-gold font-bold whitespace-nowrap">গাইড →</span>
-                    </div>
-                  </div>
-                </Link>
-              </Reveal>
-            );
-          })}
-        </div>
-
-        <div className="mt-10 text-center">
-          <Link to="/blog" className="btn-ghost">
-            সব ১৯টি স্পটের গাইড দেখুন →
-          </Link>
+        {/* স্ক্রল-ডাউন নির্দেশক */}
+        <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-1 text-white/60" aria-hidden="true">
+          <span className="text-[11.5px] font-semibold tracking-wide">নিচে দেখুন</span>
+          <svg className="hero-bounce" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
         </div>
       </section>
 
-      {/* ═══ সব ট্যুর পয়েন্ট — গোল আইকন + নিচে নাম (মোবাইলে সারিতে ৩টি) ═══ */}
-      <section className="py-10 sm:py-14 border-y border-white/[0.08] bg-white/[0.02]">
+      {/* ═══ সব ট্যুর পয়েন্ট — গোল আইকন + নিচে নাম (হিরোর ঠিক পরেই) ═══ */}
+      <section className="py-12 sm:py-16 border-y border-white/[0.08] bg-white/[0.02]">
         <p className="text-base sm:text-lg text-center text-white font-bold mb-1 tracking-tight">
           কক্সবাজারের সব ট্যুর পয়েন্ট
         </p>
@@ -335,8 +334,75 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ═══ FEATURED PHOTOGRAPHERS SECTION ═══ */}
+      {/* ═══ ট্যুর পয়েন্ট গাইড — ব্লগ-স্টাইল প্রিমিয়াম কার্ড (পয়েন্টের নিচে) ═══ */}
       <section className="max-w-7xl mx-auto px-6 py-20">
+        <Reveal className="text-center mb-12">
+          <h2 className="section-head">🧭 ট্যুর পয়েন্ট গাইড</h2>
+          <p className="section-sub mt-2">
+            প্রতিটি স্পটের আসল ছবি, ভাড়া, টিকিট, খাওয়া আর ঢাকা থেকে যাওয়ার পুরো রুট
+          </p>
+        </Reveal>
+
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {guideCards.map(({ spot, photo, guide, cost }, i) => (
+            <Reveal key={spot.key} delay={i * 60}>
+              <Link
+                to={`/spot/${spot.key}`}
+                className="glass-card overflow-hidden flex flex-col rounded-xl3 group h-full"
+              >
+                <div className="relative h-48 w-full bg-twilight-800 overflow-hidden">
+                  {photo ? (
+                    <img
+                      src={cldUrl(photo, { w: 640, c: 'fill' })}
+                      srcSet={[480, 640].map((w) => `${cldUrl(photo, { w, c: 'fill' })} ${w}w`).join(', ')}
+                      sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                      alt={`${spot.nameBn} — ${spot.nameEn}`}
+                      loading={i < 2 ? 'eager' : 'lazy'}
+                      onError={(e) => { e.currentTarget.style.opacity = '0'; }}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-sunset-soft flex items-center justify-center text-4xl">
+                      {SPOT_KIND_EMOJI[spot.kind] || '📍'}
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent pointer-events-none" />
+                  <span className="absolute top-3 left-3 chip !text-[11.5px] !py-0.5 !px-2 bg-black/40">
+                    {SPOT_KIND_EMOJI[spot.kind]} {SPOT_KIND_BN[spot.kind] || spot.kind}
+                  </span>
+                </div>
+
+                <div className="p-5 flex-1 flex flex-col justify-between">
+                  <div>
+                    <h3 className="font-bold text-white text-lg group-hover:text-sunset-gold transition leading-snug">
+                      {spot.nameBn}
+                    </h3>
+                    <p className="text-[12.5px] text-white/45 mt-0.5">{spot.nameEn}</p>
+                    <p className="text-sm text-white/60 line-clamp-2 mt-2 leading-relaxed">
+                      {guide ? guide.intro : spot.descBn}
+                    </p>
+                  </div>
+
+                  <div className="pt-4 mt-4 border-t border-white/[0.08] flex items-center justify-between gap-2 text-[12.5px]">
+                    <span className="text-white/55 truncate">🛺 {cost.vara}</span>
+                    <span className="text-white/55 truncate">🎟️ {cost.ticket}</span>
+                    <span className="text-sunset-gold font-bold whitespace-nowrap">গাইড →</span>
+                  </div>
+                </div>
+              </Link>
+            </Reveal>
+          ))}
+        </div>
+
+        <div className="mt-10 text-center">
+          <Link to="/blog" className="btn-ghost">
+            সব ১৯টি স্পটের গাইড দেখুন →
+          </Link>
+        </div>
+      </section>
+
+      {/* ═══ FEATURED PHOTOGRAPHERS — ১০ জন + সব ফটোগ্রাফার ═══ */}
+      <section className="max-w-7xl mx-auto px-6 py-20 border-t border-white/[0.08]">
         <Reveal className="text-center mb-12">
           <h2 className="section-head">ফিচার্ড ফটোগ্রাফার</h2>
           <p className="section-sub mt-2">
@@ -345,8 +411,8 @@ export default function Home() {
         </Reveal>
 
         {loadingFeatured ? (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {Array.from({ length: 6 }).map((_, i) => (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {Array.from({ length: 8 }).map((_, i) => (
               <div key={i} className="skeleton h-80 rounded-xl3" />
             ))}
           </div>
@@ -358,9 +424,9 @@ export default function Home() {
             </p>
           </div>
         ) : (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {featured.map((p, i) => (
-              <Reveal key={p.id} delay={i * 60}>
+              <Reveal key={p.id} delay={(i % 4) * 60}>
                 <PhotographerCard p={p} />
               </Reveal>
             ))}
@@ -368,149 +434,14 @@ export default function Home() {
         )}
 
         <div className="mt-12 text-center">
-          <Link to="/photographers" className="btn-ghost">
+          <Link to="/photographers" className="btn-primary">
             সব ফটোগ্রাফার দেখুন →
           </Link>
         </div>
       </section>
 
-      {/* ═══ কীভাবে কাজ করে — টিজার (সম্পূর্ণ গাইড আলাদা পেজে) ═══ */}
-      <section className="max-w-7xl mx-auto px-6 py-10">
-        <div className="glass-card rounded-xl3 p-6 sm:p-7 flex flex-col sm:flex-row items-center gap-5 justify-between">
-          <div className="flex items-center gap-4 text-center sm:text-left">
-            <div className="w-12 h-12 rounded-2xl glass grid place-items-center shrink-0" aria-hidden="true">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10" />
-                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
-                <line x1="12" y1="17" x2="12.01" y2="17" />
-              </svg>
-            </div>
-            <div>
-              <h2 className="font-bold text-white text-base sm:text-lg">প্রথমবার? কীভাবে ফটোগ্রাফার বুক করবেন জানুন</h2>
-              <p className="text-white/55 text-sm mt-0.5">৭টি সহজ ধাপের সম্পূর্ণ গাইড — খোঁজা থেকে ছবি হাতে পাওয়া পর্যন্ত</p>
-            </div>
-          </div>
-          <Link to="/how-it-works" className="btn-primary shrink-0">
-            গাইড পড়ুন →
-          </Link>
-        </div>
-      </section>
-
-      {/* ═══ CUSTOMER REVIEWS SECTION ═══ */}
-      <section className="max-w-7xl mx-auto px-6 py-20">
-        <Reveal className="text-center mb-12">
-          <h2 className="section-head">কাস্টমারদের ভালোবাসা</h2>
-          <p className="section-sub mt-2">
-            যাঁরা ফটোলাগবে-এর মাধ্যমে তাঁদের বিশেষ মুহূর্তগুলো ফ্রেমবন্দি করেছেন
-          </p>
-        </Reveal>
-
-        {loadingReviews ? (
-          <div className="grid md:grid-cols-3 gap-6">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="skeleton h-56 rounded-xl3" />
-            ))}
-          </div>
-        ) : reviews.length === 0 ? (
-          <div className="glass rounded-xl3 p-10 text-center text-white/60">
-            এখনও কোনো রিভিউ যুক্ত হয়নি।
-          </div>
-        ) : (
-          <div className="grid md:grid-cols-3 gap-6">
-            {reviews.map((r, i) => {
-              const reviewerName = r.profiles?.full_name || 'সম্মানিত গ্রাহক';
-              const reviewerAvatar = r.profiles?.avatar_url;
-              const photographerName =
-                r.photographers?.display_name || 'ফটোগ্রাফার';
-
-              return (
-                <Reveal key={r.id || i} delay={i * 70}>
-                  <div className="glass-card p-6 h-full flex flex-col justify-between">
-                    <div>
-                      <svg
-                        width="28"
-                        height="28"
-                        viewBox="0 0 24 24"
-                        fill="rgba(251, 191, 36, 0.25)"
-                        stroke="#fbbf24"
-                        strokeWidth="1.8"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="mb-4"
-                      >
-                        <path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z" />
-                        <path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v3c0 1 0 1 1 1z" />
-                      </svg>
-
-                      <p className="text-white/80 leading-relaxed line-clamp-4 text-sm sm:text-base">
-                        “{r.comment || 'অসাধারণ ফটোগ্রাফি এবং সময়মতো ডেলিভারি পেয়েছি!'}”
-                      </p>
-                    </div>
-
-                    <div className="flex items-center justify-between gap-3 pt-5 mt-5 border-t border-white/[0.08]">
-                      <div className="flex items-center gap-3 min-w-0">
-                        {reviewerAvatar ? (
-                          <img
-                            src={reviewerAvatar}
-                            alt={reviewerName}
-                            className="w-10 h-10 rounded-full object-cover ring-2 ring-sunset-gold/35 shrink-0"
-                          />
-                        ) : (
-                          <div className="w-10 h-10 rounded-full bg-sunset-gradient flex items-center justify-center text-sm font-extrabold text-[#1A0E06] shrink-0">
-                            {reviewerName.slice(0, 1)}
-                          </div>
-                        )}
-                        <div className="min-w-0">
-                          <div className="text-sm font-bold text-white truncate">
-                            {reviewerName}
-                          </div>
-                          {r.photographer_id && (
-                            <Link
-                              to={`/photographer/${r.photographer_id}`}
-                              className="text-xs text-sunset-gold hover:underline truncate block"
-                            >
-                              → {photographerName}
-                            </Link>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </Reveal>
-              );
-            })}
-          </div>
-        )}
-      </section>
-
-      {/* ═══ CALL TO ACTION SECTION ═══ */}
-      <section className="max-w-5xl mx-auto px-6 pb-24">
-        <Reveal>
-          <div className="glass-card relative overflow-hidden p-10 sm:p-12 text-center rounded-xl3 bg-sunset-soft">
-            {/* Decorative Blurred Blobs */}
-            <div className="w-64 h-64 rounded-full bg-sunset-gold/25 blur-3xl absolute -top-20 -left-20 pointer-events-none" />
-            <div className="w-64 h-64 rounded-full bg-sunset-coral/25 blur-3xl absolute -bottom-20 -right-20 pointer-events-none" />
-
-            <div className="relative z-10 max-w-2xl mx-auto">
-              <h3 className="text-2xl sm:text-3xl font-extrabold text-white">
-                আপনার মুহূর্ত ফ্রেমে বাঁধুন
-              </h3>
-              <p className="text-white/70 mt-3 text-base sm:text-lg leading-relaxed">
-                সমুদ্রের গর্জন আর সোনালী সূর্যাস্তের মাঝে আপনার প্রিয় মানুষদের সাথে কাটানো প্রতিটি মুহূর্ত চিরস্মরণীয় করে রাখুন।
-              </p>
-
-              <div className="flex flex-wrap items-center justify-center gap-4 mt-8">
-                <Link to="/photographers" className="btn-primary">
-                  ফটোগ্রাফার খুঁজুন
-                </Link>
-                <Link to="/finder" className="btn-ghost">
-                  ম্যাপ দেখুন
-                </Link>
-              </div>
-            </div>
-          </div>
-        </Reveal>
-      </section>
+      {/* ═══ ফটো গ্যালারি — সাইড-স্ক্রল + দৃশ্যমান prev/next (পেজের শেষ সেকশন) ═══ */}
+      <PhotoGallery />
     </div>
   );
 }
