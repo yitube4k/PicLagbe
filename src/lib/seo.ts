@@ -25,7 +25,7 @@ interface PageMetaOpts {
   description?: string;
   image?: string;
   path?: string;
-  type?: 'website' | 'profile';
+  type?: 'website' | 'profile' | 'article';
 }
 
 export function usePageMeta(opts: PageMetaOpts): void {
@@ -69,4 +69,32 @@ export function usePageMeta(opts: PageMetaOpts): void {
     }
     canonical.href = url;
   }, [title, description, image, path, type]);
+}
+
+/** Head-এ ডাইনামিক JSON-LD স্ক্রিপ্ট ট্যাগ ইনসার্ট ও ক্লিনআপ করার হুক (V28) */
+export function useJsonLd(id: string, schema: object | null): void {
+  const serialized = schema ? JSON.stringify(schema) : null;
+
+  useEffect(() => {
+    const selector = `script[type="application/ld+json"][data-jsonld="${id}"]`;
+    const existing = document.head.querySelector(selector) as HTMLScriptElement | null;
+
+    if (!serialized) {
+      existing?.remove();
+      return;
+    }
+
+    let scriptTag = existing;
+    if (!scriptTag) {
+      scriptTag = document.createElement('script');
+      scriptTag.type = 'application/ld+json';
+      scriptTag.setAttribute('data-jsonld', id);
+      document.head.appendChild(scriptTag);
+    }
+    scriptTag.textContent = serialized;
+
+    return () => {
+      document.head.querySelector(selector)?.remove();
+    };
+  }, [id, serialized]);
 }

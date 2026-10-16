@@ -8,6 +8,7 @@ import { matchSpotKey, SPOT_PHOTOS } from '../lib/spotPhotos';
 import { openDirections } from './Finder';
 import { cldUrl } from '../lib/cloudinary';
 import TravelDataCards, { TravelQuickFactsBento } from '../components/TravelDataCards';
+import { usePageMeta, useJsonLd, absoluteUrl, SITE_URL, DEFAULT_OG_IMAGE } from '../lib/seo';
 
 /** স্পটে available ফটোগ্রাফার সংখ্যা (parent থেকে আসে) */
 interface SpotStat {
@@ -109,6 +110,34 @@ export default function BlogPostPage() {
   const [relatedPosts, setRelatedPosts] = useState<BlogPost[]>([]);
   const [spotStats, setSpotStats] = useState<Record<string, SpotStat>>({});
   const [loading, setLoading] = useState(true);
+
+  // V28 — ব্লগ পোস্টের SEO মেটাডাটা (title/description/OG/canonical)
+  usePageMeta({
+    title: post
+      ? `${post.title} — ফটোলাগবে PicLagbe`
+      : 'ফটোলাগবে ব্লগ — কক্সবাজার ভ্রমণ ও ফটোগ্রাফি গাইড',
+    description: post?.excerpt || undefined,
+    image: post?.cover_url || undefined,
+    path: post ? `/blog/${post.slug}` : '/blog',
+    type: 'article'
+  });
+
+  // V28 — Article JSON-LD (Google Rich Results / AI উত্তরের জন্য)
+  const articleJsonLd = useMemo(() => {
+    if (!post) return null;
+    return {
+      '@context': 'https://schema.org',
+      '@type': 'Article',
+      headline: post.title,
+      description: post.excerpt,
+      image: [post.cover_url ? absoluteUrl(post.cover_url) : DEFAULT_OG_IMAGE],
+      datePublished: post.created_at,
+      author: { '@type': 'Person', name: post.author || 'ফটোলাগবে' },
+      publisher: { '@type': 'Organization', name: 'ফটোলাগবে PicLagbe', url: SITE_URL },
+      mainEntityOfPage: { '@type': 'WebPage', '@id': absoluteUrl(`/blog/${post.slug}`) }
+    };
+  }, [post]);
+  useJsonLd('blog-post', articleJsonLd);
 
   useEffect(() => {
     window.scrollTo(0, 0);

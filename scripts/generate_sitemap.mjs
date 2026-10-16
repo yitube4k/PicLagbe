@@ -37,6 +37,26 @@ async function generateSitemap() {
     console.warn('Warning: Failed to fetch photographers for sitemap, generating static entries only:', err.message);
   }
 
+  // V28 — পাবলিশড ব্লগ পোস্টও sitemap-এ যোগ হয়
+  let blogPosts = [];
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/blog_posts?select=slug,created_at&published=eq.true&order=created_at.desc`, {
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`
+      },
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+    if (res.ok) {
+      blogPosts = await res.json();
+    }
+  } catch (err) {
+    console.warn('Warning: Failed to fetch blog posts for sitemap:', err.message);
+  }
+
   const staticPages = [
     { url: '/', changefreq: 'daily', priority: '1.0' },
     { url: '/photographers', changefreq: 'daily', priority: '0.9' },
@@ -69,12 +89,24 @@ async function generateSitemap() {
     xml += '  </url>\n';
   }
 
+  // V28 — ব্লগ পোস্ট URLs
+  for (const bp of blogPosts) {
+    if (!bp.slug) continue;
+    const lastmod = bp.created_at ? `<lastmod>${bp.created_at.split('T')[0]}</lastmod>` : '';
+    xml += '  <url>\n';
+    xml += `    <loc>${SITE_URL}/blog/${esc(bp.slug)}</loc>\n`;
+    if (lastmod) xml += `    ${lastmod}\n`;
+    xml += '    <changefreq>weekly</changefreq>\n';
+    xml += '    <priority>0.7</priority>\n';
+    xml += '  </url>\n';
+  }
+
   xml += '</urlset>';
 
   const distDir = resolve('dist');
   mkdirSync(distDir, { recursive: true });
   writeFileSync(resolve(distDir, 'sitemap.xml'), xml, 'utf8');
-  console.log(`sitemap.xml: ${staticPages.length} static + ${photographers.length} photographers = ${staticPages.length + photographers.length} URLs`);
+  console.log(`sitemap.xml: ${staticPages.length} static + ${photographers.length} photographers + ${blogPosts.length} blog posts = ${staticPages.length + photographers.length + blogPosts.length} URLs`);
 }
 
 generateSitemap();

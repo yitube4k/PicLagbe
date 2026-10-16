@@ -8,6 +8,7 @@ import { SPOT_PHOTOS } from '../lib/spotPhotos';
 import { SPOT_GUIDES, spotCostSummary } from '../lib/spotGuides';
 import { cldUrl } from '../lib/cloudinary';
 import Reveal from '../components/Reveal';
+import { usePageMeta } from '../lib/seo';
 
 const SPOT_KIND_EMOJI: Record<string, string> = {
   beach: '🏖️',
@@ -24,6 +25,13 @@ const SPOT_KIND_EMOJI: Record<string, string> = {
  *  ২) DB থেকে পাবলিশড আর্টিকেল
  */
 export default function Blog() {
+  // V28 — ব্লগ ইনডেক্স পেজের SEO মেটাডাটা
+  usePageMeta({
+    title: 'ফটোলাগবে ব্লগ — কক্সবাজার ভ্রমণ ও ফটোগ্রাফি গাইড | PicLagbe Blog',
+    description: 'কক্সবাজার ভ্রমণ গাইড, ফটোশুট স্পট, বাজেট প্ল্যান, প্রি-ওয়েডিং টিপস — ফটোলাগবে ব্লগে সব একসাথে।',
+    path: '/blog'
+  });
+
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [loadingPosts, setLoadingPosts] = useState(true);
   const [kindFilter, setKindFilter] = useState<string>('all');
