@@ -6,6 +6,7 @@ export type Profile = {
   whatsapp: string | null
   bio: string | null
   avatar_url: string | null
+  cover_url: string | null
   role: 'customer' | 'photographer' | 'admin'
   created_at: string
 }

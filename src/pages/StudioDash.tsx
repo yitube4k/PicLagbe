@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
@@ -90,6 +90,9 @@ export default function StudioDash() {
   const [photographer, setPhotographer] = useState<Photographer | null>(null);
   const [tab, setTab] = useState<StudioTab | 'home'>('home');
   const [avatarBusy, setAvatarBusy] = useState(false);
+  // V25 — ফেসবুক-স্টাইল কভার কুইক-আপলোড
+  const [coverCamBusy, setCoverCamBusy] = useState(false);
+  const coverCamRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(true);
 
   // ভিউ বদলালে উপরে স্ক্রল (হোম ↔ ডিটেইল)
@@ -589,6 +592,27 @@ export default function StudioDash() {
     }
   };
 
+  /* V25 — কভার ফটো কুইক-আপলোড (ফেসবুক-স্টাইল) → Cloudinary → photographers.cover_photo_url */
+  const handleStudioCoverFile = async (file: File) => {
+    if (!photographer || coverCamBusy) return;
+    setCoverCamBusy(true);
+    try {
+      const res = await uploadToCloudinary(file, 'piclagbe/covers');
+      if (res?.url) {
+        setPhotographer((prev) => (prev ? { ...prev, cover_photo_url: res.url } : prev));
+        const { error } = await supabase
+          .from('photographers')
+          .update({ cover_photo_url: res.url })
+          .eq('id', photographer.id);
+        if (!error) setProfCover(res.url);
+      }
+    } catch (err) {
+      console.error('Studio cover upload error:', err);
+    } finally {
+      setCoverCamBusy(false);
+    }
+  };
+
   return (
     <div className="dash-coastal min-h-screen">
       <div className="max-w-6xl mx-auto px-6 pt-28 pb-24 space-y-8">
@@ -601,14 +625,50 @@ export default function StudioDash() {
 
       {tab === 'home' && (
       <>
-      {/* Header Cover & Profile Bar */}
+      {/* Header Cover & Profile Bar — V25 ফেসবুক-স্টাইল (কভার + ক্যামেরা বাটন + ওভারল্যাপিং অ্যাভাটার) */}
       <div className="glass rounded-xl3 overflow-hidden shadow-glass-lg border border-white/[0.12]">
-        <div className="relative h-32 sm:h-40 w-full bg-gradient-to-br from-sky-500/25 via-cyan-600/15 to-emerald-500/20 bg-[#0a2338]">
+        <div className="relative h-40 sm:h-56 w-full bg-gradient-to-br from-sky-500/35 via-cyan-600/25 to-emerald-500/30">
           {photographer.cover_photo_url ? (
             <img src={photographer.cover_photo_url} alt="কভার" className="w-full h-full object-cover" />
           ) : (
-            <div className="w-full h-full bg-sunset-soft" />
+            <div
+              className="w-full h-full"
+              style={{
+                background:
+                  'radial-gradient(520px 240px at 85% 0%, rgba(125,211,252,0.4), transparent 65%), radial-gradient(440px 260px at 8% 100%, rgba(110,231,183,0.3), transparent 60%), linear-gradient(135deg, rgba(14,42,66,0.92), rgba(12,40,66,0.88))',
+              }}
+            />
           )}
+          <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/35 to-transparent pointer-events-none" />
+
+          {/* কভার বদলানোর ক্যামেরা বাটন */}
+          <button
+            type="button"
+            onClick={() => coverCamRef.current?.click()}
+            disabled={coverCamBusy}
+            aria-label="কভার ফটো আপলোড করুন"
+            className="cover-cam-btn absolute bottom-3 right-3 flex items-center gap-2 rounded-full px-3.5 h-9 text-[12.5px] font-bold text-white transition-transform outline-none focus-visible:ring-2 focus-visible:ring-sky-300 disabled:opacity-60"
+          >
+            {coverCamBusy ? (
+              <span className="block size-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+            ) : (
+              <>
+                {CIc.cameraBadge(15)}
+                <span>{photographer.cover_photo_url ? 'কভার বদলান' : 'কভার যোগ করুন'}</span>
+              </>
+            )}
+          </button>
+          <input
+            ref={coverCamRef}
+            type="file"
+            accept="image/*"
+            className="sr-only"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) handleStudioCoverFile(f);
+              e.target.value = '';
+            }}
+          />
         </div>
 
         <div className="p-6 pt-0 relative flex flex-wrap items-end justify-between gap-4 -mt-10">
@@ -616,7 +676,7 @@ export default function StudioDash() {
             <CircleAvatar
               url={photographer.profile_photo_url}
               initials={getInitials(photographer.display_name)}
-              size={80}
+              size={88}
               busy={avatarBusy}
               onFile={handleStudioAvatarFile}
             />

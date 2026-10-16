@@ -11,6 +11,7 @@ import BookingForm from '../components/BookingForm';
 import MediaReviews from '../components/MediaReviews';
 import PostCard from '../components/PostCard';
 import { videoThumb } from '../components/PackageEditDialog';
+import { GalleryViewer, ViewerItem } from '../components/GalleryViewer';
 
 /* ── Small presentational helpers ─────────────────────────────── */
 
@@ -138,7 +139,7 @@ function GalleryNavBtn({ dir, enabled, onClick }: { dir: 'L' | 'R'; enabled: boo
   );
 }
 
-function ProfileGallery({ items, onOpen }: { items: GalleryMedia[]; onOpen: (m: GalleryMedia) => void }) {
+function ProfileGallery({ items, onOpen }: { items: GalleryMedia[]; onOpen: (m: GalleryMedia, i: number) => void }) {
   const trackRef = useRef<HTMLDivElement | null>(null);
   const [canL, setCanL] = useState(false);
   const [canR, setCanR] = useState(true);
@@ -197,7 +198,7 @@ function ProfileGallery({ items, onOpen }: { items: GalleryMedia[]; onOpen: (m: 
             <button
               key={m.id}
               type="button"
-              onClick={() => onOpen(m)}
+              onClick={() => onOpen(m, i)}
               className="relative shrink-0 snap-start w-[240px] h-[180px] sm:w-[300px] sm:h-[212px] rounded-2xl overflow-hidden border border-[#e2ddd2] bg-[#f2efe8] group/tile text-left"
               aria-label={`${cap || 'গ্যালারি'} ${toBn(i + 1)} — বড় করে দেখুন`}
             >
@@ -259,7 +260,8 @@ export default function PhotographerProfile() {
   const [coverBroken, setCoverBroken] = useState(false);
   const [posts, setPosts] = useState<Post[]>([]);
   const [gallery, setGallery] = useState<GalleryMedia[]>([]); // V24 portfolio_images (ছবি+ভিডিও)
-  const [viewerMedia, setViewerMedia] = useState<{ url: string; type: 'image' | 'video'; title?: string } | null>(null); // V21 package reference viewer
+  // V25 — ডেডিকেটেড ফুল-স্ক্রিন গ্যালারি ভিউয়ার (গ্যালারি + প্যাকেজ নমুনা — পোর্টাল, হেডারের উপরে)
+  const [viewer, setViewer] = useState<{ items: ViewerItem[]; index: number } | null>(null);
 
   const viewCountedRef = useRef(false);
 
@@ -724,11 +726,15 @@ export default function PhotographerProfile() {
           {gallery.length > 0 ? (
             <ProfileGallery
               items={gallery}
-              onOpen={(m) =>
-                setViewerMedia({
-                  url: m.url,
-                  type: m.isVideo ? 'video' : 'image',
-                  title: galleryCaption(m.caption) || photographer.display_name,
+              onOpen={(m, i) =>
+                setViewer({
+                  items: gallery.map((g) => ({
+                    url: g.url,
+                    type: g.isVideo ? ('video' as const) : ('image' as const),
+                    caption: galleryCaption(g.caption),
+                    title: photographer.display_name,
+                  })),
+                  index: i,
                 })
               }
             />
@@ -931,7 +937,12 @@ export default function PhotographerProfile() {
                               <button
                                 key={mi}
                                 type="button"
-                                onClick={() => setViewerMedia({ url: m.url, type: m.type, title: pkg.name })}
+                                onClick={() =>
+                                  setViewer({
+                                    items: (pkg.media || []).map((mm) => ({ url: mm.url, type: mm.type, title: pkg.name })),
+                                    index: mi,
+                                  })
+                                }
                                 className="relative w-[156px] aspect-[16/10] shrink-0 snap-start rounded-xl overflow-hidden border border-[#e2ddd2] bg-[#f2efe8] group/tile"
                                 aria-label={`${pkg.name} নমুনা ${mi + 1} বড় করে দেখুন`}
                               >
@@ -1139,24 +1150,9 @@ export default function PhotographerProfile() {
         </div>
       )}
 
-      {/* V21 — প্যাকেজ রেফারেন্স মিডিয়া ভিউয়ার (full-screen) */}
-      {viewerMedia && (
-        <div className="fixed inset-0 z-[95] bg-black/92 flex flex-col" role="dialog" aria-modal="true" onClick={() => setViewerMedia(null)}>
-          <div className="shrink-0 h-14 px-3 flex items-center justify-between text-white">
-            <span className="text-sm font-bold truncate px-1">{viewerMedia.title || 'নমুনা কাজ'}</span>
-            <button type="button" aria-label="বন্ধ করুন" className="w-11 h-11 rounded-full grid place-items-center hover:bg-white/10">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
-            </button>
-          </div>
-          <div className="flex-1 min-h-0 grid place-items-center p-4" onClick={(e) => e.stopPropagation()}>
-            {viewerMedia.type === 'video' ? (
-              <video src={viewerMedia.url} controls autoPlay playsInline className="max-w-full max-h-full rounded-xl" />
-            ) : (
-              <img src={viewerMedia.url} alt={viewerMedia.title || ''} className="max-w-full max-h-full rounded-xl object-contain" />
-            )}
-          </div>
-          <div className="shrink-0 h-[max(1rem,env(safe-area-inset-bottom))]" />
-        </div>
+      {/* V25 — ডেডিকেটেড ফুল-স্ক্রিন গ্যালারি (portal z-9999 — হেডার/নববার কখনো ওভারল্যাপ করে না) */}
+      {viewer && (
+        <GalleryViewer items={viewer.items} startIndex={viewer.index} onClose={() => setViewer(null)} />
       )}
     </div>
   );

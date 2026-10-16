@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
@@ -70,8 +70,10 @@ export default function CustomerDash() {
   const [reviewComment, setReviewComment] = useState('');
   const [reviewSubmitting, setReviewSubmitting] = useState(false);
 
-  // Avatar quick upload
+  // Avatar + cover quick upload
   const [avatarBusy, setAvatarBusy] = useState(false);
+  const [coverBusy, setCoverBusy] = useState(false);
+  const coverInputRef = useRef<HTMLInputElement>(null);
 
   // Success banner query check
   const showBookedBanner = searchParams.get('booked') === '1';
@@ -262,6 +264,26 @@ export default function CustomerDash() {
       console.error('Avatar upload error:', err);
     } finally {
       setAvatarBusy(false);
+    }
+  };
+
+  /* V25 — ফেসবুক-স্টাইল কভার ফটো আপলোড → Cloudinary → profiles.cover_url */
+  const handleCoverFile = async (file: File) => {
+    if (coverBusy) return;
+    setCoverBusy(true);
+    try {
+      const res = await uploadToCloudinary(file, 'piclagbe/covers');
+      if (res?.url) {
+        const { error } = await supabase
+          .from('profiles')
+          .update({ cover_url: res.url })
+          .eq('id', profile.id);
+        if (!error) await refresh();
+      }
+    } catch (err) {
+      console.error('Cover upload error:', err);
+    } finally {
+      setCoverBusy(false);
     }
   };
 
@@ -564,24 +586,73 @@ export default function CustomerDash() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-28 pb-24">
       {view === 'home' ? (
         <>
-          {/* ── হেডার: বৃত্তাকার ছবি + শুভেচ্ছা ── */}
-          <header className="flex flex-col items-center text-center mb-10">
-            <CircleAvatar
-              url={profile.avatar_url}
-              initials={getInitials(profile.full_name)}
-              onFile={handleAvatarFile}
-              busy={avatarBusy}
-              size={112}
-            />
-            <h1 className="mt-4 text-2xl font-extrabold text-white">
-              {profile.full_name || 'গ্রাহক'}
-            </h1>
-            <p className="text-sm text-white/55 mt-1">
-              {profile.email}
-            </p>
-            <span className="mt-2 rounded-full bg-sky-400/15 px-3 py-1 text-xs font-bold text-sky-300 ring-1 ring-sky-300/30">
-              {profile.role === 'photographer' ? 'ফটোগ্রাফার' : 'সাধারণ সদস্য'}
-            </span>
+          {/* ── V25 হেডার: ফেসবুক-স্টাইল কভার ফটো + উপরে বৃত্তাকার ছবি + শুভেচ্ছা (ব্ল্যাক গ্লাস কার্ড) ── */}
+          <header className="glass-card overflow-hidden mb-10">
+            {/* কভার ব্যানার */}
+            <div className="relative h-36 sm:h-52 w-full bg-gradient-to-br from-sky-500/40 via-cyan-600/30 to-emerald-500/35">
+              {profile.cover_url ? (
+                <img src={profile.cover_url} alt="কভার ফটো" className="w-full h-full object-cover" />
+              ) : (
+                <div
+                  className="w-full h-full"
+                  style={{
+                    background:
+                      'radial-gradient(420px 200px at 82% 0%, rgba(125,211,252,0.4), transparent 65%), radial-gradient(380px 220px at 12% 100%, rgba(110,231,183,0.28), transparent 60%), linear-gradient(135deg, rgba(14,42,66,0.9), rgba(12,40,66,0.85))',
+                  }}
+                />
+              )}
+              {/* নিচের দিকে হালকা শেড (অ্যাভাটার সংযোগ মসৃণ করতে) */}
+              <div className="absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-black/35 to-transparent pointer-events-none" />
+
+              {/* কভার বদলানোর ক্যামেরা বাটন */}
+              <button
+                type="button"
+                onClick={() => coverInputRef.current?.click()}
+                disabled={coverBusy}
+                aria-label="কভার ফটো আপলোড করুন"
+                className="cover-cam-btn absolute bottom-3 right-3 flex items-center gap-2 rounded-full px-3.5 h-9 text-[12.5px] font-bold text-white transition-transform outline-none focus-visible:ring-2 focus-visible:ring-sky-300 disabled:opacity-60"
+              >
+                {coverBusy ? (
+                  <span className="block size-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+                ) : (
+                  <>
+                    {CIc.cameraBadge(15)}
+                    <span className="hidden xs:inline sm:inline">{profile.cover_url ? 'বদলান' : 'যোগ করুন'}</span>
+                  </>
+                )}
+              </button>
+              <input
+                ref={coverInputRef}
+                type="file"
+                accept="image/*"
+                className="sr-only"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) handleCoverFile(f);
+                  e.target.value = '';
+                }}
+              />
+            </div>
+
+            {/* অ্যাভাটার কভারের উপর ওভারল্যাপ + পরিচিতি */}
+            <div className="flex flex-col items-center text-center px-4 pb-6 -mt-12 relative">
+              <CircleAvatar
+                url={profile.avatar_url}
+                initials={getInitials(profile.full_name)}
+                onFile={handleAvatarFile}
+                busy={avatarBusy}
+                size={104}
+              />
+              <h1 className="mt-3 text-2xl font-extrabold text-white">
+                {profile.full_name || 'গ্রাহক'}
+              </h1>
+              <p className="text-sm text-white/55 mt-1">
+                {profile.email}
+              </p>
+              <span className="mt-2 rounded-full bg-sky-400/15 px-3 py-1 text-xs font-bold text-sky-300 ring-1 ring-sky-300/30">
+                {profile.role === 'photographer' ? 'ফটোগ্রাফার' : 'সাধারণ সদস্য'}
+              </span>
+            </div>
           </header>
 
           {/* Booking Success Banner */}
