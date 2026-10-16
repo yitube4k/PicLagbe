@@ -33,10 +33,19 @@ export type Photographer = {
   phone: string | null
   whatsapp: string | null
   service_areas: string | null
+  details?: {
+    specialties?: string[]
+    covered_spots?: string[]
+    delivery_days?: number
+    gear?: { camera?: string; lenses?: string; extras?: string[] }
+    social_links?: { facebook?: string; instagram?: string }
+  } | null
   photographer_categories?: { category_id: number; categories?: { name: string; slug: string; icon: string } }[]
 }
 
 export type Category = { id: number; name: string; slug: string; icon: string }
+
+export type PackageMedia = { url: string; type: 'image' | 'video'; thumb_url?: string }
 
 export type Package = {
   id: string
@@ -46,6 +55,9 @@ export type Package = {
   price: number
   duration_hours: number | null
   features: string[]
+  media?: PackageMedia[]
+  sort_order?: number
+  is_popular?: boolean
 }
 
 export type PortfolioImage = { id: string; photographer_id: string; url: string; caption: string | null; sort_order: number }
@@ -60,6 +72,11 @@ export type Booking = {
   event_location: string | null
   notes: string | null
   status: 'pending' | 'accepted' | 'rejected' | 'cancelled' | 'completed'
+  package_snapshot?: { name: string; price: number; duration_hours?: number | null; cover_url?: string | null; features_count?: number } | null
+  shoot_spot?: string | null
+  shoot_time_slot?: string | null
+  status_history?: { status: string; at: string; note?: string }[]
+  cancellation_reason?: string | null
   created_at: string
   photographers?: Partial<Photographer>
   packages?: Partial<Package>
@@ -99,6 +116,31 @@ export type BlogPost = {
   tags: string[]
   published: boolean
   created_at: string
+  travel_data?: TravelData | null
+}
+
+/* ── structured Cox's Bazar travel guide (blog_posts.travel_data) ── */
+export type TravelQuickFacts = {
+  entry_fee?: string
+  distance_from_town?: string
+  best_season?: string
+  safety_or_tide_note?: string
+}
+
+export type RentRow = { label: string; value: string; note?: string }
+export type FoodRow = { name: string; price: string; recommended_spot?: string }
+export type CaptionedPhoto = { url: string; caption?: string; price_range?: string }
+
+export type TravelData = {
+  spot_key?: string | null
+  quick_facts?: TravelQuickFacts
+  rent_rows?: RentRow[]
+  food_rows?: FoodRow[]
+  time_note?: string
+  photo_spots?: string[]
+  hotel_photos?: CaptionedPhoto[]
+  gallery?: CaptionedPhoto[]
+  tips?: string[]
 }
 
 /* ── Photographer POSTS (feed-style, admin-approved) ── */

@@ -1,9 +1,11 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { Photographer } from '../../lib/types';
+import { Photographer, Package } from '../../lib/types';
 import { COX_SPOTS } from '../../lib/constants';
-import { bnDate, taka } from '../../lib/utils';
+import { bnDate, taka, toBn } from '../../lib/utils';
 import { openApp } from '../../lib/base';
+import { cldUrl } from '../../lib/cloudinary';
+import PackageEditDialog, { videoThumb } from '../PackageEditDialog';
 import {
   AdminSheet, FullDialog, ConfirmDialog, FilterBar, OverflowMenu,
   Field, StatusPill, EmptyState, ListSkeleton, KV, ProgressiveRows, waMe, telHref,
@@ -55,6 +57,55 @@ export default function AdminPhotographers({ onChanged }: { onChanged?: () => vo
   React.useEffect(() => { if (qTick) list.silentReload(); }, [qTick]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [viewing, setViewing] = useState<AdminPhotographer | null>(null);
+
+  // V21 — view-sheet package management
+  const [viewPkgs, setViewPkgs] = useState<Package[]>([]);
+  const [viewPkgsLoading, setViewPkgsLoading] = useState(false);
+  const [pkgDlgOpen, setPkgDlgOpen] = useState(false);
+  const [pkgEditing, setPkgEditing] = useState<Package | null>(null);
+  const [pkgDeleting, setPkgDeleting] = useState<Package | null>(null);
+  const [pkgDelBusy, setPkgDelBusy] = useState(false);
+
+  useEffect(() => {
+    if (!viewing) { setViewPkgs([]); return; }
+    let dead = false;
+    setViewPkgsLoading(true);
+    supabase
+      .from('packages')
+      .select('*')
+      .eq('photographer_id', viewing.id)
+      .order('sort_order').order('price')
+      .then(({ data }) => { if (!dead) { setViewPkgs((data as Package[]) || []); setViewPkgsLoading(false); } });
+    return () => { dead = true; };
+  }, [viewing]);
+
+  const reloadViewPkgs = useCallback(async () => {
+    if (!viewing) return;
+    const { data } = await supabase.from('packages').select('*').eq('photographer_id', viewing.id).order('sort_order').order('price');
+    setViewPkgs((data as Package[]) || []);
+  }, [viewing]);
+
+  const handleAdminPkgSaved = (pkg: Package, mode: 'created' | 'updated') => {
+    setViewPkgs((prev) => (mode === 'created' ? [...prev, pkg] : prev.map((p) => (p.id === pkg.id ? pkg : p))));
+    setPkgDlgOpen(false);
+    setPkgEditing(null);
+    show(mode === 'created' ? `প্যাকেজ "${pkg.name}" যোগ হয়েছে ✓` : `প্যাকেজ "${pkg.name}" আপডেট হয়েছে ✓`);
+    logAction(mode === 'created' ? 'create' : 'update', 'package', pkg.id, pkg.name, { meta: { photographer: viewing?.display_name } });
+  };
+
+  const handleAdminPkgDelete = async () => {
+    if (!pkgDeleting) return;
+    setPkgDelBusy(true);
+    const { error } = await supabase.from('packages').delete().eq('id', pkgDeleting.id);
+    setPkgDelBusy(false);
+    if (!error) {
+      setViewPkgs((prev) => prev.filter((p) => p.id !== pkgDeleting.id));
+      show(`প্যাকেজ "${pkgDeleting.name}" ডিলিট হয়েছে`);
+      if (viewing) logAction('delete', 'package', pkgDeleting.id, pkgDeleting.name, { meta: { photographer: viewing.display_name } });
+      setPkgDeleting(null);
+    }
+  };
+
   const [editing, setEditing] = useState<AdminPhotographer | null>(null);
   const [adding, setAdding] = useState(false);
   const [deleting, setDeleting] = useState<AdminPhotographer | null>(null);
@@ -385,9 +436,94 @@ export default function AdminPhotographers({ onChanged }: { onChanged?: () => vo
                 <p className="text-[13.5px] text-white/80 leading-relaxed mt-1 whitespace-pre-line">{viewing.bio}</p>
               </div>
             )}
+
+            {/* V21 — প্যাকেজ সমূহ (অ্যাডমিন ম্যানেজ) */}
+            <div className="mt-5 pt-4 border-t border-white/[0.08]">
+              <div className="flex items-center justify-between gap-2 mb-3">
+                <p className="field-label !mb-0">প্যাকেজ সমূহ ({toBn(viewPkgs.length)}/৬)</p>
+                {viewPkgs.length < 6 && (
+                  <button
+                    type="button"
+                    onClick={() => { setPkgEditing(null); setPkgDlgOpen(true); }}
+                    className="h-9 px-3 rounded-full bg-sunset-soft text-sunset-gold text-xs font-bold hover:bg-sunset-gold hover:text-white transition flex items-center gap-1"
+                  >
+                    <AIcon name="plus" size={13} strokeWidth={2.4} /> নতুন
+                  </button>
+                )}
+              </div>
+              {viewPkgsLoading ? (
+                <p className="text-xs text-white/40 py-3">লোড হচ্ছে…</p>
+              ) : viewPkgs.length === 0 ? (
+                <p className="text-xs text-white/45 py-3 rounded-xl border border-dashed border-white/15 text-center px-3">
+                  এই ফটোগ্রাফারের কোনো প্যাকেজ নেই — নতুন যোগ করে দিন
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {viewPkgs.map((pkg) => (
+                    <div key={pkg.id} className="flex items-center gap-2.5 rounded-xl border border-white/10 bg-white/[0.04] p-2">
+                      <span className="relative w-12 h-12 rounded-lg overflow-hidden bg-twilight-800 shrink-0 border border-white/10">
+                        {pkg.media && pkg.media[0] ? (
+                          <img
+                            src={pkg.media[0].type === 'video' ? videoThumb(pkg.media[0].url) : cldUrl(pkg.media[0].url, { w: 120, c: 'fill' })}
+                            alt="" className="w-full h-full object-cover" loading="lazy"
+                          />
+                        ) : (
+                          <span className="absolute inset-0 grid place-items-center text-lg">📦</span>
+                        )}
+                        {pkg.is_popular && <span className="absolute top-0 left-0 bg-sunset-gold text-white text-[9px] font-extrabold px-1 rounded-br-md">⭐</span>}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[13.5px] font-bold text-white truncate">{pkg.name}</p>
+                        <p className="text-[11.5px] text-white/50 mt-0.5">
+                          {taka(pkg.price)} · ⏱ {toBn(pkg.duration_hours || 0)} ঘণ্টা
+                          {pkg.media?.length ? ` · 📷 ${toBn(pkg.media.length)}` : ''}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => { setPkgEditing(pkg); setPkgDlgOpen(true); }}
+                        aria-label="প্যাকেজ এডিট"
+                        className="w-11 h-11 rounded-full grid place-items-center text-white/55 hover:text-sunset-gold hover:bg-white/[0.07] transition"
+                      >
+                        <AIcon name="edit" size={16} strokeWidth={2} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPkgDeleting(pkg)}
+                        aria-label="প্যাকেজ ডিলিট"
+                        className="w-11 h-11 rounded-full grid place-items-center text-rose-300/70 hover:text-rose-300 hover:bg-rose-500/10 transition"
+                      >
+                        <AIcon name="trash" size={16} strokeWidth={2} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
       </AdminSheet>
+
+      {/* V21 — প্যাকেজ এডিট ডায়ালগ (অ্যাডমিন) + ডিলিট কনফার্ম */}
+      {viewing && (
+        <PackageEditDialog
+          key={pkgEditing?.id || 'admin-new'}
+          open={pkgDlgOpen}
+          photographerId={viewing.id}
+          editing={pkgEditing}
+          existingCount={viewPkgs.length}
+          onClose={() => { setPkgDlgOpen(false); setPkgEditing(null); }}
+          onSaved={handleAdminPkgSaved}
+        />
+      )}
+      <ConfirmDialog
+        open={!!pkgDeleting}
+        onClose={() => setPkgDeleting(null)}
+        onConfirm={handleAdminPkgDelete}
+        title="প্যাকেজটি মুছে ফেলবেন?"
+        body={pkgDeleting ? `"${pkgDeleting.name}" (ফটোগ্রাফার: ${viewing?.display_name}) স্থায়ীভাবে মুছে যাবে।` : undefined}
+        busy={pkgDelBusy}
+      />
 
       {/* EDIT FULL DIALOG */}
       <FullDialog

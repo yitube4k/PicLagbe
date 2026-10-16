@@ -7,6 +7,7 @@ import { SPOT_BY_KEY, SPOT_KIND_BN } from '../lib/constants';
 import { matchSpotKey, SPOT_PHOTOS } from '../lib/spotPhotos';
 import { openDirections } from './Finder';
 import { cldUrl } from '../lib/cloudinary';
+import TravelDataCards, { TravelQuickFactsBento } from '../components/TravelDataCards';
 
 /** স্পটে available ফটোগ্রাফার সংখ্যা (parent থেকে আসে) */
 interface SpotStat {
@@ -367,11 +368,17 @@ export default function BlogPostPage() {
             </select>
           </div>
         )}
+
+        {/* V21 — কুইক ফ্যাক্টস বেন্টো (কভার ও সারসংক্ষেপের পরেই) */}
+        <TravelQuickFactsBento td={post.travel_data} />
       </div>
 
       {/* Content Body */}
       <div className="max-w-3xl mx-auto px-6 py-10">
         <article className="prose-lite">{renderContentLines(post.content || '')}</article>
+
+        {/* V21 — স্ট্রাকচার্ড ট্রাভেল কার্ডসমূহ */}
+        <TravelDataCards td={post.travel_data} />
 
         {/* ═══ লোকেশন ও ম্যাপ — ব্লগের একদম শেষে: স্পটের ছবি + ফটোগ্রাফার + ডিরেকশন ফ্রেম ═══ */}
         {mentionedSpots.length > 0 && (

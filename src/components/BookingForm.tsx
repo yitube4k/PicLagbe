@@ -5,6 +5,8 @@ import { useAuth } from '../lib/auth';
 import { Photographer, Package } from '../lib/types';
 import { toBn, taka } from '../lib/utils';
 import { COX_SPOTS, SPOT_BY_KEY } from '../lib/constants';
+import { cldUrl } from '../lib/cloudinary';
+import { videoThumb } from './PackageEditDialog';
 
 interface BookingFormProps {
   p: Photographer;
@@ -84,6 +86,19 @@ export default function BookingForm({ p, packages, selectedPkgId, onPackageChang
         event_location: spot,
         notes: notes.trim() || null,
         status: 'pending',
+        // V21 — immutable snapshot + structured shoot info
+        package_snapshot: selectedPackage
+          ? {
+              name: selectedPackage.name,
+              price: Number(selectedPackage.price) || 0,
+              duration_hours: selectedPackage.duration_hours ?? null,
+              cover_url: selectedPackage.media?.[0]?.url ?? null,
+              features_count: selectedPackage.features?.length ?? 0,
+            }
+          : null,
+        shoot_spot: spot || null,
+        shoot_time_slot: slotText || null,
+        status_history: [{ status: 'pending', at: new Date().toISOString() }],
       });
 
       if (error) {
@@ -143,6 +158,22 @@ export default function BookingForm({ p, packages, selectedPkgId, onPackageChang
                       ⏱ {toBn(pkg.duration_hours || 0)} ঘণ্টা{pkg.description ? ` · ${pkg.description}` : ''}
                     </span>
                   </span>
+                  {pkg.media && pkg.media.length > 0 && (
+                    <span className="relative shrink-0 w-14 h-14 rounded-xl overflow-hidden border border-[#e2ddd2] bg-[#f2efe8]">
+                      <img
+                        src={pkg.media[0].type === 'video' ? videoThumb(pkg.media[0].url) : cldUrl(pkg.media[0].url, { w: 160, c: 'fill' })}
+                        alt="" className="w-full h-full object-cover" loading="lazy"
+                      />
+                      {pkg.media[0].type === 'video' && (
+                        <span className="absolute inset-0 grid place-items-center text-white">
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg>
+                        </span>
+                      )}
+                      {pkg.media.length > 1 && (
+                        <span className="absolute bottom-0 inset-x-0 bg-black/60 text-[9px] font-bold text-white text-center leading-4">+{toBn(pkg.media.length - 1)}</span>
+                      )}
+                    </span>
+                  )}
                 </label>
               );
             })}

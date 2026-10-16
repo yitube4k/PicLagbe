@@ -77,7 +77,8 @@ const MAX_VIDEO_MB = 80;
  */
 export async function uploadToCloudinary(
   file: File,
-  folder = 'piclagbe'
+  folder = 'piclagbe',
+  onProgress?: (pct: number) => void
 ): Promise<CldUploadResult> {
   if (!cldConfigured()) {
     throw new Error(
@@ -101,6 +102,27 @@ export async function uploadToCloudinary(
     fd.append('file', file);
     fd.append('upload_preset', PRESET);
     if (withFolder) fd.append('folder', folder);
+
+    // XHR (not fetch) so we can report upload progress to the UI
+    if (onProgress) {
+      return new Promise<any>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', endpoint);
+        xhr.upload.onprogress = (ev) => {
+          if (ev.lengthComputable) onProgress(Math.round((ev.loaded / ev.total) * 100));
+        };
+        xhr.onload = () => {
+          let json: any = {};
+          try { json = JSON.parse(xhr.responseText); } catch { /* empty */ }
+          if (xhr.status >= 400 || json.error) {
+            reject(new Error(json?.error?.message || `আপলোড ব্যর্থ (${xhr.status})`));
+          } else resolve(json);
+        };
+        xhr.onerror = () => reject(new Error('নেটওয়ার্ক সমস্যা — আপলোড ব্যর্থ'));
+        xhr.send(fd);
+      });
+    }
+
     const res = await fetch(endpoint, { method: 'POST', body: fd });
     const json = await res.json();
     if (!res.ok || json.error) {

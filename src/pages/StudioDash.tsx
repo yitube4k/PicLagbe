@@ -9,10 +9,24 @@ import CldUploadField from '../components/CldUploadField';
 import ScheduleTab from '../components/ScheduleTab';
 import PostCard from '../components/PostCard';
 import PostComposer from '../components/PostComposer';
+import PackageEditDialog, { videoThumb } from '../components/PackageEditDialog';
+import { ConfirmDialog } from '../components/admin/kit';
+import { AIcon } from '../admin/icons';
+import { cldUrl } from '../lib/cloudinary';
 import { waLink } from '../lib/cloudinary';
 import DashTabs, { TabIc } from '../components/DashTabs';
 
 type StudioTab = 'overview' | 'bookings' | 'schedule' | 'posts' | 'packages' | 'portfolio' | 'profile' | 'verification';
+
+/* V21 — detail density option lists (Argon W4) */
+const SPECIALTY_OPTIONS = ['ওয়েডিং', 'কাপল ও প্রি-ওয়েডিং', 'সলো পোর্ট্রেট', 'ফ্যামিলি ও কিডস', 'মডেলিং ও ফ্যাশন', 'ইভেন্ট', 'ড্রোন শুট', 'সিনেম্যাটিক ভিডিও'];
+const DELIVERY_OPTIONS = [
+  { v: 1, l: '২৪ ঘণ্টা' },
+  { v: 3, l: '২-৩ দিন' },
+  { v: 7, l: '৫-৭ দিন' },
+];
+const GEAR_EXTRA_OPTIONS = ['ড্রোন আছে', 'গিম্বল', 'পোর্টেবল লাইট'];
+const LANGUAGE_OPTIONS = ['বাংলা', 'চাটগাঁইয়া/স্থানীয়', 'English', 'হিন্দি'];
 
 type StudioBooking = Booking & {
   profiles?: {
@@ -61,13 +75,11 @@ export default function StudioDash() {
   const [editingPost, setEditingPost] = useState<Post | null>(null);
 
   // Package edit/add form state
-  const [pkgEditingId, setPkgEditingId] = useState<string | null>(null);
-  const [pkgName, setPkgName] = useState('');
-  const [pkgDesc, setPkgDesc] = useState('');
-  const [pkgPrice, setPkgPrice] = useState('');
-  const [pkgDuration, setPkgDuration] = useState('');
-  const [pkgFeatures, setPkgFeatures] = useState('');
-  const [isAddingPkg, setIsAddingPkg] = useState(false);
+  const [pkgDialogOpen, setPkgDialogOpen] = useState(false);
+  const [pkgEditing, setPkgEditing] = useState<Package | null>(null); // null = create
+  const [pkgDeleting, setPkgDeleting] = useState<Package | null>(null);
+  const [pkgFlash, setPkgFlash] = useState<string | null>(null);
+  const [pkgSavingDel, setPkgSavingDel] = useState(false);
 
   // Portfolio add form state
   const [portUrl, setPortUrl] = useState('');
@@ -85,6 +97,14 @@ export default function StudioDash() {
   const [profCover, setProfCover] = useState('');
   const [profPhone, setProfPhone] = useState('');
   const [profAreas, setProfAreas] = useState('');
+  // V21 — detail density (photographers.details jsonb)
+  const [profSpecialties, setProfSpecialties] = useState<string[]>([]);
+  const [profCoveredSpots, setProfCoveredSpots] = useState<string[]>([]);
+  const [profDelivery, setProfDelivery] = useState(3);
+  const [profGearCamera, setProfGearCamera] = useState('');
+  const [profGearLenses, setProfGearLenses] = useState('');
+  const [profGearExtras, setProfGearExtras] = useState<string[]>([]);
+  const [profLanguages, setProfLanguages] = useState<string[]>([]);
   const [profSaving, setProfSaving] = useState(false);
 
   // KYC verification form state
@@ -135,6 +155,15 @@ export default function StudioDash() {
         setProfCover(p.cover_photo_url || '');
         setProfPhone(p.phone || '');
         setProfAreas(p.service_areas || '');
+        // V21 detail density load
+        const det = p.details || {};
+        setProfSpecialties(det.specialties || []);
+        setProfCoveredSpots(det.covered_spots || []);
+        setProfDelivery(det.delivery_days ?? 3);
+        setProfGearCamera(det.gear?.camera || '');
+        setProfGearLenses(det.gear?.lenses || '');
+        setProfGearExtras(det.gear?.extras || []);
+        setProfLanguages(p.languages ? p.languages.split(',').map((s) => s.trim()).filter(Boolean) : ['বাংলা']);
 
         // Fetch bookings, packages, portfolio, reviews, kyc in parallel
         const [bRes, pkgRes, portRes, revRes, kycRes] = await Promise.all([
@@ -143,7 +172,7 @@ export default function StudioDash() {
             .select('*, profiles!bookings_customer_id_fkey(full_name, avatar_url, phone, whatsapp), packages(name, price)')
             .eq('photographer_id', p.id)
             .order('created_at', { ascending: false }),
-          supabase.from('packages').select('*').eq('photographer_id', p.id).order('price'),
+          supabase.from('packages').select('*').eq('photographer_id', p.id).order('sort_order').order('price'),
           supabase.from('portfolio_images').select('*').eq('photographer_id', p.id).order('sort_order'),
           supabase.from('reviews').select('*').eq('photographer_id', p.id).order('created_at', { ascending: false }),
           supabase.from('kyc_submissions').select('*').eq('photographer_id', p.id).maybeSingle(),
@@ -269,73 +298,44 @@ export default function StudioDash() {
     }
   };
 
-  // Package handlers
-  const handleStartEditPkg = (pkg: Package) => {
-    setPkgEditingId(pkg.id);
-    setPkgName(pkg.name);
-    setPkgDesc(pkg.description || '');
-    setPkgPrice(String(pkg.price));
-    setPkgDuration(String(pkg.duration_hours || 2));
-    setPkgFeatures(pkg.features ? pkg.features.join(', ') : '');
-    setIsAddingPkg(false);
+  // Package handlers — V21 (PackageEditDialog + M3 confirm + sort)
+  const flashPkg = (msg: string) => {
+    setPkgFlash(msg);
+    window.setTimeout(() => setPkgFlash(null), 3500);
   };
 
-  const handleStartAddPkg = () => {
-    setPkgEditingId(null);
-    setPkgName('');
-    setPkgDesc('');
-    setPkgPrice('');
-    setPkgDuration('2');
-    setPkgFeatures('');
-    setIsAddingPkg(true);
+  const handlePkgSaved = (pkg: Package, mode: 'created' | 'updated') => {
+    setPackages((prev) =>
+      mode === 'created'
+        ? [...prev, pkg]
+        : prev.map((p) => (p.id === pkg.id ? pkg : p)),
+    );
+    setPkgDialogOpen(false);
+    setPkgEditing(null);
+    flashPkg(mode === 'created' ? `"${pkg.name}" প্যাকেজ যোগ হয়েছে ✓` : `"${pkg.name}" আপডেট হয়েছে ✓`);
   };
 
-  const handleSavePkg = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const featuresArr = pkgFeatures
-      .split(',')
-      .map((f) => f.trim())
-      .filter(Boolean);
-
-    const payload = {
-      photographer_id: photographer.id,
-      name: pkgName.trim(),
-      description: pkgDesc.trim() || null,
-      price: Number(pkgPrice) || 0,
-      duration_hours: Number(pkgDuration) || 2,
-      features: featuresArr,
-    };
-
-    if (isAddingPkg) {
-      const { data, error } = await supabase
-        .from('packages')
-        .insert(payload)
-        .select()
-        .single();
-      if (!error && data) {
-        setPackages((prev) => [...prev, data as Package]);
-        setIsAddingPkg(false);
-      }
-    } else if (pkgEditingId) {
-      const { error } = await supabase
-        .from('packages')
-        .update(payload)
-        .eq('id', pkgEditingId);
-      if (!error) {
-        setPackages((prev) =>
-          prev.map((p) => (p.id === pkgEditingId ? { ...p, ...payload } : p))
-        );
-        setPkgEditingId(null);
-      }
-    }
-  };
-
-  const handleDeletePkg = async (pkgId: string) => {
-    if (!window.confirm('এই প্যাকেজটি ডিলিট করতে চান?')) return;
-    const { error } = await supabase.from('packages').delete().eq('id', pkgId);
+  const handleDeletePkg = async () => {
+    if (!pkgDeleting) return;
+    setPkgSavingDel(true);
+    const { error } = await supabase.from('packages').delete().eq('id', pkgDeleting.id);
+    setPkgSavingDel(false);
     if (!error) {
-      setPackages((prev) => prev.filter((p) => p.id !== pkgId));
+      setPackages((prev) => prev.filter((p) => p.id !== pkgDeleting.id));
+      flashPkg(`"${pkgDeleting.name}" ডিলিট হয়েছে`);
+      setPkgDeleting(null);
     }
+  };
+
+  const movePackage = async (idx: number, dir: -1 | 1) => {
+    const next = [...packages];
+    const j = idx + dir;
+    if (j < 0 || j >= next.length) return;
+    [next[idx], next[j]] = [next[j], next[idx]];
+    setPackages(next); // optimistic reorder
+    await Promise.all(
+      next.map((p, i) => supabase.from('packages').update({ sort_order: i }).eq('id', p.id)),
+    );
   };
 
   // Portfolio handlers
@@ -395,6 +395,17 @@ export default function StudioDash() {
       cover_photo_url: profCover.trim() || null,
       phone: profPhone.trim() || null,
       service_areas: profAreas.trim() || null,
+      languages: profLanguages.length ? profLanguages.join(', ') : (photographer.languages || null),
+      details: {
+        specialties: profSpecialties,
+        covered_spots: profCoveredSpots,
+        delivery_days: profDelivery,
+        gear: {
+          camera: profGearCamera.trim() || undefined,
+          lenses: profGearLenses.trim() || undefined,
+          extras: profGearExtras.length ? profGearExtras : undefined,
+        },
+      },
     };
 
     const { error } = await supabase
@@ -863,143 +874,148 @@ export default function StudioDash() {
           </div>
         )}
 
-        {/* PACKAGES TAB */}
+        {/* PACKAGES TAB — V21 Android rebuild (Argon spec) */}
         {tab === 'packages' && (
-          <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h3 className="font-bold text-white text-lg">আপনার প্যাকেজসমূহ</h3>
-              <button type="button" onClick={handleStartAddPkg} className="btn-primary text-sm">
-                + নতুন প্যাকেজ যোগ করুন
-              </button>
-            </div>
-
-            {/* Add/Edit Form Modal or Inline Box */}
-            {(isAddingPkg || pkgEditingId) && (
-              <form onSubmit={handleSavePkg} className="glass-card p-6 rounded-xl3 space-y-4 border-sunset-gold/50">
-                <h4 className="font-bold text-white text-base">
-                  {isAddingPkg ? 'নতুন প্যাকেজ তৈরি' : 'প্যাকেজ এডিট করুন'}
-                </h4>
-
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="field-label">প্যাকেজের নাম</label>
-                    <input
-                      type="text"
-                      required
-                      value={pkgName}
-                      onChange={(e) => setPkgName(e.target.value)}
-                      placeholder="যেমন: গোল্ডেন আওয়ার শ্যুট"
-                      className="glass-input"
-                    />
-                  </div>
-                  <div>
-                    <label className="field-label">মূল্য (৳)</label>
-                    <input
-                      type="number"
-                      required
-                      value={pkgPrice}
-                      onChange={(e) => setPkgPrice(e.target.value)}
-                      placeholder="যেমন: ৩০০০"
-                      className="glass-input"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="field-label">সময়কাল (ঘণ্টা)</label>
-                    <input
-                      type="number"
-                      value={pkgDuration}
-                      onChange={(e) => setPkgDuration(e.target.value)}
-                      placeholder="যেমন: ২"
-                      className="glass-input"
-                    />
-                  </div>
-                  <div>
-                    <label className="field-label">বৈশিষ্ট্যসমূহ (কমা দিয়ে আলাদা করুন)</label>
-                    <input
-                      type="text"
-                      value={pkgFeatures}
-                      onChange={(e) => setPkgFeatures(e.target.value)}
-                      placeholder="৫০+ এডিটেড ছবি, ড্রোন শ্যুট"
-                      className="glass-input"
-                    />
-                  </div>
-                </div>
-
+          <div className="space-y-5">
+            {/* কোটা বার */}
+            <div className="glass-card p-4 sm:p-5 rounded-xl3">
+              <div className="flex items-center justify-between gap-3 flex-wrap">
                 <div>
-                  <label className="field-label">বিবরণ</label>
-                  <textarea
-                    rows={2}
-                    value={pkgDesc}
-                    onChange={(e) => setPkgDesc(e.target.value)}
-                    placeholder="প্যাকেজের সংক্ষিপ্ত বিবরণ..."
-                    className="glass-input resize-none"
-                  />
+                  <h3 className="font-bold text-white text-base">আপনার প্যাকেজ ({toBn(packages.length)}/৬)</h3>
+                  <p className="text-xs text-white/50 mt-0.5">প্রতিটি প্যাকেজে রেফারেন্স ছবি দিলে বুকিং বাড়ে</p>
                 </div>
-
-                <div className="flex justify-end gap-3 pt-2">
+                {packages.length < 6 ? (
                   <button
                     type="button"
-                    onClick={() => {
-                      setIsAddingPkg(false);
-                      setPkgEditingId(null);
-                    }}
-                    className="btn-ghost !py-2 !px-4 !text-xs"
+                    onClick={() => { setPkgEditing(null); setPkgDialogOpen(true); }}
+                    className="btn-primary text-sm !py-2.5 !px-4 flex items-center gap-1.5"
                   >
-                    বাতিল
+                    <AIcon name="plus" size={15} strokeWidth={2.4} /> নতুন প্যাকেজ
                   </button>
-                  <button type="submit" className="btn-primary !py-2 !px-5 !text-xs">
-                    সংরক্ষণ করুন
-                  </button>
-                </div>
-              </form>
+                ) : (
+                  <span className="text-xs font-bold text-amber-300 bg-amber-400/10 border border-amber-400/30 rounded-full px-3 py-2">
+                    সর্বোচ্চ ৬টি প্যাকেজ পূর্ণ হয়েছে
+                  </span>
+                )}
+              </div>
+              <div className="h-1.5 rounded-full bg-white/[0.08] mt-3.5 overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-sunset-gold to-sunset-coral transition-all duration-500"
+                  style={{ width: `${(packages.length / 6) * 100}%` }}
+                />
+              </div>
+            </div>
+
+            {pkgFlash && (
+              <div className="rounded-xl border border-emerald-400/25 bg-emerald-500/10 px-4 py-3 text-sm font-semibold text-emerald-300">
+                {pkgFlash}
+              </div>
             )}
 
-            {/* Packages List */}
-            <div className="grid md:grid-cols-2 gap-5">
-              {packages.map((pkg) => (
-                <div key={pkg.id} className="glass-card p-6 rounded-xl3 flex flex-col justify-between">
-                  <div>
-                    <div className="flex justify-between items-start gap-2 mb-2">
-                      <h4 className="font-bold text-white text-base">{pkg.name}</h4>
-                      <span className="price-tag text-xl">{taka(pkg.price)}</span>
+            {/* প্যাকেজ তালিকা (মোবাইলে ১ কলাম) */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {packages.map((pkg, idx) => (
+                <div key={pkg.id} className="glass-card p-4 sm:p-5 rounded-xl3">
+                  {/* header row */}
+                  <div className="flex items-start gap-2.5">
+                    <div className="flex flex-col gap-1 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => movePackage(idx, -1)}
+                        disabled={idx === 0}
+                        aria-label="উপরে নিন"
+                        className="w-11 h-6 rounded-md grid place-items-center text-white/45 hover:text-sunset-gold hover:bg-white/[0.06] disabled:opacity-20 transition"
+                      >
+                        <AIcon name="arrow-up" size={13} strokeWidth={2.3} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => movePackage(idx, 1)}
+                        disabled={idx === packages.length - 1}
+                        aria-label="নিচে নিন"
+                        className="w-11 h-6 rounded-md grid place-items-center text-white/45 hover:text-sunset-gold hover:bg-white/[0.06] disabled:opacity-20 transition rotate-180"
+                      >
+                        <AIcon name="arrow-up" size={13} strokeWidth={2.3} />
+                      </button>
                     </div>
-                    <p className="text-xs text-white/60 mb-3">{pkg.description || 'বিবরণ নেই'}</p>
-                    <span className="text-[12.5px] text-white/50 block mb-3">
-                      ⏱ {toBn(pkg.duration_hours || 2)} ঘণ্টা
-                    </span>
-                    {pkg.features && pkg.features.length > 0 && (
-                      <ul className="space-y-1 mb-4 text-xs text-white/75">
-                        {pkg.features.map((f, i) => (
-                          <li key={i} className="flex gap-2">
-                            <span className="text-sunset-gold">✓</span> {f}
-                          </li>
-                        ))}
-                      </ul>
-                    )}
+                    <button type="button" onClick={() => { setPkgEditing(pkg); setPkgDialogOpen(true); }} className="flex-1 min-w-0 text-left">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h4 className="font-bold text-white text-[15px] truncate min-w-0">{pkg.name}</h4>
+                        {pkg.is_popular && (
+                          <span className="text-[10.5px] font-extrabold bg-sunset-soft text-sunset-gold rounded-full px-2 py-0.5 shrink-0">⭐ জনপ্রিয়</span>
+                        )}
+                      </div>
+                      <div className="flex items-baseline gap-2 mt-0.5 flex-wrap">
+                        <span className="price-tag text-lg">{taka(pkg.price)}</span>
+                        <span className="text-xs text-white/45">⏱ {toBn(pkg.duration_hours || 0)} ঘণ্টা{pkg.features?.length ? ` · ${toBn(pkg.features.length)}টি সুবিধা` : ''}</span>
+                      </div>
+                    </button>
                   </div>
 
-                  <div className="flex justify-end gap-2 pt-3 border-t border-white/[0.08]">
+                  {/* media strip */}
+                  {pkg.media && pkg.media.length > 0 ? (
+                    <div className="flex gap-1.5 mt-3">
+                      {pkg.media.slice(0, 4).map((m, mi) => (
+                        <div key={mi} className="relative w-12 h-12 rounded-lg overflow-hidden border border-white/10 shrink-0 bg-twilight-800">
+                          <img
+                            src={m.type === 'video' ? videoThumb(m.url) : cldUrl(m.url, { w: 120, c: 'fill' })}
+                            alt="" className="w-full h-full object-cover" loading="lazy"
+                          />
+                          {mi === 0 && <span className="absolute inset-x-0 bottom-0 bg-black/65 text-[8.5px] font-extrabold text-sunset-gold text-center leading-3.5 py-px">কভার</span>}
+                          {mi === 3 && pkg.media!.length > 4 && (
+                            <span className="absolute inset-0 bg-black/65 text-white text-[11px] font-bold grid place-items-center">+{toBn(pkg.media!.length - 4)}</span>
+                          )}
+                          {m.type === 'video' && <span className="absolute top-0.5 left-0.5 text-[9px]">▶</span>}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
                     <button
                       type="button"
-                      onClick={() => handleDeletePkg(pkg.id)}
-                      className="btn-danger !py-1 !px-3 !text-xs"
+                      onClick={() => { setPkgEditing(pkg); setPkgDialogOpen(true); }}
+                      className="mt-3 w-full rounded-lg border-2 border-dashed border-amber-400/30 bg-amber-400/[0.05] px-3 py-2 text-left text-[11.5px] font-semibold text-amber-300/85 hover:border-amber-400/60 transition"
                     >
-                      ডিলিট
+                      রেফারেন্স ছবি নেই — বুকিং বাড়াতে ছবি যোগ করুন
+                    </button>
+                  )}
+
+                  {/* desc + features summary */}
+                  {pkg.description && <p className="text-xs text-white/55 mt-3 line-clamp-2 leading-relaxed">{pkg.description}</p>}
+
+                  {/* actions */}
+                  <div className="flex items-center justify-end gap-2 mt-3.5 pt-3 border-t border-white/[0.08]">
+                    <button
+                      type="button"
+                      onClick={() => setPkgDeleting(pkg)}
+                      aria-label="ডিলিট"
+                      className="w-11 h-9 rounded-lg grid place-items-center text-rose-300/80 hover:text-rose-300 hover:bg-rose-500/10 transition"
+                    >
+                      <AIcon name="trash" size={16} strokeWidth={2} />
                     </button>
                     <button
                       type="button"
-                      onClick={() => handleStartEditPkg(pkg)}
-                      className="btn-ghost !py-1 !px-3 !text-xs"
+                      onClick={() => { setPkgEditing(pkg); setPkgDialogOpen(true); }}
+                      className="btn-ghost !py-2 !px-4 !text-xs flex items-center gap-1.5"
                     >
-                      এডিট
+                      <AIcon name="edit" size={13} strokeWidth={2.2} /> এডিট
                     </button>
                   </div>
                 </div>
               ))}
             </div>
+
+            {/* খালি অবস্থা */}
+            {packages.length === 0 && (
+              <button
+                type="button"
+                onClick={() => { setPkgEditing(null); setPkgDialogOpen(true); }}
+                className="w-full glass-card rounded-xl3 p-8 text-center hover:border-sunset-gold/40 transition"
+              >
+                <span className="block text-3xl mb-2">📦</span>
+                <span className="block font-bold text-white">প্রথম প্যাকেজ তৈরি করুন</span>
+                <span className="block text-xs text-white/50 mt-1">দাম, সময় আর রেফারেন্স ছবি দিয়ে ক্লায়েন্ট আকর্ষণ করুন</span>
+              </button>
+            )}
           </div>
         )}
 
@@ -1213,6 +1229,141 @@ export default function StudioDash() {
               </div>
             </div>
 
+            {/* V21 — ডিটেইল ডেন্সিটি: স্পেশালটি, কভার্ড স্পট, ডেলিভারি, গিয়ার, ভাষা */}
+            <div className="pt-2 border-t border-white/[0.08] space-y-5">
+              <div>
+                <label className="field-label">বিশেষত্ব (সর্বোচ্চ ৪টি)</label>
+                <p className="text-[12.5px] text-white/45 mb-2">প্রোফাইলে চিপ হিসেবে দেখাবে — ক্লায়েন্ট দ্রুত বুঝবে</p>
+                <div className="flex flex-wrap gap-2">
+                  {SPECIALTY_OPTIONS.map((s) => {
+                    const active = profSpecialties.includes(s);
+                    return (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() =>
+                          setProfSpecialties((prev) =>
+                            active ? prev.filter((x) => x !== s) : prev.length >= 4 ? prev : [...prev, s],
+                          )
+                        }
+                        className={`rounded-full px-3.5 py-2 text-[13px] font-semibold transition ${
+                          active
+                            ? 'bg-sunset-gradient text-[#1A0E06] shadow-sunset-glow'
+                            : 'chip text-white/65 hover:text-white'
+                        }`}
+                      >
+                        {active ? '✓ ' : '+ '}{s}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div>
+                <label className="field-label">যেসব স্পটে কাজ করেন (সর্বোচ্চ ৬টি)</label>
+                <div className="flex flex-wrap gap-2 mt-1">
+                  {COX_SPOTS.map((s) => {
+                    const active = profCoveredSpots.includes(s.key);
+                    return (
+                      <button
+                        key={s.key}
+                        type="button"
+                        onClick={() =>
+                          setProfCoveredSpots((prev) =>
+                            active ? prev.filter((x) => x !== s.key) : prev.length >= 6 ? prev : [...prev, s.key],
+                          )
+                        }
+                        className={`rounded-full px-3 py-1.5 text-[12.5px] font-semibold transition ${
+                          active ? 'bg-emerald-500/20 border border-emerald-400/40 text-emerald-300' : 'chip !py-1.5 !text-[12.5px] text-white/60'
+                        }`}
+                      >
+                        📍 {s.nameBn}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div>
+                <label className="field-label">ছবি ডেলিভারি সময়</label>
+                <div className="grid grid-cols-3 gap-2 mt-1">
+                  {DELIVERY_OPTIONS.map((d) => (
+                    <button
+                      key={d.v}
+                      type="button"
+                      onClick={() => setProfDelivery(d.v)}
+                      className={`rounded-xl py-3 text-[13px] font-bold transition ${
+                        profDelivery === d.v
+                          ? 'bg-sunset-soft text-sunset-gold border border-sunset-gold/50'
+                          : 'chip !py-3 !text-[13px] text-white/60'
+                      }`}
+                    >
+                      {d.l}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[12.5px] text-white/45 mt-1.5">প্রোফাইলে "⚡ {DELIVERY_OPTIONS.find((d) => d.v === profDelivery)?.l} ডেলিভারি" ব্যাজ দেখাবে</p>
+              </div>
+
+              <div>
+                <label className="field-label">📷 ব্যবহৃত গিয়ার</label>
+                <div className="grid sm:grid-cols-2 gap-3 mt-1">
+                  <input
+                    type="text"
+                    value={profGearCamera}
+                    onChange={(e) => setProfGearCamera(e.target.value)}
+                    placeholder="ক্যামেরা — যেমন: Sony A7IV"
+                    className="glass-input"
+                  />
+                  <input
+                    type="text"
+                    value={profGearLenses}
+                    onChange={(e) => setProfGearLenses(e.target.value)}
+                    placeholder="লেন্স — যেমন: 85mm f/1.4, 35mm"
+                    className="glass-input"
+                  />
+                </div>
+                <div className="flex flex-wrap gap-2 mt-2.5">
+                  {GEAR_EXTRA_OPTIONS.map((g) => {
+                    const active = profGearExtras.includes(g);
+                    return (
+                      <button
+                        key={g}
+                        type="button"
+                        onClick={() => setProfGearExtras((prev) => (active ? prev.filter((x) => x !== g) : [...prev, g]))}
+                        className={`rounded-full px-3 py-1.5 text-[12.5px] font-semibold transition ${
+                          active ? 'bg-sunset-soft text-sunset-gold border border-sunset-gold/40' : 'chip !py-1.5 !text-[12.5px] text-white/60'
+                        }`}
+                      >
+                        {active ? '✓ ' : '+ '}{g}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div>
+                <label className="field-label">🗣 ভাষা</label>
+                <div className="flex flex-wrap gap-2 mt-1">
+                  {LANGUAGE_OPTIONS.map((l) => {
+                    const active = profLanguages.includes(l);
+                    return (
+                      <button
+                        key={l}
+                        type="button"
+                        onClick={() => setProfLanguages((prev) => (active ? prev.filter((x) => x !== l) : [...prev, l]))}
+                        className={`rounded-full px-3.5 py-2 text-[13px] font-semibold transition ${
+                          active ? 'bg-white/[0.14] border border-white/25 text-white' : 'chip !py-2 !text-[13px] text-white/60'
+                        }`}
+                      >
+                        {active ? '✓ ' : ''}{l}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
             <div className="flex justify-end pt-4">
               <button
                 type="submit"
@@ -1334,6 +1485,27 @@ export default function StudioDash() {
           </div>
         )}
       </div>
+
+      {/* V21 — প্যাকেজ এডিট ডায়ালগ + M3 ডিলিট কনফার্ম */}
+      {photographer && (
+        <PackageEditDialog
+          key={pkgEditing?.id || 'new'}
+          open={pkgDialogOpen}
+          photographerId={photographer.id}
+          editing={pkgEditing}
+          existingCount={packages.length}
+          onClose={() => { setPkgDialogOpen(false); setPkgEditing(null); }}
+          onSaved={handlePkgSaved}
+        />
+      )}
+      <ConfirmDialog
+        open={!!pkgDeleting}
+        onClose={() => setPkgDeleting(null)}
+        onConfirm={handleDeletePkg}
+        title="প্যাকেজটি মুছে ফেলবেন?"
+        body={pkgDeleting ? `"${pkgDeleting.name}" স্থায়ীভাবে মুছে যাবে — এটি আর ফিরিয়ে আনা যাবে না।` : undefined}
+        busy={pkgSavingDel}
+      />
     </div>
   );
 }

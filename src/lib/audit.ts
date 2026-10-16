@@ -23,6 +23,7 @@ export type AuditEntity =
   | 'kyc'
   | 'role_request'
   | 'chat'
+  | 'package'
   | 'system';
 
 export interface AuditDetails {
@@ -109,6 +110,7 @@ export const ENTITY_BN: Record<string, string> = {
   kyc: 'KYC',
   role_request: 'রোল রিকোয়েস্ট',
   chat: 'চ্যাট',
+  package: 'প্যাকেজ',
   system: 'সিস্টেম',
 };
 

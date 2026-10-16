@@ -9,6 +9,7 @@ import { waLink, cldUrl } from '../lib/cloudinary';
 import BookingForm from '../components/BookingForm';
 import MediaReviews from '../components/MediaReviews';
 import PostCard from '../components/PostCard';
+import { videoThumb } from '../components/PackageEditDialog';
 
 /* ── Small presentational helpers ─────────────────────────────── */
 
@@ -131,6 +132,7 @@ export default function PhotographerProfile() {
   const [avatarBroken, setAvatarBroken] = useState(false);
   const [coverBroken, setCoverBroken] = useState(false);
   const [posts, setPosts] = useState<Post[]>([]);
+  const [viewerMedia, setViewerMedia] = useState<{ url: string; type: 'image' | 'video'; title?: string } | null>(null); // V21 package reference viewer
 
   const viewCountedRef = useRef(false);
 
@@ -386,6 +388,18 @@ export default function PhotographerProfile() {
     .map((s) => s.trim())
     .filter(Boolean);
 
+  // V21 — detail density (photographers.details)
+  const det = photographer.details || {};
+  const specialties: string[] = det.specialties || [];
+  const coveredSpots: string[] = det.covered_spots || [];
+  const gearCamera = det.gear?.camera || '';
+  const gearLenses = det.gear?.lenses || '';
+  const gearExtras: string[] = det.gear?.extras || [];
+  const deliveryLabel =
+    det.delivery_days === 1 ? '২৪ ঘণ্টা' :
+    det.delivery_days === 3 ? '২-৩ দিন' :
+    det.delivery_days === 7 ? '৫-৭ দিন' : null;
+
   const categories = (photographer.photographer_categories || [])
     .map((c) => c?.categories?.name)
     .filter(Boolean) as string[];
@@ -601,9 +615,44 @@ export default function PhotographerProfile() {
             )}
           </section>
 
-          {/* Specialties & service areas */}
+          {/* Specialties & service areas — V21 detail density */}
           <section className="pf-card p-6" aria-labelledby="pf-areas-h">
             <h2 id="pf-areas-h" className="pf-serif text-lg font-bold text-[#26231e] mb-3">সার্ভিস এরিয়া ও বিশেষত্ব</h2>
+
+            {specialties.length > 0 && (
+              <div className="mb-4">
+                <span className="text-[12.5px] font-bold uppercase tracking-wide text-[#8a8172] block mb-2">বিশেষত্ব</span>
+                <div className="flex flex-wrap gap-2">
+                  {specialties.map((s, i) => (
+                    <span key={i} className="inline-flex items-center gap-1.5 rounded-full bg-[#eef5f1] border border-[#cfe0d6] px-3 py-1.5 text-[13px] font-bold text-[#1d4d3b]">
+                      ✦ {s}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {coveredSpots.length > 0 && (
+              <div className="mb-4">
+                <span className="text-[12.5px] font-bold uppercase tracking-wide text-[#8a8172] block mb-2">যেসব স্পটে কাজ করেন</span>
+                <div className="flex flex-wrap gap-1.5">
+                  {coveredSpots.map((k) => {
+                    const s = SPOT_BY_KEY(k);
+                    if (!s) return null;
+                    return (
+                      <span key={k} className="pf-chip !text-[12.5px] !py-1">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#b08d57" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                          <circle cx="12" cy="10" r="3" />
+                        </svg>
+                        {s.nameBn}
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             <div className="flex flex-wrap gap-2">
               <span className="pf-chip">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#b08d57" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -617,6 +666,20 @@ export default function PhotographerProfile() {
               ))}
               <span className="pf-chip">সমগ্র কক্সবাজার</span>
             </div>
+
+            {(gearCamera || gearLenses || gearExtras.length > 0) && (
+              <div className="mt-4 pt-4 border-t border-[#e6ddcc]">
+                <span className="text-[12.5px] font-bold uppercase tracking-wide text-[#8a8172] block mb-2">📷 ব্যবহৃত গিয়ার</span>
+                <div className="flex flex-wrap gap-1.5 items-center">
+                  {gearCamera && <span className="rounded-lg bg-[#f3efe6] border border-[#e2ddd2] px-2.5 py-1.5 text-[13px] font-semibold text-[#26231e]">🎥 {gearCamera}</span>}
+                  {gearLenses && <span className="rounded-lg bg-[#f3efe6] border border-[#e2ddd2] px-2.5 py-1.5 text-[13px] font-semibold text-[#26231e]">🔭 {gearLenses}</span>}
+                  {gearExtras.map((g, i) => (
+                    <span key={i} className="rounded-lg bg-[#eef5f1] border border-[#cfe0d6] px-2.5 py-1.5 text-[13px] font-semibold text-[#1d4d3b]">✓ {g}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {spotObj && (
               <Link
                 to={`/finder?spot=${encodeURIComponent(spotObj.key)}`}
@@ -657,11 +720,16 @@ export default function PhotographerProfile() {
 
           {/* Packages */}
           <section aria-labelledby="pf-pkg-h">
-            <div className="flex items-end justify-between mb-4">
+            <div className="flex items-end justify-between mb-4 gap-3 flex-wrap">
               <div>
                 <h2 id="pf-pkg-h" className="pf-serif text-xl font-bold text-[#26231e]">প্যাকেজ ও মূল্য</h2>
                 <p className="text-sm text-[#6b6357] mt-0.5">স্বচ্ছ দাম — কোনো লুকানো চার্জ নেই</p>
               </div>
+              {deliveryLabel && (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-[#eef5f1] border border-[#cfe0d6] px-3 py-1.5 text-[12.5px] font-bold text-[#1d4d3b] whitespace-nowrap">
+                  ⚡ {deliveryLabel} ছবি ডেলিভারি
+                </span>
+              )}
             </div>
 
             {packages.length === 0 ? (
@@ -672,7 +740,7 @@ export default function PhotographerProfile() {
             ) : (
               <div className="grid md:grid-cols-2 gap-4">
                 {packages.map((pkg, idx) => {
-                  const isPopular = idx === 0;
+                  const isPopular = pkg.is_popular === true || (packages.every((p) => !p.is_popular) && idx === 0);
                   return (
                     <article
                       key={pkg.id}
@@ -690,6 +758,46 @@ export default function PhotographerProfile() {
                       <p className="text-xs text-[#6b6357] mt-0.5">
                         {toBn(pkg.duration_hours || 0)} ঘণ্টা{pkg.description ? ` · ${pkg.description}` : ''}
                       </p>
+
+                      {/* V21 — রেফারেন্স মিডিয়া স্ট্রিপ (ট্যাপ করে বড় দেখুন) */}
+                      {pkg.media && pkg.media.length > 0 && (
+                        <div className="mt-3.5">
+                          <p className="text-[11px] font-bold text-[#8a8172] uppercase tracking-wide mb-1.5">
+                            এই প্যাকেজের নমুনা কাজ (ট্যাপ করে বড় দেখুন)
+                          </p>
+                          <div className="-mx-5 px-5 overflow-x-auto snap-x snap-mandatory flex gap-2.5 pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                            {pkg.media.map((m, mi) => (
+                              <button
+                                key={mi}
+                                type="button"
+                                onClick={() => setViewerMedia({ url: m.url, type: m.type, title: pkg.name })}
+                                className="relative w-[156px] aspect-[16/10] shrink-0 snap-start rounded-xl overflow-hidden border border-[#e2ddd2] bg-[#f2efe8] group/tile"
+                                aria-label={`${pkg.name} নমুনা ${mi + 1} বড় করে দেখুন`}
+                              >
+                                <img
+                                  src={m.type === 'video' ? videoThumb(m.url) : cldUrl(m.url, { w: 480, c: 'fill' })}
+                                  alt={`${pkg.name} — নমুনা ${toBn(mi + 1)}`}
+                                  className="w-full h-full object-cover transition-transform duration-300 group-hover/tile:scale-[1.04]"
+                                  loading="lazy"
+                                />
+                                {m.type === 'video' && (
+                                  <span className="absolute inset-0 grid place-items-center">
+                                    <span className="w-9 h-9 rounded-full bg-black/55 backdrop-blur-sm grid place-items-center text-white">
+                                      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg>
+                                    </span>
+                                  </span>
+                                )}
+                                {mi === 0 && (
+                                  <span className="absolute top-1.5 left-1.5 rounded-md bg-[#1d4d3b]/90 text-white text-[10px] font-extrabold px-1.5 py-0.5">
+                                    {mi === 0 ? 'নমুনা' : ''}
+                                  </span>
+                                )}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
                       {pkg.features && pkg.features.length > 0 && (
                         <ul className="mt-3 space-y-1.5 flex-1">
                           {pkg.features.map((feat, fIdx) => (
@@ -867,6 +975,26 @@ export default function PhotographerProfile() {
               />
             </div>
           </div>
+        </div>
+      )}
+
+      {/* V21 — প্যাকেজ রেফারেন্স মিডিয়া ভিউয়ার (full-screen) */}
+      {viewerMedia && (
+        <div className="fixed inset-0 z-[95] bg-black/92 flex flex-col" role="dialog" aria-modal="true" onClick={() => setViewerMedia(null)}>
+          <div className="shrink-0 h-14 px-3 flex items-center justify-between text-white">
+            <span className="text-sm font-bold truncate px-1">{viewerMedia.title || 'নমুনা কাজ'}</span>
+            <button type="button" aria-label="বন্ধ করুন" className="w-11 h-11 rounded-full grid place-items-center hover:bg-white/10">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+            </button>
+          </div>
+          <div className="flex-1 min-h-0 grid place-items-center p-4" onClick={(e) => e.stopPropagation()}>
+            {viewerMedia.type === 'video' ? (
+              <video src={viewerMedia.url} controls autoPlay playsInline className="max-w-full max-h-full rounded-xl" />
+            ) : (
+              <img src={viewerMedia.url} alt={viewerMedia.title || ''} className="max-w-full max-h-full rounded-xl object-contain" />
+            )}
+          </div>
+          <div className="shrink-0 h-[max(1rem,env(safe-area-inset-bottom))]" />
         </div>
       )}
     </div>

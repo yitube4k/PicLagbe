@@ -104,7 +104,7 @@ export default function Blog() {
       </div>
 
       {/* ═══ স্পট গাইড কার্ড ═══ */}
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredSpots.map((spot, i) => {
           const photo = SPOT_PHOTOS[spot.key];
           const guide = SPOT_GUIDES[spot.key];
@@ -154,10 +154,10 @@ export default function Blog() {
                   </div>
 
                   {/* ভাড়া + টিকিট summary */}
-                  <div className="pt-4 mt-4 border-t border-white/[0.08] flex items-center justify-between gap-2 text-[12.5px]">
-                    <span className="text-white/55 truncate">🛺 {cost.vara}</span>
-                    <span className="text-white/55 truncate">🎟️ {cost.ticket}</span>
-                    <span className="text-sunset-gold font-bold whitespace-nowrap">গাইড →</span>
+                  <div className="pt-4 mt-4 border-t border-white/[0.08] flex items-center justify-between gap-2 text-[12.5px] min-w-0">
+                    <span className="text-white/55 truncate min-w-0 flex-1">🛺 {cost.vara}</span>
+                    <span className="text-white/55 truncate min-w-0 flex-1 text-right">🎟️ {cost.ticket}</span>
+                    <span className="text-sunset-gold font-bold whitespace-nowrap shrink-0">গাইড →</span>
                   </div>
                 </div>
               </Link>

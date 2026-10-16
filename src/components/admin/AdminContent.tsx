@@ -1,8 +1,9 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { BlogPost, Category, Review } from '../../lib/types';
+import { BlogPost, Category, Review, TravelData } from '../../lib/types';
 import { bnDate, toBn } from '../../lib/utils';
 import CldUploadField from '../CldUploadField';
+import TravelDataBuilder from './TravelDataBuilder';
 import {
   AdminSheet, FullDialog, ConfirmDialog, FilterBar, OverflowMenu,
   Field, EmptyState, ListSkeleton, KV,
@@ -30,13 +31,25 @@ export function AdminBlog() {
   const [busyId, setBusyId] = useState<string | null>(null);
 
   const [f, setF] = useState({ title: '', slug: '', excerpt: '', cover: '', content: '', author: 'ফটোলাগবে টিম', tags: '', published: true });
+  const [td, setTd] = useState<TravelData | null>(null); // V21 structured travel data
+  const [slugTouched, setSlugTouched] = useState(false);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const dirtyRef = useRef(false);
   const setFD = (p: Partial<typeof f>) => { setF((prev) => ({ ...prev, ...p })); dirtyRef.current = true; };
+  const setTD = (v: TravelData | null) => { setTd(v); dirtyRef.current = true; };
+
+  // Bengali-safe live slug autogen from title (preserves \u0980-\u09FF) until user touches slug
+  useEffect(() => {
+    if (slugTouched) return;
+    const gen = f.title.trim().toLowerCase().replace(/[^a-z0-9\u0980-\u09FF]+/g, '-').replace(/^-+|-+$/g, '');
+    setF((prev) => (prev.slug === gen ? prev : { ...prev, slug: gen }));
+  }, [f.title, slugTouched]);
 
   const openNew = () => {
     setF({ title: '', slug: '', excerpt: '', cover: '', content: '', author: 'ফটোলাগবে টিম', tags: '', published: true });
+    setTd(null);
+    setSlugTouched(false);
     setEditing(null);
     setAdding(true);
     dirtyRef.current = false;
@@ -49,6 +62,8 @@ export function AdminBlog() {
       content: b.content, author: b.author || 'ফটোলাগবে টিম',
       tags: (b.tags || []).join(', '), published: b.published,
     });
+    setTd(b.travel_data || null);
+    setSlugTouched(true); // editing existing — keep its slug stable
     setEditing(b);
     setAdding(true);
     dirtyRef.current = false;
@@ -68,6 +83,7 @@ export function AdminBlog() {
       author: f.author.trim() || 'ফটোলাগবে টিম',
       tags: f.tags.split(',').map((t) => t.trim()).filter(Boolean),
       published: f.published,
+      travel_data: td && Object.keys(td).length > 0 ? td : null,
     };
     let error;
     if (editing) {
@@ -185,8 +201,8 @@ export function AdminBlog() {
             <input value={f.title} onChange={(e) => setFD({ title: e.target.value })} className="glass-input !text-base" />
           </Field>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <Field label="স্লাগ" hint="খালি রাখলে টাইটেল থেকে হবে">
-              <input value={f.slug} onChange={(e) => setFD({ slug: e.target.value })} className="glass-input !text-base" />
+            <Field label="স্লাগ" hint={slugTouched ? 'ম্যানুয়াল স্লাগ' : 'টাইটেল থেকে অটো-তৈরি হচ্ছে'}>
+              <input value={f.slug} onChange={(e) => { setSlugTouched(true); setFD({ slug: e.target.value }); }} className="glass-input !text-base" />
             </Field>
             <Field label="লেখক">
               <input value={f.author} onChange={(e) => setFD({ author: e.target.value })} className="glass-input !text-base" />
@@ -209,6 +225,9 @@ export function AdminBlog() {
               {f.published ? '✓ পাবলিশড' : 'ড্রাফট হিসেবে সেভ'}
             </button>
           </div>
+
+          {/* V21 — স্ট্রাকচার্ড ট্রাভেল গাইড বিল্ডার */}
+          <TravelDataBuilder value={td} onChange={setTD} />
         </div>
       </FullDialog>
 
