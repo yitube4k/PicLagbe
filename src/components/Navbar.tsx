@@ -11,6 +11,46 @@ interface NavItem {
   icon: React.ReactNode;
 }
 
+/* ── অপশন মেনুর SVG আইকনস (homepage-এর nav-এর সাথে ম্যাচড, stroke = currentColor) ── */
+const IcUser = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+    <circle cx="12" cy="7" r="4" />
+  </svg>
+);
+
+const IcStudio = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <circle cx="12" cy="12" r="10" />
+    <line x1="14.31" y1="8" x2="20.05" y2="17.94" />
+    <line x1="9.69" y1="8" x2="21.17" y2="8" />
+    <line x1="7.38" y1="12" x2="13.12" y2="2.06" />
+    <line x1="9.69" y1="16" x2="3.95" y2="6.06" />
+    <line x1="14.31" y1="16" x2="2.83" y2="16" />
+    <line x1="16.62" y1="12" x2="10.88" y2="21.94" />
+  </svg>
+);
+
+const IcShield = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+  </svg>
+);
+
+const IcLogout = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+    <polyline points="16 17 21 12 16 7" />
+    <line x1="21" y1="12" x2="9" y2="12" />
+  </svg>
+);
+
+const IcChat = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+  </svg>
+);
+
 const NAV_ITEMS: NavItem[] = [
   {
     label: 'হোম',
@@ -376,61 +416,122 @@ export default function Navbar() {
                   {menuOpen && (
                     <div
                       role="menu"
-                      className="absolute right-0 top-12 w-64 glass-strong !rounded-[18px] p-2 shadow-glass-lg origin-top-right"
+                      className="absolute right-0 top-12 w-72 glass-strong !rounded-[20px] shadow-glass-lg origin-top-right menu-pop overflow-hidden"
                     >
-                      {/* header */}
-                      <div className="flex items-center gap-3 px-3 pt-2 pb-3">
+                      {/* সোনালি গ্রেডিয়েন্ট বর্ডার লাইন (homepage-ম্যাচড) */}
+                      <span aria-hidden="true" className="menu-fx-line !rounded-[20px]" />
+
+                      {/* header: অ্যাভাটার + নাম + ইমেইল + রোল ব্যাজ */}
+                      <div className="flex items-center gap-3 px-4 pt-4 pb-3 bg-white/[0.03]">
                         {renderAvatar()}
-                        <div className="min-w-0">
+                        <div className="min-w-0 flex-1">
                           <span className="text-sm font-bold text-white truncate block">
                             {profile?.full_name || 'ব্যবহারকারী'}
                           </span>
-                          <span className="text-[11px] text-white/50 truncate block">
+                          <span className="text-[11px] text-white/50 truncate block mt-0.5">
                             {profile?.email || ''}
                           </span>
                         </div>
                       </div>
 
-                      <hr className="divider-glow my-1" />
-
-                      <Link
-                        to="/dashboard"
-                        role="menuitem"
-                        className="flex items-center gap-3 rounded-xl2 px-3 py-2.5 text-sm font-medium text-white/85 hover:bg-white/[0.08] hover:text-white"
-                      >
-                        <span>👤</span> প্রোফাইল দেখুন
-                      </Link>
-
-                      {profile?.role === 'photographer' && (
-                        <Link
-                          to="/studio"
-                          role="menuitem"
-                          className="flex items-center gap-3 rounded-xl2 px-3 py-2.5 text-sm font-medium text-white/85 hover:bg-white/[0.08] hover:text-white"
+                      {/* রোল ব্যাজ */}
+                      <div className="px-4 pb-3">
+                        <span
+                          className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.12em] ${
+                            profile?.role === 'admin'
+                              ? 'bg-sunset-gradient text-[#1A0E06]'
+                              : profile?.role === 'photographer'
+                                ? 'bg-sunset-soft text-sunset-gold border border-sunset-gold/35'
+                                : 'bg-white/[0.08] text-white/70 border border-white/10'
+                          }`}
                         >
-                          <span>🎛️</span> মাই স্টুডিও
-                        </Link>
-                      )}
+                          {profile?.role === 'admin' ? (
+                            <><IcShield /> অ্যাডমিন</>
+                          ) : profile?.role === 'photographer' ? (
+                            <><IcStudio /> ফটোগ্রাফার</>
+                          ) : (
+                            <><IcUser /> সাধারণ সদস্য</>
+                          )}
+                        </span>
+                      </div>
 
-                      {profile?.role === 'admin' && (
+                      <hr className="divider-glow my-0.5" />
+
+                      <div className="p-1.5">
                         <Link
-                          to="/admin"
+                          to="/dashboard"
                           role="menuitem"
-                          className="flex items-center gap-3 rounded-xl2 px-3 py-2.5 text-sm font-medium text-sunset-gold hover:bg-white/[0.08]"
+                          className="group flex items-center gap-3 rounded-xl2 px-2.5 py-2.5 text-sm font-medium text-white/85 hover:bg-white/[0.07] hover:text-white transition-colors"
                         >
-                          <span>🛡️</span> অ্যাডমিন প্যানেল
+                          <span className="w-8 h-8 rounded-lg bg-white/[0.06] flex items-center justify-center text-white/70 group-hover:bg-sunset-soft group-hover:text-sunset-gold transition-colors shrink-0">
+                            <IcUser />
+                          </span>
+                          <span className="flex-1">
+                            প্রোফাইল ড্যাশবোর্ড
+                            <span className="block text-[10.5px] text-white/45 font-normal mt-0.5">বুকিং, প্রিয়, রিভিউ ও এডিট</span>
+                          </span>
                         </Link>
-                      )}
 
-                      <hr className="divider-glow my-1" />
+                        {profile?.role === 'photographer' && (
+                          <Link
+                            to="/studio"
+                            role="menuitem"
+                            className="group flex items-center gap-3 rounded-xl2 px-2.5 py-2.5 text-sm font-medium text-white/85 hover:bg-white/[0.07] hover:text-white transition-colors"
+                          >
+                            <span className="w-8 h-8 rounded-lg bg-white/[0.06] flex items-center justify-center text-white/70 group-hover:bg-sunset-soft group-hover:text-sunset-gold transition-colors shrink-0">
+                              <IcStudio />
+                            </span>
+                            <span className="flex-1">
+                              মাই স্টুডিও
+                              <span className="block text-[10.5px] text-white/45 font-normal mt-0.5">পোস্ট, প্যাকেজ, শিডিউল ও বুকিং</span>
+                            </span>
+                          </Link>
+                        )}
 
-                      <button
-                        type="button"
-                        role="menuitem"
-                        onClick={handleLogout}
-                        className="w-full flex items-center gap-3 rounded-xl2 px-3 py-2.5 text-sm font-semibold text-rose-300 hover:bg-rose-500/10 text-left"
-                      >
-                        <span>🚪</span> লগআউট
-                      </button>
+                        {profile?.role === 'admin' && (
+                          <Link
+                            to="/admin"
+                            role="menuitem"
+                            className="group flex items-center gap-3 rounded-xl2 px-2.5 py-2.5 text-sm font-semibold text-sunset-gold hover:bg-white/[0.07] transition-colors"
+                          >
+                            <span className="w-8 h-8 rounded-lg bg-sunset-soft border border-sunset-gold/30 flex items-center justify-center text-sunset-gold transition-colors shrink-0">
+                              <IcShield />
+                            </span>
+                            <span className="flex-1">
+                              অ্যাডমিন প্যানেল
+                              <span className="block text-[10.5px] text-white/45 font-normal mt-0.5">সব কন্ট্রোল, এডিট ও অনুমোদন</span>
+                            </span>
+                          </Link>
+                        )}
+
+                        <Link
+                          to="/chat"
+                          role="menuitem"
+                          className="group flex items-center gap-3 rounded-xl2 px-2.5 py-2.5 text-sm font-medium text-white/85 hover:bg-white/[0.07] hover:text-white transition-colors"
+                        >
+                          <span className="w-8 h-8 rounded-lg bg-white/[0.06] flex items-center justify-center text-white/70 group-hover:bg-sunset-soft group-hover:text-sunset-gold transition-colors shrink-0">
+                            <IcChat />
+                          </span>
+                          <span className="flex-1">
+                            মেসেজ ইনবক্স
+                            <span className="block text-[10.5px] text-white/45 font-normal mt-0.5">user ↔ ফটোগ্রাফার চ্যাট</span>
+                          </span>
+                        </Link>
+
+                        <hr className="divider-glow my-1" />
+
+                        <button
+                          type="button"
+                          role="menuitem"
+                          onClick={handleLogout}
+                          className="group w-full flex items-center gap-3 rounded-xl2 px-2.5 py-2.5 text-sm font-semibold text-rose-300 hover:bg-rose-500/10 text-left transition-colors"
+                        >
+                          <span className="w-8 h-8 rounded-lg bg-rose-500/10 flex items-center justify-center text-rose-300 group-hover:bg-rose-500/20 transition-colors shrink-0">
+                            <IcLogout />
+                          </span>
+                          লগআউট
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -552,16 +653,16 @@ export default function Navbar() {
                 onClick={() => setDrawerOpen(false)}
                 className="rounded-xl2 px-4 py-2.5 flex items-center gap-3 text-sm font-medium text-white/85 hover:bg-white/[0.08]"
               >
-                <span>👤</span> প্রোফাইল দেখুন
+                <span className="text-sunset-gold/90 shrink-0"><IcUser /></span> প্রোফাইল ড্যাশবোর্ড
               </Link>
 
               {profile?.role === 'photographer' && (
                 <Link
                   to="/studio"
                   onClick={() => setDrawerOpen(false)}
-                  className="btn-primary w-full py-2.5 text-sm justify-center"
+                  className="rounded-xl2 px-4 py-2.5 flex items-center gap-3 text-sm font-medium text-white/85 hover:bg-white/[0.08]"
                 >
-                  🎛️ মাই স্টুডিও
+                  <span className="text-sunset-gold/90 shrink-0"><IcStudio /></span> মাই স্টুডিও
                 </Link>
               )}
 
@@ -569,26 +670,26 @@ export default function Navbar() {
                 <Link
                   to="/admin"
                   onClick={() => setDrawerOpen(false)}
-                  className="btn-primary w-full py-2.5 text-sm justify-center"
+                  className="rounded-xl2 px-4 py-2.5 flex items-center gap-3 text-sm font-semibold text-sunset-gold hover:bg-white/[0.08]"
                 >
-                  🛡️ অ্যাডমিন প্যানেল
+                  <span className="shrink-0"><IcShield /></span> অ্যাডমিন প্যানেল
                 </Link>
               )}
 
               <Link
                 to="/chat"
                 onClick={() => setDrawerOpen(false)}
-                className="btn-ghost w-full py-2.5 text-sm justify-center"
+                className="rounded-xl2 px-4 py-2.5 flex items-center gap-3 text-sm font-medium text-white/85 hover:bg-white/[0.08]"
               >
-                💬 মেসেজ ইনবক্স
+                <span className="text-sunset-gold/90 shrink-0"><IcChat /></span> মেসেজ ইনবক্স
               </Link>
 
               <button
                 type="button"
                 onClick={handleLogout}
-                className="w-full rounded-xl2 px-4 py-2.5 flex items-center justify-center gap-2 text-sm font-semibold text-rose-300 hover:bg-rose-500/10 transition"
+                className="w-full rounded-xl2 px-4 py-2.5 flex items-center gap-3 text-sm font-semibold text-rose-300 hover:bg-rose-500/10 transition text-left"
               >
-                🚪 লগআউট
+                <span className="shrink-0"><IcLogout /></span> লগআউট
               </button>
             </div>
           )}

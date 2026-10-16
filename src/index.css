@@ -989,3 +989,41 @@
 @media (prefers-reduced-motion: reduce) {
   .bf-spin { animation-duration: 1.6s; }
 }
+
+/* ═══ AVATAR OPTION MENU — homepage-ম্যাচড সোনালি গ্রেডিয়েন্ট বর্ডার + পপ ইন ═══ */
+.menu-fx-line {
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.5), rgba(249, 115, 22, 0.12) 38%, rgba(255, 255, 255, 0.05) 62%, rgba(251, 191, 36, 0.32));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+@keyframes menuPop {
+  from { opacity: 0; transform: scale(0.96) translateY(-4px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.menu-pop {
+  animation: menuPop 160ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menu-pop {
+    animation: none;
+  }
+}
+
+/* ড্যাশবোর্ড ট্যাব বার — মোবাইলে স্ক্রলবার লুকানো */
+.dash-tabs-scroll {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.dash-tabs-scroll::-webkit-scrollbar {
+  display: none;
+}

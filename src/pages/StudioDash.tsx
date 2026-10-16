@@ -10,6 +10,7 @@ import ScheduleTab from '../components/ScheduleTab';
 import PostCard from '../components/PostCard';
 import PostComposer from '../components/PostComposer';
 import { waLink } from '../lib/cloudinary';
+import DashTabs, { TabIc } from '../components/DashTabs';
 
 type StudioTab = 'overview' | 'bookings' | 'schedule' | 'posts' | 'packages' | 'portfolio' | 'profile' | 'verification';
 
@@ -556,67 +557,23 @@ export default function StudioDash() {
         <span>💬 রিভিউ সংখ্যা: <strong className="text-white">{toBn(photographer.rating_count || 0)}</strong></span>
       </div>
 
-      {/* Tabs */}
-      <div className="flex justify-center">
-        <div className="glass rounded-full inline-flex p-1.5 gap-1 flex-wrap justify-center">
-          <button
-            type="button"
-            onClick={() => setTab('overview')}
-            className={tab === 'overview' ? 'chip-active rounded-full px-5 py-2 text-sm' : 'chip !border-transparent text-white/75 hover:text-white'}
-          >
-            ওভারভিউ
-          </button>
-          <button
-            type="button"
-            onClick={() => setTab('bookings')}
-            className={tab === 'bookings' ? 'chip-active rounded-full px-5 py-2 text-sm' : 'chip !border-transparent text-white/75 hover:text-white'}
-          >
-            বুকিং ({toBn(bookings.length)})
-          </button>
-          <button
-            type="button"
-            onClick={() => setTab('schedule')}
-            className={tab === 'schedule' ? 'chip-active rounded-full px-5 py-2 text-sm' : 'chip !border-transparent text-white/75 hover:text-white'}
-          >
-            🗓️ সময়সূচি
-          </button>
-          <button
-            type="button"
-            onClick={() => setTab('posts')}
-            className={tab === 'posts' ? 'chip-active rounded-full px-5 py-2 text-sm' : 'chip !border-transparent text-white/75 hover:text-white'}
-          >
-            🖼 পোস্ট ({toBn(posts.length)})
-          </button>
-          <button
-            type="button"
-            onClick={() => setTab('packages')}
-            className={tab === 'packages' ? 'chip-active rounded-full px-5 py-2 text-sm' : 'chip !border-transparent text-white/75 hover:text-white'}
-          >
-            প্যাকেজ ({toBn(packages.length)})
-          </button>
-          <button
-            type="button"
-            onClick={() => setTab('portfolio')}
-            className={tab === 'portfolio' ? 'chip-active rounded-full px-5 py-2 text-sm' : 'chip !border-transparent text-white/75 hover:text-white'}
-          >
-            পোর্টফোলিও ({toBn(portfolio.length)})
-          </button>
-          <button
-            type="button"
-            onClick={() => setTab('profile')}
-            className={tab === 'profile' ? 'chip-active rounded-full px-5 py-2 text-sm' : 'chip !border-transparent text-white/75 hover:text-white'}
-          >
-            প্রোফাইল
-          </button>
-          <button
-            type="button"
-            onClick={() => setTab('verification')}
-            className={tab === 'verification' ? 'chip-active rounded-full px-5 py-2 text-sm' : 'chip !border-transparent text-white/75 hover:text-white'}
-          >
-            {kycSub?.status === 'approved' ? '✓ ভেরিফায়েড' : 'ভেরিফিকেশন'}
-          </button>
-        </div>
-      </div>
+      {/* Tabs — ক্লিন আইকন ট্যাব (মোবাইলে এক লাইন স্ক্রল) */}
+      <DashTabs<StudioTab>
+        tabs={[
+          { key: 'overview', label: 'ওভারভিউ', icon: <TabIc.grid /> },
+          { key: 'bookings', label: 'বুকিং', icon: <TabIc.calendar />, count: bookings.length },
+          { key: 'schedule', label: 'সময়সূচি', icon: <TabIc.clock /> },
+          { key: 'posts', label: 'পোস্ট', icon: <TabIc.image />, count: posts.length },
+          { key: 'packages', label: 'প্যাকেজ', icon: <TabIc.tag />, count: packages.length },
+          { key: 'portfolio', label: 'পোর্টফোলিও', icon: <TabIc.camera />, count: portfolio.length },
+          { key: 'profile', label: 'প্রোফাইল', icon: <TabIc.user /> },
+          kycSub?.status === 'approved'
+            ? { key: 'verification', label: 'ভেরিফায়েড', icon: <TabIc.check />, tone: 'gold' as const }
+            : { key: 'verification', label: 'ভেরিফিকেশন', icon: <TabIc.shield /> },
+        ]}
+        active={tab}
+        onChange={setTab}
+      />
 
       {/* Tab Content */}
       <div>

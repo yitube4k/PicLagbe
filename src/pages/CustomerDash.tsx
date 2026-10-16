@@ -6,6 +6,7 @@ import { Booking, Review, Notification, Photographer, Package } from '../lib/typ
 import { toBn, taka, bnDate } from '../lib/utils';
 import { waLink } from '../lib/cloudinary';
 import PhotographerCard from '../components/PhotographerCard';
+import DashTabs, { TabIc } from '../components/DashTabs';
 import { ProfileEditSection, MigrationSection, KycSection } from '../components/ProfileSections';
 
 type DashTab = 'bookings' | 'favorites' | 'reviews' | 'notifications' | 'profile' | 'kyc';
@@ -305,55 +306,19 @@ export default function CustomerDash() {
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="mt-8 flex justify-center">
-        <div className="glass rounded-full inline-flex p-1.5 gap-1 flex-wrap justify-center">
-          <button
-            type="button"
-            onClick={() => setTab('bookings')}
-            className={tab === 'bookings' ? 'chip-active rounded-full px-5 py-2 text-sm' : 'chip !border-transparent text-white/75 hover:text-white'}
-          >
-            বুকিং ({toBn(bookings.length)})
-          </button>
-          <button
-            type="button"
-            onClick={() => setTab('favorites')}
-            className={tab === 'favorites' ? 'chip-active rounded-full px-5 py-2 text-sm' : 'chip !border-transparent text-white/75 hover:text-white'}
-          >
-            প্রিয় ({toBn(favoritePhotographers.length)})
-          </button>
-          <button
-            type="button"
-            onClick={() => setTab('reviews')}
-            className={tab === 'reviews' ? 'chip-active rounded-full px-5 py-2 text-sm' : 'chip !border-transparent text-white/75 hover:text-white'}
-          >
-            রিভিউ ({toBn(myReviews.length)})
-          </button>
-          <button
-            type="button"
-            onClick={() => setTab('notifications')}
-            className={tab === 'notifications' ? 'chip-active rounded-full px-5 py-2 text-sm' : 'chip !border-transparent text-white/75 hover:text-white'}
-          >
-            নোটিফিকেশন ({toBn(notifications.filter((n) => !n.read).length)})
-          </button>
-          <button
-            type="button"
-            onClick={() => setTab('profile')}
-            className={tab === 'profile' ? 'chip-active rounded-full px-5 py-2 text-sm' : 'chip !border-transparent text-white/75 hover:text-white'}
-          >
-            👤 প্রোফাইল
-          </button>
-          {profile.role === 'photographer' && (
-            <button
-              type="button"
-              onClick={() => setTab('kyc')}
-              className={tab === 'kyc' ? 'chip-active rounded-full px-5 py-2 text-sm' : 'chip !border-transparent text-white/75 hover:text-white'}
-            >
-              🛡️ KYC
-            </button>
-          )}
-        </div>
-      </div>
+      {/* Tabs — ক্লিন আইকন ট্যাব (মোবাইলে এক লাইন স্ক্রল) */}
+      <DashTabs<DashTab>
+        tabs={[
+          { key: 'bookings', label: 'বুকিং', icon: <TabIc.calendar />, count: bookings.length },
+          { key: 'favorites', label: 'প্রিয়', icon: <TabIc.heart />, count: favoritePhotographers.length },
+          { key: 'reviews', label: 'রিভিউ', icon: <TabIc.star />, count: myReviews.length },
+          { key: 'notifications', label: 'নোটিফিকেশন', icon: <TabIc.bell />, count: notifications.filter((n) => !n.read).length },
+          { key: 'profile', label: 'প্রোফাইল', icon: <TabIc.user /> },
+          { key: 'kyc', label: 'KYC', icon: <TabIc.shield />, show: profile.role === 'photographer' },
+        ]}
+        active={tab}
+        onChange={setTab}
+      />
 
       {/* Tab Content */}
       <div className="mt-8">
