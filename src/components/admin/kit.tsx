@@ -279,23 +279,25 @@ export function OverflowMenu({ items, align = 'right' }: { items: OverflowItem[]
     setOpen(true);
   };
 
-  // outside click / scroll / Esc close
+  // outside click / scroll / Esc close — V20: named handlers, ALL removed on cleanup (leak fix)
   useEffect(() => {
     if (!open) return;
     const close = () => setOpen(false);
     const onDoc = (e: MouseEvent | TouchEvent) => {
       if (!ref.current?.parentElement?.contains(e.target as Node) && !(e.target instanceof Element && e.target.closest('.admin-overflow-pop'))) close();
     };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') close(); };
     document.addEventListener('mousedown', onDoc);
     document.addEventListener('touchstart', onDoc);
     window.addEventListener('scroll', close, true);
     window.addEventListener('resize', close);
-    window.addEventListener('keydown', (e) => e.key === 'Escape' && close());
+    window.addEventListener('keydown', onKey);
     return () => {
       document.removeEventListener('mousedown', onDoc);
       document.removeEventListener('touchstart', onDoc);
       window.removeEventListener('scroll', close, true);
       window.removeEventListener('resize', close);
+      window.removeEventListener('keydown', onKey);
     };
   }, [open]);
 
@@ -414,21 +416,46 @@ export function FilterBar({
   );
 }
 
-/* ══════════════════ 8. LIST HOOK — zero-skeleton optimistic ══════════════════ */
+/* ══════════════════ 8. LIST HOOK — zero-skeleton optimistic + V20 perf (SWR cache, single-flight) ══════════════════ */
+
+/* V20 — module-level SWR cache + in-flight dedup keyed by fetcher identity.
+   Same useCallback(fetcher) instance = same query → rapid section remounts and
+   duplicate effects NEVER stack parallel fetches (low-end Android hang fix). */
+const listCache = new WeakMap<() => Promise<unknown[]>, { data: unknown[]; ts: number }>();
+const listInflight = new WeakMap<() => Promise<unknown[]>, Promise<unknown[]>>();
+const LIST_STALE_MS = 15_000;
 
 export function useAdminList<T extends { id: string }>(fetcher: () => Promise<T[]>, deps: unknown[]) {
-  const [items, setItems] = useState<T[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [items, setItems] = useState<T[]>(() => (listCache.get(fetcher)?.data as T[]) || []);
+  const [loading, setLoading] = useState(() => !listCache.get(fetcher));
   const [error, setError] = useState<string | null>(null);
   const [shakeId, setShakeId] = useState<string | null>(null);
   const alive = useRef(true);
   const first = useRef(true);
 
-  const load = useCallback(async (silent = false) => {
-    if (!silent) setLoading(true);
+  const load = useCallback(async (silent = false, force = false) => {
+    if (!silent) {
+      const cached = listCache.get(fetcher);
+      if (!force && cached && Date.now() - cached.ts < LIST_STALE_MS) {
+        // SWR: fresh cache → instant paint, zero skeleton (fast section back-navigation)
+        setItems(cached.data as T[]); setError(null); setLoading(false);
+        return;
+      }
+      setLoading(true);
+    }
     try {
-      const data = await fetcher();
-      if (alive.current) { setItems(data || []); setError(null); }
+      // single-flight: reuse an identical in-flight request instead of stacking a new one
+      let prom = listInflight.get(fetcher);
+      if (!prom) {
+        prom = fetcher().then((d) => {
+          listCache.set(fetcher, { data: (d as unknown[]) || [], ts: Date.now() });
+          listInflight.delete(fetcher);
+          return d;
+        }).catch((e) => { listInflight.delete(fetcher); throw e; });
+        listInflight.set(fetcher, prom);
+      }
+      const data = await prom;
+      if (alive.current) { setItems((data as T[]) || []); setError(null); }
     } catch (e) {
       if (alive.current) setError((e as Error)?.message || 'লোড ব্যর্থ হয়েছে');
     } finally {
@@ -456,7 +483,10 @@ export function useAdminList<T extends { id: string }>(fetcher: () => Promise<T[
     window.setTimeout(() => setShakeId(null), 420);
   }, []);
 
-  return { items, setItems, loading, error, reload: load, silentReload: () => load(true), patch, remove, prepend, shakeId, shake };
+  /** মিউটেশনের পর সত্যিকারের রিফ্রেশ — ক্যাশ বাইপাস করে নেটওয়ার্কে যায় */
+  const silentReload = useCallback(() => load(true, true), [load]);
+
+  return { items, setItems, loading, error, reload: load, silentReload, patch, remove, prepend, shakeId, shake };
 }
 
 /* rollback helper — wrap a mutation; on error re-sync from DB, shake row, error snack */
@@ -565,6 +595,54 @@ export function ListSkeleton({ rows = 4, h = 'h-[72px]' }: { rows?: number; h?: 
       ))}
     </div>
   );
+}
+
+/* ══════════════════ V20 PROGRESSIVE LIST — Android hang fix ══════════════════
+   বড় লিস্ট (১৫০–৩০০ রো) একবারে রেন্ডার করলে লো-এন্ড ফোন আটকে যায়।
+   প্রথমে ৩০টি, "আরও দেখুন" বাটনে +৩০। ফিল্টার বদলালে আবার ৩০ থেকে শুরু। */
+export function useProgressiveList<T>(items: T[], chunkSize = 30, resetKey?: unknown) {
+  const [visible, setVisible] = useState(chunkSize);
+  useEffect(() => { setVisible(chunkSize); }, [chunkSize, resetKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  const visibleItems = useMemo(() => items.slice(0, visible), [items, visible]);
+  const hasMore = visible < items.length;
+  const remaining = Math.max(0, items.length - visible);
+  const loadMore = useCallback(() => setVisible((v) => Math.min(v + chunkSize, items.length)), [chunkSize, items.length]);
+  return { visibleItems, hasMore, remaining, loadMore };
+}
+
+export function ProgressiveRows<T extends { id: string }>({
+  items, renderRow, resetKey, chunkSize = 30, className = 'space-y-2.5',
+}: {
+  items: T[];
+  renderRow: (item: T) => React.ReactNode;
+  resetKey?: unknown;
+  chunkSize?: number;
+  className?: string;
+}) {
+  const { visibleItems, hasMore, remaining, loadMore } = useProgressiveList(items, chunkSize, resetKey);
+  return (
+    <div className={className}>
+      {visibleItems.map((item) => renderRow(item))}
+      {hasMore && (
+        <button
+          type="button"
+          onClick={loadMore}
+          className="w-full h-12 rounded-xl2 bg-white/[0.06] border border-white/10 text-[13.5px] font-bold text-white/75 hover:text-white hover:bg-white/[0.09] active:scale-[0.99] transition-all inline-flex items-center justify-center gap-2"
+        >
+          <AIcon name="chevron" size={15} className="rotate-90" />
+          আরও দেখুন
+          <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-white/10 text-[11px] font-extrabold grid place-items-center tabular-nums">
+            {toBnNum(remaining)}
+          </span>
+        </button>
+      )}
+    </div>
+  );
+}
+
+/** ছোট বাংলা সংখ্যা হেল্পার (kit অভ্যন্তরীণ — utils-এর সার্কুলার ইমপোর্ট এড়াতে) */
+function toBnNum(n: number): string {
+  return String(n).replace(/\d/g, (d) => '০১২৩৪৫৬৭৮৯'[Number(d)]);
 }
 
 export function SectionHead({ title, sub, right }: { title: string; sub?: string; right?: React.ReactNode }) {

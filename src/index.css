@@ -1163,3 +1163,37 @@
 }
 
 /* admin overflow menu / popup scrollbar — uses global .no-scrollbar (line 71) */
+
+/* ═══════════ V20 — LOW-END ANDROID HANG FIX (Gemini 4 Argon spec) ═══════════
+   Each .glass row with backdrop-filter creates an isolated GPU compositing pass;
+   150–300 rows exhaust VRAM and stall the compositor on low-end phones.
+   Fix: list rows inside the admin shell drop REAL blur on touch devices and get
+   a faux-glass gradient + specular top border (visually identical, 0% GPU blur),
+   plus content-visibility so off-screen rows skip layout/paint entirely.
+   Sticky chrome (top bar, bottom nav, sheets) keeps true blur — few elements. */
+
+/* max-width key = deterministic for ALL phones (pointer media queries lie in some webviews);
+   tablets get the same faux-glass — visually identical, still 0% blur cost */
+@media (max-width: 1023px) {
+  .admin-shell main .glass,
+  .admin-shell main .glass-card {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.075) 0%, rgba(255, 255, 255, 0.045) 100%);
+    border-top-color: rgba(255, 255, 255, 0.14); /* faux-glass specular highlight */
+  }
+}
+
+/* skip layout/paint of off-screen admin list rows (long lists = bookings 150, audit 300) */
+.admin-shell main .glass,
+.admin-shell main .glass-card {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 88px;
+}
+/* rows hosting an open overlay (overflow menu / snack near row) — contain:paint clips
+   absolutely-positioned children INSIDE the row; our menus are body-portaled so safe,
+   but keep row hover elevation from being clipped: */
+.admin-shell main .glass:has(.admin-overflow-pop),
+.admin-shell main .glass-card:has(.admin-overflow-pop) {
+  content-visibility: visible;
+}

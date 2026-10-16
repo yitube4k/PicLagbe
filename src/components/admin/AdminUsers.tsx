@@ -4,7 +4,7 @@ import { Profile } from '../../lib/types';
 import { bnDate } from '../../lib/utils';
 import {
   AdminSheet, FullDialog, ConfirmDialog, FilterBar, IconAction, OverflowMenu,
-  Field, StatusPill, EmptyState, ListSkeleton, KV, waMe, telHref,
+  Field, StatusPill, EmptyState, ListSkeleton, KV, ProgressiveRows, waMe, telHref,
   useAdminList, useSnack, useOptimistic,
 } from './kit';
 import { logAction } from '../../lib/audit';
@@ -170,8 +170,10 @@ export default function AdminUsers({ onChanged }: { onChanged?: () => void }) {
       ) : list.items.length === 0 ? (
         <EmptyState icon="👥" title="কোনো ইউজার পাওয়া যায়নি" sub="সার্চ বা ফিল্টার বদলে দেখুন।" />
       ) : (
-        <div className="space-y-2.5">
-          {list.items.map((u) => {
+        <ProgressiveRows
+          items={list.items}
+          resetKey={roleFilter}
+          renderRow={(u) => {
             const wa = waMe(u.whatsapp || u.phone);
             return (
               <div key={u.id} className={`glass rounded-xl2 p-3.5 flex items-center gap-3 ${list.shakeId === u.id ? 'admin-shake' : ''}`}>
@@ -214,8 +216,8 @@ export default function AdminUsers({ onChanged }: { onChanged?: () => void }) {
                 />
               </div>
             );
-          })}
-        </div>
+          }}
+        />
       )}
 
       {/* VIEW SHEET */}

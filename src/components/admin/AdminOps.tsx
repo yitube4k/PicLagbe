@@ -4,7 +4,7 @@ import { Booking } from '../../lib/types';
 import { bnDate, bnDateTime, toBn, STATUS_BN } from '../../lib/utils';
 import {
   AdminSheet, FullDialog, ConfirmDialog, FilterBar, OverflowMenu, MediaViewer,
-  Field, StatusPill, EmptyState, ListSkeleton, KV, waMe, telHref,
+  Field, StatusPill, EmptyState, ListSkeleton, KV, ProgressiveRows, waMe, telHref,
   useAdminList, useSnack, useOptimistic,
 } from './kit';
 import { logAction } from '../../lib/audit';
@@ -135,8 +135,10 @@ export function AdminBookings() {
       ) : list.items.length === 0 ? (
         <EmptyState icon="📅" title="কোনো বুকিং নেই" sub="এই ফিল্টারে কোনো বুকিং পাওয়া যায়নি।" />
       ) : (
-        <div className="space-y-2.5">
-          {list.items.map((b) => (
+        <ProgressiveRows
+          items={list.items}
+          resetKey={filter}
+          renderRow={(b) => (
             <div key={b.id} className={`glass rounded-xl2 p-3.5 flex items-center gap-2.5 ${list.shakeId === b.id ? 'admin-shake' : ''}`}>
               <button type="button" onClick={() => setViewing(b)} className="flex items-center gap-3 min-w-0 flex-1 text-left">
                 <span className="w-11 h-11 rounded-xl2 bg-sunset-soft border border-sunset-gold/25 grid place-items-center text-sunset-gold shrink-0">
@@ -165,8 +167,8 @@ export function AdminBookings() {
                 ]}
               />
             </div>
-          ))}
-        </div>
+          )}
+        />
       )}
 
       {/* VIEW SHEET — contacts + quick status + edit */}

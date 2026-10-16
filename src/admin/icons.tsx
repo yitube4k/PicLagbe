@@ -8,7 +8,8 @@ export type IconName =
   | 'chats' | 'users' | 'star' | 'category' | 'blog' | 'audit' | 'tune'
   | 'grid' | 'search' | 'close' | 'chevron' | 'arrow-up' | 'plus' | 'logout'
   | 'more' | 'eye' | 'edit' | 'trash' | 'check' | 'xmark' | 'whatsapp'
-  | 'phone' | 'undo' | 'alert' | 'ban' | 'download' | 'refresh' | 'external' | 'clock';
+  | 'phone' | 'undo' | 'alert' | 'ban' | 'download' | 'refresh' | 'external' | 'clock'
+  | 'bell' | 'check-all';
 
 const PATHS: Record<IconName, React.ReactNode> = {
   dashboard: (
@@ -212,6 +213,18 @@ const PATHS: Record<IconName, React.ReactNode> = {
     <>
       <circle cx="12" cy="12" r="8.8" />
       <path d="M12 7v5.2l3.4 2" />
+    </>
+  ),
+  bell: (
+    <>
+      <path d="M18 8.4a6 6 0 0 0-12 0c0 6.6-2.5 8.1-2.5 8.1h17S18 15 18 8.4" />
+      <path d="M13.9 20a2.2 2.2 0 0 1-3.8 0" />
+    </>
+  ),
+  'check-all': (
+    <>
+      <path d="m2 13.5 4 4L14.5 9" />
+      <path d="m12.5 15.5 2 2L23 9" />
     </>
   ),
 };

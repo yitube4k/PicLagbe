@@ -98,7 +98,7 @@ function AdminLock() {
 /* ── the real chrome ── */
 function AdminChrome() {
   const { profile } = useAuth();
-  const { pendingAlerts, badge } = useAdminCounts();
+  const { pendingAlerts, badge, unreadNotif } = useAdminCounts();
   const { pathname } = useLocation();
   const [sheetOpen, setSheetOpen] = useState(false);
 
@@ -150,6 +150,19 @@ function AdminChrome() {
                 {toBn(pendingAlerts)} অপেক্ষমাণ
               </span>
             )}
+            {/* V20 — নোটিফিকেশন বেল (অপঠিত ব্যাজ) */}
+            <Link
+              to={adminPath('notification')}
+              aria-label={`নোটিফিকেশন${unreadNotif > 0 ? ` — ${toBn(unreadNotif)} অপঠিত` : ''}`}
+              className="relative w-10 h-10 shrink-0 rounded-full grid place-items-center text-white/70 hover:text-white hover:bg-white/[0.07] transition-colors active:scale-90"
+            >
+              <AIcon name="bell" size={19} strokeWidth={unreadNotif > 0 ? 2.1 : 1.8} />
+              {unreadNotif > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 min-w-[17px] h-[17px] px-1 rounded-full bg-sunset-coral text-white text-[10px] font-extrabold grid place-items-center ring-2 ring-twilight-950 tabular-nums admin-badge-pulse">
+                  {toBn(unreadNotif > 99 ? 99 : unreadNotif)}
+                </span>
+              )}
+            </Link>
           </div>
         </header>
 

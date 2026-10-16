@@ -6,7 +6,7 @@ import { bnDate, taka } from '../../lib/utils';
 import { openApp } from '../../lib/base';
 import {
   AdminSheet, FullDialog, ConfirmDialog, FilterBar, OverflowMenu,
-  Field, StatusPill, EmptyState, ListSkeleton, KV, waMe, telHref,
+  Field, StatusPill, EmptyState, ListSkeleton, KV, ProgressiveRows, waMe, telHref,
   useAdminList, useSnack, useOptimistic,
 } from './kit';
 import { logAction } from '../../lib/audit';
@@ -251,8 +251,10 @@ export default function AdminPhotographers({ onChanged }: { onChanged?: () => vo
       ) : list.items.length === 0 ? (
         <EmptyState icon="📷" title="কোনো ফটোগ্রাফার পাওয়া যায়নি" sub="ফিল্টার বদলে দেখুন বা ম্যানুয়াল যোগ করুন।" />
       ) : (
-        <div className="space-y-2.5">
-          {list.items.map((p) => {
+        <ProgressiveRows
+          items={list.items}
+          resetKey={filter}
+          renderRow={(p) => {
             const wa = waMe(p.whatsapp || p.phone, `আসসালামু আলাইকুম ${p.display_name || ''}! PicLagbe থেকে যোগাযোগ করছি।`);
             return (
               <div key={p.id} className={`glass rounded-xl2 p-3.5 flex items-center gap-2.5 ${list.shakeId === p.id ? 'admin-shake' : ''}`}>
@@ -308,8 +310,8 @@ export default function AdminPhotographers({ onChanged }: { onChanged?: () => vo
                 />
               </div>
             );
-          })}
-        </div>
+          }}
+        />
       )}
 
       {/* VIEW SHEET */}

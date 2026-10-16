@@ -62,6 +62,19 @@ export function logAction(
         details: details || null,
       });
       if (error) console.warn('[audit] log insert failed:', error.message);
+
+      // V20: অ্যাডমিন অ্যাকশন রিসিপ্ট → নোটিফিকেশন ফিডেও (প্রি-রিড — ব্যাজে চাপ দেবে না)
+      const { error: nErr } = await supabase.from('admin_notifications').insert({
+        type: 'admin_action',
+        title: `${title || ACTION_BN[action] || action} — ${ENTITY_BN[entity] || entity}`,
+        body: details?.note || (title ? `${ACTION_BN[action] || action} সম্পন্ন হয়েছে।` : 'অ্যাকশন সম্পন্ন হয়েছে।'),
+        target_section: NOTIF_SECTION[entity] || '/admin/dashboard',
+        entity_id: entityId || null,
+        actor_id: user?.id || null,
+        is_read: true,
+        metadata: { action, entity },
+      });
+      if (nErr) console.warn('[audit] notification receipt failed:', nErr.message);
     } catch (e) {
       console.warn('[audit] logAction failed:', e);
     }
@@ -97,4 +110,19 @@ export const ENTITY_BN: Record<string, string> = {
   role_request: 'রোল রিকোয়েস্ট',
   chat: 'চ্যাট',
   system: 'সিস্টেম',
+};
+
+/** V20 — এন্টিটি → নোটিফিকেশন রিসিপ্টের টার্গেট সেকশন (আমাদের রাউট) */
+const NOTIF_SECTION: Record<string, string> = {
+  user: '/admin/user',
+  photographer: '/admin/photographer',
+  post: '/admin/post',
+  booking: '/admin/booking',
+  review: '/admin/review',
+  blog: '/admin/blog',
+  category: '/admin/category',
+  kyc: '/admin/kyc',
+  role_request: '/admin/requests',
+  chat: '/admin/chat',
+  system: '/admin/settings',
 };

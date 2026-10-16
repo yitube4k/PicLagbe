@@ -6,7 +6,7 @@ import { cldUrl } from '../../lib/cloudinary';
 import { openApp } from '../../lib/base';
 import {
   AdminSheet, ConfirmDialog, FilterBar, OverflowMenu, MediaViewer, FullDialog, Field,
-  StatusPill, EmptyState, ListSkeleton,
+  StatusPill, EmptyState, ListSkeleton, ProgressiveRows,
   useAdminList, useSnack, useOptimistic,
 } from './kit';
 import { logAction } from '../../lib/audit';
@@ -123,8 +123,11 @@ export default function AdminPosts({ onChanged }: { onChanged?: () => void }) {
       ) : list.items.length === 0 ? (
         <EmptyState icon="🖼" title="কোনো পোস্ট নেই" sub="এই ফিল্টারে কোনো পোস্ট পাওয়া যায়নি।" />
       ) : (
-        <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
-          {list.items.map((p) => (
+        <ProgressiveRows
+          items={list.items}
+          resetKey={filter}
+          className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4"
+          renderRow={(p) => (
             <article key={p.id} className={`glass-card rounded-xl3 overflow-hidden flex flex-col ${list.shakeId === p.id ? 'admin-shake' : ''}`}>
               {/* media thumb — tap = preview */}
               <button type="button" onClick={() => setPreview(p)} className="relative h-40 bg-twilight-800 block w-full active:opacity-90">
@@ -190,8 +193,8 @@ export default function AdminPosts({ onChanged }: { onChanged?: () => void }) {
                 </div>
               </div>
             </article>
-          ))}
-        </div>
+          )}
+        />
       )}
 
       {/* PREVIEW SHEET */}

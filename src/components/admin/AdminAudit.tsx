@@ -4,7 +4,7 @@ import { toBn, bnDateTime } from '../../lib/utils';
 import { ACTION_BN, ENTITY_BN } from '../../lib/audit';
 import {
   AdminSheet, ConfirmDialog, FilterBar, OverflowMenu, Field,
-  EmptyState, ListSkeleton, KV,
+  EmptyState, ListSkeleton, KV, ProgressiveRows,
   useAdminList, useSnack,
 } from './kit';
 import { AIcon } from '../../admin/icons';
@@ -244,8 +244,11 @@ export default function AdminAudit() {
               sub="অ্যাডমিন প্যানেলে কাজ করলেই (অনুমোদন, এডিট, ডিলিট) এখানে রেকর্ড জমা হবে।"
             />
           ) : (
-            <div className="space-y-2">
-              {logs.items.map((l) => (
+            <ProgressiveRows
+              items={logs.items}
+              resetKey={`${entityF}|${actionF}|${dateFrom}|${dateTo}|${qTick}`}
+              className="space-y-2"
+              renderRow={(l) => (
                 <div key={l.id} className="glass rounded-xl2 p-3.5 flex items-start gap-3">
                   <span className="w-10 h-10 rounded-xl2 glass grid place-items-center text-base shrink-0" aria-hidden="true">
                     {ACTION_EMOJI[l.action] || '•'}
@@ -266,8 +269,8 @@ export default function AdminAudit() {
                     </p>
                   </div>
                 </div>
-              ))}
-            </div>
+              )}
+            />
           )}
         </>
       )}

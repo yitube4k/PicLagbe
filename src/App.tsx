@@ -22,6 +22,7 @@ import HowItWorks from './pages/HowItWorks';
 // V18 modular admin — one route per file in src/admin/
 import AdminLayout from './admin/layout';
 import AdminDashboard from './admin/dashboard';
+import AdminNotification from './admin/notification';
 import AdminUser from './admin/user';
 import AdminPhotographer from './admin/photographer';
 import AdminPost from './admin/post';
@@ -87,6 +88,7 @@ export default function App() {
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard" element={<AdminDashboard />} />
+            <Route path="notification" element={<AdminNotification />} />
             <Route path="user" element={<AdminUser />} />
             <Route path="photographer" element={<AdminPhotographer />} />
             <Route path="post" element={<AdminPost />} />

@@ -17,7 +17,7 @@ interface Tile {
 }
 
 export default function AdminDashboard() {
-  const { counts } = useAdminCounts();
+  const { counts, unreadNotif } = useAdminCounts();
   const navigate = useNavigate();
 
   const tiles: Tile[] = [
@@ -34,6 +34,7 @@ export default function AdminDashboard() {
   ];
 
   const quick: { label: string; icon: IconName; to: AdminSlug; badge?: number }[] = [
+    { label: 'নোটিফিকেশন',        icon: 'bell',     to: 'notification', badge: unreadNotif },
     { label: 'পোস্ট অনুমোদন',      icon: 'posts',    to: 'post',         badge: counts?.pendingPosts },
     { label: 'ফটোগ্রাফার অনুমোদন', icon: 'camera',   to: 'photographer', badge: counts?.pendingPhotographers },
     { label: 'KYC রিভিউ',         icon: 'shield',   to: 'kyc',          badge: counts?.pendingKyc },

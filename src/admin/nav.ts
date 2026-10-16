@@ -6,7 +6,7 @@ import type { IconName } from './icons';
    Desktop rail: 4 logical groups. */
 
 export type AdminSlug =
-  | 'dashboard' | 'user' | 'photographer' | 'post' | 'booking' | 'review'
+  | 'dashboard' | 'notification' | 'user' | 'photographer' | 'post' | 'booking' | 'review'
   | 'blog' | 'category' | 'kyc' | 'requests' | 'chat' | 'audit' | 'settings';
 
 export type BadgeKey = 'pendingPosts' | 'pendingKyc' | 'pendingRoleReq' | 'pendingPhotographers';
@@ -21,6 +21,7 @@ export interface AdminNavItem {
 
 export const ADMIN_NAV: AdminNavItem[] = [
   { slug: 'dashboard',    label: 'ওভারভিউ',      sub: 'পুরো সাইটের এক নজরে অবস্থা',            icon: 'dashboard' },
+  { slug: 'notification', label: 'নোটিফিকেশন',   sub: 'সব গুরুত্বপূর্ণ ইভেন্টের লাইভ ফিড',      icon: 'bell' },
   { slug: 'booking',      label: 'বুকিং',        sub: 'সব বুকিং দেখা, স্ট্যাটাস ও এডিট',        icon: 'bookings' },
   { slug: 'photographer', label: 'ফটোগ্রাফার',    sub: 'অনুমোদন, ভেরিফিকেশন ও সম্পূর্ণ এডিট',   icon: 'camera', badgeKey: 'pendingPhotographers' },
   { slug: 'kyc',          label: 'KYC',          sub: 'পরিচয় যাচাই — অনুমোদন ও বাতিল',        icon: 'shield', badgeKey: 'pendingKyc' },
@@ -42,7 +43,7 @@ export const ADMIN_NAV_BY_SLUG: Record<AdminSlug, AdminNavItem> = ADMIN_NAV.redu
 
 /* Desktop rail — Argon group order */
 export const NAV_GROUPS: { title: string; slugs: AdminSlug[] }[] = [
-  { title: 'কোর',                    slugs: ['dashboard', 'booking'] },
+  { title: 'কোর',                    slugs: ['dashboard', 'notification', 'booking'] },
   { title: 'ভেরিফিকেশন ও মডারেশন',   slugs: ['kyc', 'requests', 'post', 'review', 'chat'] },
   { title: 'ডিরেক্টরি ও কনটেন্ট',    slugs: ['photographer', 'user', 'category', 'blog'] },
   { title: 'সিস্টেম',                slugs: ['audit', 'settings'] },
