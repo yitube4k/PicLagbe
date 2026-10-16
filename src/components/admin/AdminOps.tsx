@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabase';
 import { Booking } from '../../lib/types';
 import { bnDate, STATUS_BN } from '../../lib/utils';
 import { AdminModal, Field, StatusPill, EmptyState, SectionHead, DangerConfirm } from './kit';
+import { logAction } from '../../lib/audit';
 
 type AdminBooking = Booking & {
   photographers?: { display_name?: string | null } | null;
@@ -68,6 +69,11 @@ export function AdminBookings() {
       .eq('id', editing.id);
     setSaving(false);
     if (error) { setErr(error.message); return; }
+    logAction(status !== editing.status ? 'status_change' : 'update', 'booking', editing.id, `${editing.profiles?.full_name || 'গ্রাহক'} → ${editing.photographers?.display_name || 'ফটোগ্রাফার'}`, {
+      note: status !== editing.status ? `বুকিং স্ট্যাটাস: ${editing.status} → ${status}` : 'বুকিং ডিটেইলস এডিট',
+      before: { status: editing.status },
+      after: { status, event_date: date },
+    });
     setEditing(null);
     load();
   };
@@ -75,6 +81,9 @@ export function AdminBookings() {
   const del = async (b: AdminBooking) => {
     const { error } = await supabase.from('bookings').delete().eq('id', b.id);
     if (error) { window.alert('ডিলিট ব্যর্থ: ' + error.message); return; }
+    logAction('delete', 'booking', b.id, `${b.profiles?.full_name || 'গ্রাহক'} → ${b.photographers?.display_name || 'ফটোগ্রাফার'}`, {
+      note: 'বুকিং ডিলিট',
+    });
     load();
   };
 
@@ -200,6 +209,9 @@ export function AdminKyc({ onChanged }: { onChanged?: () => void }) {
       .update({ status: 'approved', review_note: null, reviewed_at: new Date().toISOString() })
       .eq('id', s.id);
     await supabase.from('photographers').update({ verified: true, profile_status: 'approved' }).eq('id', s.photographer_id);
+    logAction('approve', 'kyc', s.id, s.photographers?.display_name || 'ফটোগ্রাফার', {
+      note: `KYC অনুমোদন + ভেরিফাই (${s.photographers?.display_name || 'ফটোগ্রাফার'})`,
+    });
     setBusy(false);
     load();
     onChanged?.();
@@ -212,6 +224,9 @@ export function AdminKyc({ onChanged }: { onChanged?: () => void }) {
       .from('kyc_submissions')
       .update({ status: 'rejected', review_note: note.trim() || null, reviewed_at: new Date().toISOString() })
       .eq('id', rejecting.id);
+    logAction('reject', 'kyc', rejecting.id, rejecting.photographers?.display_name || 'ফটোগ্রাফার', {
+      note: `KYC বাতিল${note.trim() ? ` — কারণ: ${note.trim()}` : ''}`,
+    });
     setBusy(false);
     setRejecting(null);
     load();

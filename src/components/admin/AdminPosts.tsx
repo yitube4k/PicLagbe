@@ -5,6 +5,7 @@ import { Post } from '../../lib/types';
 import { toBn, bnDate } from '../../lib/utils';
 import { cldUrl } from '../../lib/cloudinary';
 import { AdminModal, Field, StatusPill, EmptyState, SectionHead, DangerConfirm } from './kit';
+import { logAction } from '../../lib/audit';
 
 type AdminPost = Post & {
   photographers?: { id?: string; display_name?: string | null; profile_photo_url?: string | null } | null;
@@ -48,6 +49,9 @@ export default function AdminPosts({ onChanged }: { onChanged?: () => void }) {
       .eq('id', p.id);
     setBusy(false);
     if (error) { window.alert('ব্যর্থ: ' + error.message); return; }
+    logAction('approve', 'post', p.id, p.photographers?.display_name || 'পোস্ট', {
+      note: `পোস্ট অনুমোদন (${p.photographers?.display_name || 'ফটোগ্রাফার'})`,
+    });
     load();
     onChanged?.();
   };
@@ -66,6 +70,9 @@ export default function AdminPosts({ onChanged }: { onChanged?: () => void }) {
       .eq('id', rejecting.id);
     setBusy(false);
     if (error) { window.alert('ব্যর্থ: ' + error.message); return; }
+    logAction('reject', 'post', rejecting.id, rejecting.photographers?.display_name || 'পোস্ট', {
+      note: `পোস্ট বাতিল${note.trim() ? ` — কারণ: ${note.trim()}` : ''}`,
+    });
     setRejecting(null);
     load();
     onChanged?.();
@@ -74,6 +81,9 @@ export default function AdminPosts({ onChanged }: { onChanged?: () => void }) {
   const delPost = async (p: AdminPost) => {
     const { error } = await supabase.from('posts').delete().eq('id', p.id);
     if (error) { window.alert('ডিলিট ব্যর্থ: ' + error.message); return; }
+    logAction('delete', 'post', p.id, p.photographers?.display_name || 'পোস্ট', {
+      note: `পোস্ট ডিলিট (${p.photographers?.display_name || 'ফটোগ্রাফার'})`,
+    });
     load();
     onChanged?.();
   };

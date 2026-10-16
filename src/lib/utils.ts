@@ -19,6 +19,14 @@ export function bnDate(iso: string): string {
   return `${toBn(d.getDate())} ${BN_MONTHS[d.getMonth()]}, ${toBn(d.getFullYear())}`
 }
 
+/** তারিখ + সময় (স্থানীয়) — অডিট লগের মতো রেকর্ডে ব্যবহার হয় */
+export function bnDateTime(iso: string): string {
+  const d = new Date(iso)
+  const hh = String(d.getHours()).padStart(2, '0')
+  const mm = String(d.getMinutes()).padStart(2, '0')
+  return `${toBn(d.getDate())} ${BN_MONTHS[d.getMonth()]}, ${toBn(d.getFullYear())} · ${toBn(`${hh}:${mm}`)}`
+}
+
 export const STATUS_BN: Record<string, string> = {
   pending: 'অপেক্ষমাণ',
   accepted: 'গৃহীত',

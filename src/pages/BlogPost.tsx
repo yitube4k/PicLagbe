@@ -257,32 +257,27 @@ export default function BlogPostPage() {
           <h2
             key={index}
             id={spotKey ? `h-spot-${spotKey}` : undefined}
-            className="text-xl sm:text-2xl font-bold text-white mt-10 mb-4 pl-4 border-l-2 border-sunset-gold scroll-mt-28"
+            className="text-2xl sm:text-[1.7rem] font-bold text-white mt-11 mb-5 pl-4 border-l-2 border-sunset-gold scroll-mt-28 leading-snug"
           >
             {parseFormattedText(headingText)}
           </h2>
         );
-        // স্পট হেডিংয়ের ঠিক নিচে — আসল ছবি + ফটোগ্রাফার/গাইড/ডিরেকশন রো
-        if (spotKey) {
-          elements.push(
-            <LocationCard key={`loc-${index}`} spotKey={spotKey} stat={spotStats[spotKey]} />
-          );
-        }
+        // স্পটের ছবি/লোকেশন ফ্রেম এখন আর এখানে নয় — ব্লগের একদম শেষে "লোকেশন ও ম্যাপ" সেকশনে থাকে
       } else if (trimmed.startsWith('- ')) {
         elements.push(
-          <li key={index} className="text-white/75 text-base my-2 pl-2 list-disc ml-5">
+          <li key={index} className="text-white/80 text-lg sm:text-[1.1rem] my-2.5 pl-2 list-disc ml-6 leading-[1.85]">
             {parseFormattedText(trimmed.replace(/^-\s*/, ''))}
           </li>
         );
       } else if (/^\d+\.\s/.test(trimmed)) {
         elements.push(
-          <li key={index} className="text-white/75 text-base my-2 pl-2 list-decimal ml-5">
+          <li key={index} className="text-white/80 text-lg sm:text-[1.1rem] my-2.5 pl-2 list-decimal ml-6 leading-[1.85]">
             {parseFormattedText(trimmed.replace(/^\d+\.\s*/, ''))}
           </li>
         );
       } else {
         elements.push(
-          <p key={index} className="text-white/80 text-base sm:text-lg leading-[1.9] my-4">
+          <p key={index} className="text-white/85 text-lg sm:text-[1.15rem] leading-[2.0] my-5">
             {parseFormattedText(trimmed)}
           </p>
         );
@@ -348,7 +343,7 @@ export default function BlogPostPage() {
           </div>
         </div>
 
-        {/* স্পট সিলেক্টর — নির্বাচন করলে সেই স্পটের ছবি+কার্ডে স্ক্রল করবে */}
+        {/* স্পট সিলেক্টর — নির্বাচন করলে ব্লগের শেষের "লোকেশন ও ম্যাপ" সেকশনে স্ক্রল করবে */}
         {mentionedSpots.length >= 2 && (
           <div className="glass-strong rounded-xl3 p-4 mt-4 border border-white/[0.15] flex items-center gap-3 flex-wrap">
             <label htmlFor="spot-jump" className="text-sm font-bold text-white whitespace-nowrap">
@@ -360,7 +355,7 @@ export default function BlogPostPage() {
               onChange={(e) => {
                 const k = e.target.value;
                 if (!k) return;
-                document.getElementById(`loc-spot-${k}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                document.getElementById('location-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
               }}
               className="glass-select flex-1 min-w-[200px] !py-2.5"
             >
@@ -377,6 +372,28 @@ export default function BlogPostPage() {
       {/* Content Body */}
       <div className="max-w-3xl mx-auto px-6 py-10">
         <article className="prose-lite">{renderContentLines(post.content || '')}</article>
+
+        {/* ═══ লোকেশন ও ম্যাপ — ব্লগের একদম শেষে: স্পটের ছবি + ফটোগ্রাফার + ডিরেকশন ফ্রেম ═══ */}
+        {mentionedSpots.length > 0 && (
+          <section id="location-section" className="mt-14 scroll-mt-28">
+            <div className="flex items-center gap-3 mb-1">
+              <span className="w-10 h-10 rounded-xl2 glass grid place-items-center text-lg" aria-hidden="true">📍</span>
+              <div>
+                <h2 className="text-xl sm:text-2xl font-bold text-white leading-tight">লোকেশন ও ম্যাপ</h2>
+                <p className="text-xs sm:text-sm text-white/50 mt-0.5">
+                  এই ব্লগে উল্লেখিত স্পটগুলোর আসল ছবি, রেজিস্টার্ড ফটোগ্রাফার ও গুগল ম্যাপ ডিরেকশন — এক জায়গায়
+                </p>
+              </div>
+            </div>
+            <div className="h-px bg-gradient-to-r from-sunset-gold/50 via-white/10 to-transparent my-5" />
+
+            <div className="space-y-9">
+              {mentionedSpots.map((k) => (
+                <LocationCard key={`loc-${k}`} spotKey={k} stat={spotStats[k]} />
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Author Card */}
         <div className="glass-card p-6 rounded-xl3 flex items-center gap-4 mt-12">

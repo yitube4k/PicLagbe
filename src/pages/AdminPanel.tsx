@@ -9,6 +9,7 @@ import AdminPhotographers from '../components/admin/AdminPhotographers';
 import AdminPosts from '../components/admin/AdminPosts';
 import { AdminBlog, AdminCategories, AdminReviews } from '../components/admin/AdminContent';
 import { AdminBookings, AdminKyc, AdminChats } from '../components/admin/AdminOps';
+import AdminAudit from '../components/admin/AdminAudit';
 
 type AdminSection =
   | 'overview'
@@ -21,7 +22,8 @@ type AdminSection =
   | 'categories'
   | 'kyc'
   | 'requests'
-  | 'chats';
+  | 'chats'
+  | 'audit';
 
 const SECTIONS: { key: AdminSection; label: string; icon: string }[] = [
   { key: 'overview', label: 'ওভারভিউ', icon: '📊' },
@@ -35,6 +37,7 @@ const SECTIONS: { key: AdminSection; label: string; icon: string }[] = [
   { key: 'kyc', label: 'KYC', icon: '🛡️' },
   { key: 'requests', label: 'রোল রিকোয়েস্ট', icon: '🔄' },
   { key: 'chats', label: 'চ্যাট', icon: '💬' },
+  { key: 'audit', label: 'অডিট রিপোর্ট', icon: '🧾' },
 ];
 
 type Counts = {
@@ -290,6 +293,9 @@ export default function AdminPanel() {
                     <button type="button" onClick={() => openSection('chats')} className="chip">
                       💬 চ্যাট দেখুন
                     </button>
+                    <button type="button" onClick={() => openSection('audit')} className="chip">
+                      🧾 অডিট রিপোর্ট
+                    </button>
                   </div>
                 </div>
 
@@ -309,6 +315,7 @@ export default function AdminPanel() {
             {section === 'kyc' && <AdminKyc onChanged={() => setRefreshKey((k) => k + 1)} />}
             {section === 'requests' && <RoleRequestsPanel />}
             {section === 'chats' && <AdminChats />}
+            {section === 'audit' && <AdminAudit />}
           </main>
         </div>
       </div>

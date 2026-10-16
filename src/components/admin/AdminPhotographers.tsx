@@ -5,6 +5,7 @@ import { Photographer } from '../../lib/types';
 import { COX_SPOTS } from '../../lib/constants';
 import { bnDate, taka } from '../../lib/utils';
 import { AdminModal, Field, StatusPill, EmptyState, SectionHead, DangerConfirm } from './kit';
+import { logAction } from '../../lib/audit';
 
 type AdminPhotographer = Photographer & {
   profiles?: { full_name?: string | null; email?: string | null } | null;
@@ -123,6 +124,10 @@ export default function AdminPhotographers({ onChanged }: { onChanged?: () => vo
       .eq('id', editing.id);
     setSaving(false);
     if (error) { setErr(error.message); return; }
+    logAction('update', 'photographer', editing.id, f.display_name.trim(), {
+      note: 'ফটোগ্রাফার প্রোফাইল এডিট',
+      after: { profile_status: f.profile_status, verified: f.verified, home_spot: f.home_spot, starting_price: Number(f.starting_price) || null },
+    });
     setEditing(null);
     load();
     onChanged?.();
@@ -131,6 +136,11 @@ export default function AdminPhotographers({ onChanged }: { onChanged?: () => vo
   const setStatus = async (p: AdminPhotographer, status: AdminPhotographer['profile_status']) => {
     const { error } = await supabase.from('photographers').update({ profile_status: status }).eq('id', p.id);
     if (error) { window.alert('ব্যর্থ: ' + error.message); return; }
+    logAction(status === 'approved' ? 'approve' : 'status_change', 'photographer', p.id, p.display_name, {
+      note: `স্ট্যাটাস: ${p.profile_status} → ${status}`,
+      before: { profile_status: p.profile_status },
+      after: { profile_status: status },
+    });
     load();
     onChanged?.();
   };
@@ -138,6 +148,10 @@ export default function AdminPhotographers({ onChanged }: { onChanged?: () => vo
   const toggleVerified = async (p: AdminPhotographer) => {
     const { error } = await supabase.from('photographers').update({ verified: !p.verified }).eq('id', p.id);
     if (error) { window.alert('ব্যর্থ: ' + error.message); return; }
+    logAction(p.verified ? 'unverify' : 'verify', 'photographer', p.id, p.display_name, {
+      note: p.verified ? 'ভেরিফায়েড ব্যাজ সরানো হয়েছে' : 'ভেরিফায়েড ব্যাজ দেওয়া হয়েছে',
+      after: { verified: !p.verified },
+    });
     load();
     onChanged?.();
   };
@@ -145,6 +159,9 @@ export default function AdminPhotographers({ onChanged }: { onChanged?: () => vo
   const delPhotographer = async (p: AdminPhotographer) => {
     const { error } = await supabase.from('photographers').delete().eq('id', p.id);
     if (error) { window.alert('ডিলিট ব্যর্থ: ' + error.message); return; }
+    logAction('delete', 'photographer', p.id, p.display_name, {
+      note: `ফটোগ্রাফার ডিলিট (${p.display_name})`,
+    });
     load();
     onChanged?.();
   };
@@ -169,6 +186,10 @@ export default function AdminPhotographers({ onChanged }: { onChanged?: () => vo
     });
     setSaving(false);
     if (error) { setErr(error.message); return; }
+    logAction('create', 'photographer', null, a.name.trim(), {
+      note: `ম্যানুয়াল ফটোগ্রাফার যোগ (${a.name.trim()})`,
+      after: { home_spot: a.spot, starting_price: Number(a.price) || null },
+    });
     setAdding(false);
     setA({ name: '', email: '', phone: '', spot: 'laboni', price: '4000', bio: '' });
     load();

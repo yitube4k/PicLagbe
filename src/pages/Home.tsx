@@ -22,56 +22,7 @@ const SPOT_KIND_EMOJI: Record<string, string> = {
 /* হোমের গাইড সেকশনে দেখানো হাইলাইট স্পট (প্রথম ভিউতে) */
 const HOME_GUIDE_KEYS = ['inani', 'saintmartin', 'himchari', 'marine', 'laboni', 'maheshkhali'];
 
-const HOW_IT_WORKS_STEPS = [
-  {
-    num: 1,
-    title: 'খুঁজুন',
-    desc: 'স্পট-ভিত্তিক সার্চ করুন ও কক্সবাজারের ভেরিফায়েড প্রোফাইল দেখুন।',
-    icon: (
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="11" cy="11" r="8" />
-        <line x1="21" y1="21" x2="16.65" y2="16.65" />
-      </svg>
-    ),
-  },
-  {
-    num: 2,
-    title: 'ম্যাপে দেখুন',
-    desc: 'ইনানী-হিমছড়ি-সেন্ট মার্টিনসহ ১৯টি স্পটে তাৎক্ষণিক লোকেশন দেখুন।',
-    icon: (
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6" />
-        <line x1="8" y1="2" x2="8" y2="18" />
-        <line x1="16" y1="6" x2="16" y2="22" />
-      </svg>
-    ),
-  },
-  {
-    num: 3,
-    title: 'বুক করুন',
-    desc: 'প্যাকেজ বেছে তারিখ দিন এবং স্বচ্ছ বাজেটে সরাসরি বুকিং নিশ্চিত করুন।',
-    icon: (
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-        <line x1="16" y1="2" x2="16" y2="6" />
-        <line x1="8" y1="2" x2="8" y2="6" />
-        <line x1="3" y1="10" x2="21" y2="10" />
-        <path d="M9 16l2 2 4-4" />
-      </svg>
-    ),
-  },
-  {
-    num: 4,
-    title: 'স্মৃতি ধরুন',
-    desc: 'শুট শেষে রিভিউ দিন এবং প্রিমিয়াম এডিটেড ছবি ঘরে বসেই বুঝে নিন।',
-    icon: (
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-        <circle cx="12" cy="13" r="4" />
-      </svg>
-    ),
-  },
-];
+/* কীভাবে কাজ করে — এখন আলাদা পেজে (/how-it-works); হোমে শুধু ছোট টিজার */
 
 type EnrichedReview = Review & {
   profiles?: {
@@ -423,36 +374,25 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ═══ HOW IT WORKS SECTION ═══ */}
-      <section className="bg-white/[0.02] border-y border-white/[0.08] py-20">
-        <div className="max-w-6xl mx-auto px-6">
-          <Reveal className="text-center mb-12">
-            <h2 className="section-head">কীভাবে কাজ করে</h2>
-            <p className="section-sub mt-2">
-              মাত্র ৪টি সহজ ধাপে আপনার পছন্দের ফটোগ্রাফার বুক করুন
-            </p>
-          </Reveal>
-
-          <div className="grid md:grid-cols-4 gap-6">
-            {HOW_IT_WORKS_STEPS.map((step, i) => (
-              <Reveal key={step.num} delay={i * 75}>
-                <div className="glass-card p-6 text-center h-full flex flex-col items-center">
-                  <div className="grad-text text-3xl font-extrabold mb-3">
-                    {toBn(step.num)}
-                  </div>
-                  <div className="w-14 h-14 rounded-2xl glass flex items-center justify-center mb-4">
-                    {step.icon}
-                  </div>
-                  <h3 className="font-bold text-lg text-white mb-2">
-                    {step.title}
-                  </h3>
-                  <p className="text-sm text-white/60 leading-relaxed line-clamp-2">
-                    {step.desc}
-                  </p>
-                </div>
-              </Reveal>
-            ))}
+      {/* ═══ কীভাবে কাজ করে — টিজার (সম্পূর্ণ গাইড আলাদা পেজে) ═══ */}
+      <section className="max-w-7xl mx-auto px-6 py-10">
+        <div className="glass-card rounded-xl3 p-6 sm:p-7 flex flex-col sm:flex-row items-center gap-5 justify-between">
+          <div className="flex items-center gap-4 text-center sm:text-left">
+            <div className="w-12 h-12 rounded-2xl glass grid place-items-center shrink-0" aria-hidden="true">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+              </svg>
+            </div>
+            <div>
+              <h2 className="font-bold text-white text-base sm:text-lg">প্রথমবার? কীভাবে ফটোগ্রাফার বুক করবেন জানুন</h2>
+              <p className="text-white/55 text-sm mt-0.5">৭টি সহজ ধাপের সম্পূর্ণ গাইড — খোঁজা থেকে ছবি হাতে পাওয়া পর্যন্ত</p>
+            </div>
           </div>
+          <Link to="/how-it-works" className="btn-primary shrink-0">
+            গাইড পড়ুন →
+          </Link>
         </div>
       </section>
 

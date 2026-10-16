@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { toBn, bnDate } from '../lib/utils';
+import { logAction } from '../lib/audit';
 
 type RoleReq = {
   id: string;
@@ -60,6 +61,10 @@ export default function RoleRequestsPanel() {
       setMsg({ ok: false, text: 'অনুমোদন ব্যর্থ: ' + error.message });
       console.error('approve_role_request error:', error);
     } else {
+      logAction('approve', 'role_request', r.id, r.display_name, {
+        note: `ফটোগ্রাফার মাইগ্রেশন অনুমোদন: ${r.display_name} — প্রোফাইল অটো-তৈরি হয়েছে`,
+        meta: { phone: r.phone, experience_years: r.experience_years },
+      });
       setMsg({ ok: true, text: `✅ "${r.display_name}" এখন ফটোগ্রাফার — প্রোফাইল তৈরি হয়েছে।` });
       load();
     }
@@ -76,6 +81,10 @@ export default function RoleRequestsPanel() {
       setMsg({ ok: false, text: 'প্রত্যাখ্যান ব্যর্থ: ' + error.message });
       console.error('reject_role_request error:', error);
     } else {
+      logAction('reject', 'role_request', r.id, r.display_name, {
+        note: `মাইগ্রেশন আবেদন প্রত্যাখ্যান: ${r.display_name}`,
+        meta: { review_note: rejectNote.trim() || 'রিভিউয়ে গ্রহণযোগ্য নয়' },
+      });
       setMsg({ ok: true, text: 'আবেদন প্রত্যাখ্যাত হয়েছে।' });
       load();
     }

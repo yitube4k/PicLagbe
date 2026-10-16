@@ -18,6 +18,7 @@ import CustomerDash from './pages/CustomerDash';
 import StudioDash from './pages/StudioDash';
 import AdminPanel from './pages/AdminPanel';
 import ChatPage from './pages/ChatPage';
+import HowItWorks from './pages/HowItWorks';
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -63,6 +64,7 @@ export default function App() {
               <Route path="/community" element={<Community />} />
               <Route path="/blog" element={<Blog />} />
               <Route path="/blog/:slug" element={<BlogPost />} />
+              <Route path="/how-it-works" element={<HowItWorks />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/dashboard" element={<CustomerDash />} />
               <Route path="/chat" element={<ChatPage />} />

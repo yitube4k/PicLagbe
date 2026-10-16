@@ -4,6 +4,7 @@ import { BlogPost, Category, Review } from '../../lib/types';
 import { bnDate, toBn } from '../../lib/utils';
 import CldUploadField from '../CldUploadField';
 import { AdminModal, Field, EmptyState, SectionHead, DangerConfirm } from './kit';
+import { logAction } from '../../lib/audit';
 
 /* ═══════════════ BLOG — full CRUD ═══════════════ */
 export function AdminBlog() {
@@ -72,17 +73,25 @@ export function AdminBlog() {
     }
     setSaving(false);
     if (error) { setErr(error.message); return; }
+    logAction(editing ? 'update' : 'create', 'blog', editing?.id || null, f.title.trim(), {
+      note: editing ? `ব্লগ এডিট: ${f.title.trim()}` : `নতুন ব্লগ: ${f.title.trim()}`,
+      after: { published: f.published, slug },
+    });
     setAdding(false);
     load();
   };
 
   const togglePublish = async (b: BlogPost) => {
     await supabase.from('blog_posts').update({ published: !b.published }).eq('id', b.id);
+    logAction(b.published ? 'unpublish' : 'publish', 'blog', b.id, b.title, {
+      note: b.published ? `ব্লগ অপ্রকাশিত: ${b.title}` : `ব্লগ প্রকাশিত: ${b.title}`,
+    });
     load();
   };
 
   const del = async (b: BlogPost) => {
     await supabase.from('blog_posts').delete().eq('id', b.id);
+    logAction('delete', 'blog', b.id, b.title, { note: `ব্লগ ডিলিট: ${b.title}` });
     load();
   };
 
@@ -211,12 +220,18 @@ export function AdminCategories() {
     const { error } = await supabase.from('categories').insert({ name: name.trim(), slug, icon: icon || '📷' });
     setBusy(false);
     if (error) { setErr(error.message); return; }
+    logAction('create', 'category', null, name.trim(), { note: `নতুন ক্যাটাগরি: ${icon} ${name.trim()}` });
     setName('');
     load();
   };
 
   const saveEdit = async (c: Category) => {
     await supabase.from('categories').update({ name: editName.trim() }).eq('id', c.id);
+    logAction('update', 'category', String(c.id), editName.trim(), {
+      note: `ক্যাটাগরি নাম: ${c.name} → ${editName.trim()}`,
+      before: { name: c.name },
+      after: { name: editName.trim() },
+    });
     setEditId(null);
     load();
   };
@@ -224,6 +239,7 @@ export function AdminCategories() {
   const del = async (c: Category) => {
     const { error } = await supabase.from('categories').delete().eq('id', c.id);
     if (error) { window.alert('ডিলিট ব্যর্থ (সম্ভবত ব্যবহৃত হচ্ছে): ' + error.message); return; }
+    logAction('delete', 'category', String(c.id), c.name, { note: `ক্যাটাগরি ডিলিট: ${c.name}` });
     load();
   };
 
@@ -325,6 +341,9 @@ export function AdminReviews() {
   const del = async (r: Review) => {
     const { error } = await supabase.from('reviews').delete().eq('id', r.id);
     if (error) { window.alert('ডিলিট ব্যর্থ: ' + error.message); return; }
+    logAction('delete', 'review', r.id, 'রিভিউ', {
+      note: `রিভিউ ডিলিট${r.comment ? `: ${r.comment.slice(0, 60)}` : ''}`,
+    });
     load();
   };
 

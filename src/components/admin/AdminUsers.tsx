@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabase';
 import { Profile } from '../../lib/types';
 import { bnDate } from '../../lib/utils';
 import { AdminModal, Field, StatusPill, EmptyState, SectionHead, DangerConfirm } from './kit';
+import { logAction } from '../../lib/audit';
 
 /**
  * USERS — full control: সার্চ, সব ফিল্ড এডিট (নাম/ফোন/WhatsApp/বায়ো/অ্যাভাটার/রোল), ডিলিট।
@@ -75,6 +76,18 @@ export default function AdminUsers({ onChanged }: { onChanged?: () => void }) {
       .eq('id', editing.id);
     setSaving(false);
     if (error) { setErr(error.message); return; }
+    // অডিট: রোল বদলালে role_change, নাহলে update
+    if (fRole !== (editing.role || 'customer')) {
+      logAction('role_change', 'user', editing.id, editing.full_name || editing.email || 'ইউজার', {
+        note: `রোল: ${editing.role || 'customer'} → ${fRole}`,
+        before: { role: editing.role || 'customer' },
+        after: { role: fRole },
+      });
+    } else {
+      logAction('update', 'user', editing.id, fName.trim() || editing.email || 'ইউজার', {
+        note: 'প্রোফাইল এডিট (নাম/ফোন/WhatsApp/বায়ো/অ্যাভাটার)',
+      });
+    }
     setEditing(null);
     load();
     onChanged?.();
@@ -83,6 +96,10 @@ export default function AdminUsers({ onChanged }: { onChanged?: () => void }) {
   const deleteUser = async (u: Profile) => {
     const { error } = await supabase.from('profiles').delete().eq('id', u.id);
     if (error) { window.alert('ডিলিট ব্যর্থ: ' + error.message); return; }
+    logAction('delete', 'user', u.id, u.full_name || u.email || 'ইউজার', {
+      note: `ইউজার ডিলিট (${u.email || u.id})`,
+      meta: { email: u.email, role: u.role },
+    });
     load();
     onChanged?.();
   };
