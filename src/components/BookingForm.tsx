@@ -7,6 +7,7 @@ import { toBn, taka } from '../lib/utils';
 import { COX_SPOTS, SPOT_BY_KEY } from '../lib/constants';
 import { cldUrl } from '../lib/cloudinary';
 import { videoThumb } from './PackageEditDialog';
+import { unitSuffix, qtyMax, defaultQty, bookingTotal, qtyLabel, photoCountLine } from '../lib/pricing';
 
 interface BookingFormProps {
   p: Photographer;
@@ -38,6 +39,7 @@ export default function BookingForm({ p, packages, selectedPkgId, onPackageChang
   const [eventTime, setEventTime] = useState('golden');
   const [spot, setSpot] = useState(SPOT_BY_KEY(p.home_spot || '')?.nameBn || COX_SPOTS[0]?.nameBn || 'লাবণী পয়েন্ট');
   const [notes, setNotes] = useState('');
+  const [qty, setQty] = useState(1); // V30 — ঘণ্টা বা ছবির সংখ্যা (unit-ভেদে)
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -56,6 +58,14 @@ export default function BookingForm({ p, packages, selectedPkgId, onPackageChang
 
   const todayStr = new Date().toISOString().split('T')[0];
   const selectedPackage = packages.find((pkg) => pkg.id === selectedPkgIdResolved);
+
+  /* V30 — প্যাকেজ বদলালে কোয়ান্টিটি ডিফল্টে ফিরে যায় (ঘণ্টা/ছবি একক) */
+  useEffect(() => {
+    if (selectedPackage) setQty(defaultQty(selectedPackage));
+  }, [selectedPackage?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const unitQty = selectedPackage && (selectedPackage.pricing_unit === 'hour' || selectedPackage.pricing_unit === 'photo');
+  const unitTotal = selectedPackage ? bookingTotal(selectedPackage, qty) : null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,7 +96,7 @@ export default function BookingForm({ p, packages, selectedPkgId, onPackageChang
         event_location: spot,
         notes: notes.trim() || null,
         status: 'pending',
-        // V21 — immutable snapshot + structured shoot info
+        // V21 — immutable snapshot + structured shoot info (V30: unit-aware)
         package_snapshot: selectedPackage
           ? {
               name: selectedPackage.name,
@@ -94,6 +104,10 @@ export default function BookingForm({ p, packages, selectedPkgId, onPackageChang
               duration_hours: selectedPackage.duration_hours ?? null,
               cover_url: selectedPackage.media?.[0]?.url ?? null,
               features_count: selectedPackage.features?.length ?? 0,
+              pricing_unit: selectedPackage.pricing_unit ?? 'event',
+              unit_qty: selectedPackage.pricing_unit === 'hour' || selectedPackage.pricing_unit === 'photo' ? qty : null,
+              photo_count: selectedPackage.photo_count ?? null,
+              total: unitTotal,
             }
           : null,
         shoot_spot: spot || null,
@@ -144,22 +158,27 @@ export default function BookingForm({ p, packages, selectedPkgId, onPackageChang
                   <span
                     aria-hidden="true"
                     className={`shrink-0 w-[18px] h-[18px] rounded-full border-2 grid place-items-center transition-colors ${
-                      active ? 'border-[#1d4d3b]' : 'border-[#cfc4ac]'
+                      active ? 'border-[#fbbf24]' : 'border-white/25'
                     }`}
                   >
-                    {active && <span className="w-2.5 h-2.5 rounded-full bg-[#1d4d3b]" />}
+                    {active && <span className="w-2.5 h-2.5 rounded-full bg-[#fbbf24]" />}
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="flex items-baseline justify-between gap-2">
-                      <b className="pf-serif text-[16.5px] text-[#26231e] truncate">{pkg.name}</b>
-                      <span className="pf-serif font-bold text-[#1d4d3b] whitespace-nowrap">{taka(pkg.price)}</span>
+                      <b className="pf-serif text-[16.5px] text-[#f3ede0] truncate">{pkg.name}</b>
+                      <span className="pf-serif font-bold text-[#fbbf24] whitespace-nowrap">{taka(pkg.price)}<span className="text-[12px] font-semibold">{unitSuffix(pkg.pricing_unit)}</span></span>
                     </span>
-                    <span className="block text-[12.5px] text-[#8a8172] mt-0.5">
-                      ⏱ {toBn(pkg.duration_hours || 0)} ঘণ্টা{pkg.description ? ` · ${pkg.description}` : ''}
+                    <span className="block text-[12.5px] text-[#8d8471] mt-0.5">
+                      {pkg.pricing_unit === 'hour'
+                        ? `⏱ ${toBn(pkg.duration_hours || 2)} ঘণ্টা সেশন${pkg.description ? ` · ${pkg.description}` : ''}`
+                        : pkg.pricing_unit === 'photo'
+                          ? `📷 যত ছবি দরকার${pkg.description ? ` · ${pkg.description}` : ''}`
+                          : <>⏱ {toBn(pkg.duration_hours || 0)} ঘণ্টা{photoCountLine(pkg) ? ` · ${photoCountLine(pkg)}` : ''}{pkg.description ? ` · ${pkg.description}` : ''}</>
+                      }
                     </span>
                   </span>
                   {pkg.media && pkg.media.length > 0 && (
-                    <span className="relative shrink-0 w-14 h-14 rounded-xl overflow-hidden border border-[#e2ddd2] bg-[#f2efe8]">
+                    <span className="relative shrink-0 w-14 h-14 rounded-xl overflow-hidden border border-white/[0.12] bg-white/[0.05]">
                       <img
                         src={pkg.media[0].type === 'video' ? videoThumb(pkg.media[0].url) : cldUrl(pkg.media[0].url, { w: 160, c: 'fill' })}
                         alt="" className="w-full h-full object-cover" loading="lazy"
@@ -180,8 +199,48 @@ export default function BookingForm({ p, packages, selectedPkgId, onPackageChang
           </div>
         </fieldset>
       ) : (
-        <div className="rounded-[12px] border border-[#e6ddcc] bg-[#f3efe6] px-4 py-3 text-xs text-[#6b6357]">
+        <div className="rounded-[12px] border border-white/10 bg-[#f3efe6] px-4 py-3 text-xs text-[#a89d88]">
           কোনো প্যাকেজ নেই — কাস্টম বুকিং হিসেবে রিকোয়েস্ট যাবে, দাম আলোচনা সাপেক্ষ।
+        </div>
+      )}
+
+      {/* ═══ ধাপ ২.৫ (V30): ঘণ্টা / ছবির সংখ্যা — একক-ভিত্তিক প্যাকেজে ═══ */}
+      {selectedPackage && unitQty && (
+        <div>
+          <span className="pf-label">
+            {selectedPackage.pricing_unit === 'hour' ? 'কত ঘণ্টা?' : 'কত ছবি?'}
+          </span>
+          <div className="flex items-center gap-3 mt-1">
+            <button
+              type="button"
+              onClick={() => setQty((v) => Math.max(1, v - 1))}
+              aria-label="কমান"
+              className="w-11 h-11 rounded-xl border border-white/15 bg-white/[0.07] text-xl font-bold text-[#f3ede0] hover:border-[#fbbf24]/50 transition shrink-0"
+            >
+              −
+            </button>
+            <input
+              type="number"
+              inputMode="numeric"
+              min={1}
+              max={qtyMax(selectedPackage)}
+              value={qty}
+              onChange={(e) => setQty(Math.min(qtyMax(selectedPackage), Math.max(1, Number(e.target.value) || 1)))}
+              aria-label={selectedPackage.pricing_unit === 'hour' ? 'ঘণ্টার সংখ্যা' : 'ছবির সংখ্যা'}
+              className="pf-input !w-24 text-center font-bold"
+            />
+            <button
+              type="button"
+              onClick={() => setQty((v) => Math.min(qtyMax(selectedPackage), v + 1))}
+              aria-label="বাড়ান"
+              className="w-11 h-11 rounded-xl border border-white/15 bg-white/[0.07] text-xl font-bold text-[#f3ede0] hover:border-[#fbbf24]/50 transition shrink-0"
+            >
+              +
+            </button>
+            <span className="text-[12.5px] text-[#8d8471]">
+              {taka(selectedPackage.price)}{unitSuffix(selectedPackage.pricing_unit)} × {qtyLabel(selectedPackage, qty)}
+            </span>
+          </div>
         </div>
       )}
 
@@ -202,7 +261,7 @@ export default function BookingForm({ p, packages, selectedPkgId, onPackageChang
             <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[16.5px] pointer-events-none" aria-hidden="true">📅</span>
           </div>
           {prettyDate && (
-            <p className="text-[12.5px] text-[#8a8172] mt-1.5">সিলেক্টেড: {prettyDate}</p>
+            <p className="text-[12.5px] text-[#8d8471] mt-1.5">সিলেক্টেড: {prettyDate}</p>
           )}
         </div>
 
@@ -268,24 +327,34 @@ export default function BookingForm({ p, packages, selectedPkgId, onPackageChang
       {/* ═══ সামারি (গ্রেডিয়েন্ট প্রিমিয়াম কার্ড) ═══ */}
       <div className="bf-summary">
         <div className="flex items-center justify-between gap-3 py-1.5">
-          <span className="text-xs font-semibold text-[#6b6357]">প্যাকেজ</span>
-          <span className="pf-serif font-bold text-[15px] text-[#26231e] text-right">
+          <span className="text-xs font-semibold text-[#a89d88]">প্যাকেজ</span>
+          <span className="pf-serif font-bold text-[15px] text-[#f3ede0] text-right">
             {selectedPackage ? selectedPackage.name : 'কাস্টম বুকিং'}
           </span>
         </div>
         {eventDate && (
-          <div className="flex items-center justify-between gap-3 py-1.5 border-t border-[#e6ddcc]/70">
-            <span className="text-xs font-semibold text-[#6b6357]">তারিখ</span>
-            <span className="text-[14.5px] font-semibold text-[#26231e] text-right">{prettyDate}</span>
+          <div className="flex items-center justify-between gap-3 py-1.5 border-t border-white/10/70">
+            <span className="text-xs font-semibold text-[#a89d88]">তারিখ</span>
+            <span className="text-[14.5px] font-semibold text-[#f3ede0] text-right">{prettyDate}</span>
           </div>
         )}
-        <div className="flex items-center justify-between gap-3 py-2 border-t border-[#e6ddcc]/70">
-          <span className="text-xs font-semibold text-[#6b6357]">প্রস্তাবিত বাজেট</span>
-          <span className="pf-serif font-bold text-lg text-[#1d4d3b]">
-            {selectedPackage ? taka(selectedPackage.price) : 'আলোচনা সাপেক্ষ'}
+        <div className="flex items-center justify-between gap-3 py-1.5 border-t border-white/10/70">
+          <span className="text-xs font-semibold text-[#a89d88]">হিসাব</span>
+          <span className="text-[14px] font-semibold text-[#f3ede0] text-right">
+            {selectedPackage && unitQty
+              ? `${taka(selectedPackage.price)}${unitSuffix(selectedPackage.pricing_unit)} × ${qtyLabel(selectedPackage, qty)}`
+              : selectedPackage
+                ? `⏱ ${toBn(selectedPackage.duration_hours || 0)} ঘণ্টা সেশন`
+                : 'কাস্টম বুকিং'}
           </span>
         </div>
-        <p className="text-[12px] text-[#8a8172] leading-relaxed pt-2 border-t border-[#e6ddcc]/70 flex items-center gap-1.5">
+        <div className="flex items-center justify-between gap-3 py-2 border-t border-white/10/70">
+          <span className="text-xs font-semibold text-[#a89d88]">প্রস্তাবিত বাজেট</span>
+          <span className="pf-serif font-bold text-lg text-[#fbbf24]">
+            {selectedPackage && unitTotal != null ? taka(unitTotal) : selectedPackage ? taka(selectedPackage.price) : 'আলোচনা সাপেক্ষ'}
+          </span>
+        </div>
+        <p className="text-[12px] text-[#8d8471] leading-relaxed pt-2 border-t border-white/10/70 flex items-center gap-1.5">
           <span aria-hidden="true">🛡️</span>
           কোনো অগ্রিম পেমেন্ট লাগবে না — ফটোগ্রাফার গ্রহণ করলে কনফার্ম হবে
         </p>
@@ -293,7 +362,7 @@ export default function BookingForm({ p, packages, selectedPkgId, onPackageChang
 
       {/* Error */}
       {errorMsg && (
-        <div role="alert" className="rounded-[10px] border border-[#e7c8c8] bg-[#fdf1f1] px-4 py-2.5 text-xs font-semibold text-[#9b3a3a]">
+        <div role="alert" className="rounded-[10px] border border-[rgba(248,113,113,0.35)] bg-[rgba(127,29,29,0.16)] px-4 py-2.5 text-xs font-semibold text-[#fca5a5]">
           {errorMsg}
         </div>
       )}

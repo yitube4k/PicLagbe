@@ -1,9 +1,10 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { supabase } from '../lib/supabase';
-import { Package, PackageMedia } from '../lib/types';
+import { Package, PackageMedia, PricingUnit } from '../lib/types';
 import { uploadToCloudinary, cldConfigured, cldUrl } from '../lib/cloudinary';
 import { toBn } from '../lib/utils';
+import { UNIT_LABEL } from '../lib/pricing';
 import { AIcon } from '../admin/icons';
 import { FullDialog } from './admin/kit';
 
@@ -16,6 +17,13 @@ import { FullDialog } from './admin/kit';
 
 const MAX_MEDIA = 8;
 const FEATURE_SUGGESTIONS = ['সব Raw ছবি', 'সিনেম্যাটিক রিল', 'এডিটেড ছবি', 'ড্রোন শট'];
+
+/** V30 — প্রাইসিং ইউনিট অপশন (ছোট ব্যাখ্যা সহ) */
+const UNIT_OPTIONS: { key: PricingUnit; hint: string }[] = [
+  { key: 'event', hint: 'পুরো সেশনের এক দাম — যেমন: ৫,০০০৳ কাপল প্যাকেজ' },
+  { key: 'hour', hint: 'ঘণ্টা হিসাবে দাম — ক্লায়েন্ট ঘণ্টা বাড়াতে পারবে' },
+  { key: 'photo', hint: 'ছবি হিসাবে দাম — ক্লায়েন্ট ছবির সংখ্যা ঠিক করবে' },
+];
 
 export function videoThumb(url: string): string {
   // Cloudinary video → auto poster frame (.jpg via so_auto)
@@ -43,6 +51,8 @@ export default function PackageEditDialog({ open, photographerId, editing, exist
   const [name, setName] = useState(editing?.name || '');
   const [price, setPrice] = useState(editing?.price != null ? String(editing.price) : '');
   const [duration, setDuration] = useState(editing?.duration_hours != null ? String(editing.duration_hours) : '2');
+  const [unit, setUnit] = useState<PricingUnit>(editing?.pricing_unit || 'event');
+  const [photoCount, setPhotoCount] = useState(editing?.photo_count != null ? String(editing.photo_count) : '');
   const [desc, setDesc] = useState(editing?.description || '');
   const [features, setFeatures] = useState<string[]>(editing?.features || []);
   const [featureText, setFeatureText] = useState('');
@@ -61,13 +71,15 @@ export default function PackageEditDialog({ open, photographerId, editing, exist
       name !== editing.name ||
       price !== String(editing.price) ||
       duration !== String(editing.duration_hours ?? '') ||
+      unit !== (editing.pricing_unit || 'event') ||
+      photoCount !== String(editing.photo_count ?? '') ||
       desc !== (editing.description || '') ||
       JSON.stringify(features) !== JSON.stringify(editing.features || []) ||
       JSON.stringify(media) !== JSON.stringify(editing.media || []) ||
       popular !== !!editing.is_popular
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [name, price, duration, desc, features, media, popular, editing]);
+  }, [name, price, duration, unit, photoCount, desc, features, media, popular, editing]);
 
   /* ── features chip input (IME-safe: explicit button + comma/dari/Enter-not-composing) ── */
   const addFeature = (raw?: string) => {
@@ -133,6 +145,8 @@ export default function PackageEditDialog({ open, photographerId, editing, exist
     setErr(null);
     if (!name.trim()) { setErr('প্যাকেজের নাম দিন'); return; }
     if (!price || Number(price) <= 0) { setErr('মূল্য দিন'); return; }
+    const pc = photoCount.trim() ? Number(photoCount) : null;
+    if (pc != null && (pc < 1 || pc > 500)) { setErr('ছবির সংখ্যা ১–৫০০ এর মধ্যে দিন'); return; }
     setSaving(true);
     try {
       const payload = {
@@ -140,7 +154,9 @@ export default function PackageEditDialog({ open, photographerId, editing, exist
         name: name.trim(),
         description: desc.trim() || null,
         price: Number(price),
-        duration_hours: Number(duration) || 2,
+        duration_hours: unit === 'event' ? (Number(duration) || 2) : (Number(duration) || null),
+        pricing_unit: unit,
+        photo_count: unit === 'photo' ? null : pc,
         features,
         media,
         is_popular: popular,
@@ -189,16 +205,62 @@ export default function PackageEditDialog({ open, photographerId, editing, exist
           <input value={name} onChange={(e) => setName(e.target.value)} placeholder="যেমন: কাপল গোল্ড প্যাকেজ" className="glass-input" maxLength={60} />
         </div>
 
+        {/* V30 — প্রাইসিং ইউনিট */}
+        <div>
+          <label className="field-label">দামের ধরন *</label>
+          <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="দামের ধরন">
+            {UNIT_OPTIONS.map((o) => (
+              <button
+                key={o.key}
+                type="button"
+                onClick={() => setUnit(o.key)}
+                aria-pressed={unit === o.key}
+                className={[
+                  'rounded-xl border px-2 py-2.5 text-center transition',
+                  unit === o.key
+                    ? 'border-sunset-gold/70 bg-sunset-soft text-sunset-gold font-bold'
+                    : 'border-white/10 bg-white/[0.04] text-white/65 hover:border-white/25 hover:text-white',
+                ].join(' ')}
+              >
+                <span className="block text-[13.5px] leading-tight">{UNIT_LABEL[o.key]}</span>
+              </button>
+            ))}
+          </div>
+          <p className="text-[11.5px] text-white/45 mt-1.5 leading-relaxed">
+            {UNIT_OPTIONS.find((o) => o.key === unit)?.hint}
+          </p>
+        </div>
+
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="field-label">মূল্য (৳) *</label>
-            <input type="number" inputMode="numeric" min={0} value={price} onChange={(e) => setPrice(e.target.value)} placeholder="৪০০০" className="glass-input" />
+            <label className="field-label">
+              {unit === 'hour' ? 'মূল্য (৳/ঘণ্টা) *' : unit === 'photo' ? 'মূল্য (৳/ছবি) *' : 'মূল্য (৳) *'}
+            </label>
+            <input type="number" inputMode="numeric" min={0} value={price} onChange={(e) => setPrice(e.target.value)} placeholder={unit === 'photo' ? '১০০' : '৪০০০'} className="glass-input" />
           </div>
           <div>
-            <label className="field-label">সময়কাল (ঘণ্টা)</label>
+            <label className="field-label">{unit === 'hour' ? 'সাজেস্টেড ঘণ্টা' : 'সময়কাল (ঘণ্টা)'}</label>
             <input type="number" inputMode="numeric" min={1} max={24} value={duration} onChange={(e) => setDuration(e.target.value)} className="glass-input" />
           </div>
         </div>
+
+        {/* অন্তর্ভুক্ত ছবি (photo ইউনিটে লুকানো — ক্লায়েন্ট নিজেই সংখ্যা ঠিক করে) */}
+        {unit !== 'photo' && (
+          <div>
+            <label className="field-label">অন্তর্ভুক্ত ছবি (ঐচ্ছিক)</label>
+            <input
+              type="number"
+              inputMode="numeric"
+              min={1}
+              max={500}
+              value={photoCount}
+              onChange={(e) => setPhotoCount(e.target.value)}
+              placeholder="যেমন: ১০ — খালি রাখলে দেখাবে না"
+              className="glass-input"
+            />
+            <p className="text-[11.5px] text-white/45 mt-1.5 leading-relaxed">ক্লায়েন্ট প্যাকেজ কার্ডে "১০ ছবি অন্তর্ভুক্ত" লেখা দেখবে।</p>
+          </div>
+        )}
 
         <div>
           <label className="field-label">বিবরণ</label>

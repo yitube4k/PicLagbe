@@ -654,20 +654,21 @@
   }
 }
 
-/* ═══ PHOTOGRAPHER PROFILE — LUXURY EDITORIAL IVORY THEME ═══ */
+/* ═══ PHOTOGRAPHER PROFILE — DARK GOLD SUNSET (V30: whole-site ek theme) ═══
+   বাকি সাইটের মতোই twilight void + glass cards + sunset-gold accent। */
 .pf-page {
-  --pf-ivory: #f7f3ec;
-  --pf-paper: #fffdf9;
-  --pf-forest: #1d4d3b;
-  --pf-forest-deep: #143528;
-  --pf-forest-soft: #e6efe9;
-  --pf-charcoal: #26231e;
-  --pf-muted: #6b6357;
-  --pf-gold: #b08d57;
-  --pf-gold-soft: #f1e8d8;
-  --pf-line: #e6ddcc;
+  --pf-ivory: #06070d;              /* page bg = global void */
+  --pf-paper: rgba(255, 255, 255, 0.045); /* glass card */
+  --pf-forest: #fbbf24;             /* primary accent = sunset gold */
+  --pf-forest-deep: #f59e0b;        /* accent hover */
+  --pf-forest-soft: rgba(251, 191, 36, 0.1);
+  --pf-charcoal: #f3ede0;           /* heading text (warm light) */
+  --pf-muted: #a89d88;              /* muted text */
+  --pf-gold: #fbbf24;
+  --pf-gold-soft: rgba(251, 191, 36, 0.14);
+  --pf-line: rgba(255, 255, 255, 0.1);
   background: var(--pf-ivory);
-  color: var(--pf-charcoal);
+  color: #d6cdbb;
   font-family: 'Hind Siliguri', 'Plus Jakarta Sans', sans-serif;
   min-height: 100vh;
 }
@@ -684,7 +685,9 @@
   background: var(--pf-paper);
   border: 1px solid var(--pf-line);
   border-radius: 18px;
-  box-shadow: 0 1px 2px rgba(38, 35, 30, 0.04), 0 10px 30px -18px rgba(38, 35, 30, 0.18);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 18px 44px -18px rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
 }
 
 .pf-btn-primary {
@@ -693,19 +696,19 @@
   justify-content: center;
   gap: 8px;
   padding: 12px 24px;
-  background: var(--pf-forest);
-  color: #f7f3ec;
-  font-weight: 700;
+  background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 55%, #fcd34d 100%);
+  color: #2a1508;
+  font-weight: 800;
   font-size: 0.95rem;
   border-radius: 12px;
-  border: 1px solid var(--pf-forest-deep);
+  border: 1px solid rgba(251, 191, 36, 0.55);
   cursor: pointer;
-  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+  transition: box-shadow 0.2s ease, transform 0.2s ease, filter 0.2s ease;
 }
 
 .pf-btn-primary:hover {
-  background: var(--pf-forest-deep);
-  box-shadow: 0 8px 20px -8px rgba(29, 77, 59, 0.55);
+  filter: brightness(1.06);
+  box-shadow: 0 10px 26px -10px rgba(251, 191, 36, 0.55);
 }
 
 .pf-btn-primary:disabled {
@@ -719,19 +722,20 @@
   justify-content: center;
   gap: 8px;
   padding: 11px 20px;
-  background: transparent;
-  color: var(--pf-forest);
-  font-weight: 600;
+  background: rgba(255, 255, 255, 0.04);
+  color: #e8dfca;
+  font-weight: 700;
   font-size: 0.92rem;
   border-radius: 12px;
-  border: 1px solid rgba(29, 77, 59, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.16);
   cursor: pointer;
   transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
 .pf-btn-outline:hover {
-  background: var(--pf-forest-soft);
-  border-color: var(--pf-forest);
+  background: rgba(251, 191, 36, 0.1);
+  border-color: rgba(251, 191, 36, 0.45);
+  color: #fde68a;
 }
 
 .pf-btn-outline:disabled {
@@ -746,36 +750,36 @@
   padding: 5px 13px;
   font-size: 0.9rem;
   font-weight: 600;
-  color: #57503f;
+  color: #e5d9b8;
   background: var(--pf-gold-soft);
-  border: 1px solid #e3d5b8;
+  border: 1px solid rgba(251, 191, 36, 0.28);
   border-radius: 9999px;
 }
 
 .pf-input {
   width: 100%;
-  background: #ffffff;
-  border: 1px solid var(--pf-line);
+  background: rgba(255, 255, 255, 0.055);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 10px;
   padding: 11px 14px;
-  color: var(--pf-charcoal);
+  color: #f3ede0;
   font-size: 0.95rem;
   outline: none;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .pf-input::placeholder {
-  color: #a89f8f;
+  color: rgba(255, 255, 255, 0.35);
 }
 
 .pf-input:focus {
-  border-color: var(--pf-forest);
-  box-shadow: 0 0 0 3px rgba(29, 77, 59, 0.14);
+  border-color: rgba(251, 191, 36, 0.55);
+  box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.14);
 }
 
 .pf-input:disabled {
-  background: #f3efe6;
-  color: #8a8172;
+  background: rgba(255, 255, 255, 0.03);
+  color: rgba(255, 255, 255, 0.4);
   cursor: not-allowed;
 }
 
@@ -783,12 +787,12 @@
   display: block;
   font-size: 0.9rem;
   font-weight: 700;
-  color: var(--pf-muted);
+  color: #b7ac95;
   margin-bottom: 6px;
 }
 
 .pf-skeleton {
-  background: #ece5d8;
+  background: rgba(255, 255, 255, 0.07);
   animation: skeletonFade 1.4s ease-in-out infinite;
   border-radius: 14px;
 }
@@ -929,69 +933,117 @@
   pointer-events: auto !important;
 }
 
-/* ═══ PREMIUM BOOKING FORM (ivory editorial) ═══ */
+/* ═══ PREMIUM BOOKING FORM (V30: dark-gold glass — whole-site theme) ═══ */
 .bf-pkg {
-  border: 1px solid var(--pf-line, #e6ddcc);
-  background: #fffdf9;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
   border-radius: 13px;
   padding: 11px 13px;
   transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
 }
 
 .bf-pkg:hover {
-  border-color: #cfc4ac;
+  border-color: rgba(255, 255, 255, 0.22);
 }
 
 .bf-pkg-active {
-  border-color: #1d4d3b;
-  background: #f2f7f4;
-  box-shadow: 0 0 0 3px rgba(29, 77, 59, 0.09);
+  border-color: rgba(251, 191, 36, 0.65);
+  background: rgba(251, 191, 36, 0.09);
+  box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.12);
 }
 
 .bf-slot {
   display: flex;
   align-items: center;
   gap: 8px;
-  border: 1px solid #e6ddcc;
-  background: #fffdf9;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
   border-radius: 12px;
   padding: 9px 11px;
   cursor: pointer;
-  color: #4d463c;
+  color: #d6cdbb;
   transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .bf-slot:hover {
-  border-color: #cfc4ac;
+  border-color: rgba(255, 255, 255, 0.22);
 }
 
 .bf-slot-active {
-  border-color: #b08d57;
-  background: #f6efe2;
-  box-shadow: 0 0 0 3px rgba(176, 141, 87, 0.12);
-  color: #26231e;
+  border-color: rgba(251, 191, 36, 0.65);
+  background: rgba(251, 191, 36, 0.1);
+  box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.12);
+  color: #fde68a;
 }
 
 .bf-summary {
-  background: linear-gradient(160deg, #fbf8f1 0%, #f3eddf 100%);
-  border: 1px solid #e6ddcc;
+  background: linear-gradient(160deg, rgba(251, 191, 36, 0.1) 0%, rgba(255, 255, 255, 0.04) 100%);
+  border: 1px solid rgba(251, 191, 36, 0.28);
   border-radius: 14px;
   padding: 12px 14px;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07);
 }
 
 .bf-spin {
   width: 15px;
   height: 15px;
   border-radius: 50%;
-  border: 2px solid rgba(247, 243, 236, 0.35);
-  border-top-color: #f7f3ec;
+  border: 2px solid rgba(42, 21, 8, 0.35);
+  border-top-color: #2a1508;
   display: inline-block;
   animation: bfSpin 0.7s linear infinite;
 }
 
 @keyframes bfSpin {
   to { transform: rotate(360deg); }
+}
+
+/* ═══ V30 — SLIDE-TO-BUDGET dual-thumb range slider ═══ */
+.budget-range input[type='range'].budget-thumb {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  margin: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  pointer-events: none;
+  height: 100%;
+}
+
+.budget-range input.budget-thumb::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  pointer-events: auto;
+  width: 22px;
+  height: 22px;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  border: 2.5px solid #06070d;
+  box-shadow: 0 2px 10px rgba(251, 191, 36, 0.45), 0 0 0 1px rgba(251, 191, 36, 0.6);
+  cursor: grab;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.budget-range input.budget-thumb::-webkit-slider-thumb:active {
+  transform: scale(1.15);
+  cursor: grabbing;
+  box-shadow: 0 2px 14px rgba(251, 191, 36, 0.65), 0 0 0 4px rgba(251, 191, 36, 0.18);
+}
+
+.budget-range input.budget-thumb::-moz-range-thumb {
+  pointer-events: auto;
+  width: 20px;
+  height: 20px;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  border: 2.5px solid #06070d;
+  box-shadow: 0 2px 10px rgba(251, 191, 36, 0.45), 0 0 0 1px rgba(251, 191, 36, 0.6);
+  cursor: grab;
+}
+
+.budget-range input.budget-thumb::-moz-range-track {
+  background: transparent;
 }
 
 /* ═══ CIRCULAR MENU — detail view enter animation (profile dashboards) ═══ */

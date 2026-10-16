@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
 import { Photographer, Booking, Package, PortfolioImage, Review, Post } from '../lib/types';
 import { toBn, taka, bnDate } from '../lib/utils';
+import { priceLine, photoCountLine } from '../lib/pricing';
 import { COX_SPOTS } from '../lib/constants';
 import CldUploadField from '../components/CldUploadField';
 import ScheduleTab from '../components/ScheduleTab';
@@ -1089,8 +1090,15 @@ export default function StudioDash() {
                         )}
                       </div>
                       <div className="flex items-baseline gap-2 mt-0.5 flex-wrap">
-                        <span className="price-tag text-lg">{taka(pkg.price)}</span>
-                        <span className="text-xs text-white/45">⏱ {toBn(pkg.duration_hours || 0)} ঘণ্টা{pkg.features?.length ? ` · ${toBn(pkg.features.length)}টি সুবিধা` : ''}</span>
+                        <span className="price-tag text-lg">{priceLine(pkg)}</span>
+                        <span className="text-xs text-white/45">
+                          {pkg.pricing_unit === 'hour'
+                            ? `⏱ ${toBn(pkg.duration_hours || 2)} ঘণ্টা সাজেস্টেড${pkg.features?.length ? ` · ${toBn(pkg.features.length)}টি সুবিধা` : ''}`
+                            : pkg.pricing_unit === 'photo'
+                              ? `📷 যত ছবি দরকার${pkg.features?.length ? ` · ${toBn(pkg.features.length)}টি সুবিধা` : ''}`
+                              : <>⏱ {toBn(pkg.duration_hours || 0)} ঘণ্টা{photoCountLine(pkg) ? ` · ${photoCountLine(pkg)}` : ''}{pkg.features?.length ? ` · ${toBn(pkg.features.length)}টি সুবিধা` : ''}</>
+                          }
+                        </span>
                       </div>
                     </button>
                   </div>

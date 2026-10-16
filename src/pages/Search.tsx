@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Photographer } from '../lib/types';
 import { toBn } from '../lib/utils';
+import { useJsonLd } from '../lib/seo';
 import { COX_SPOTS, SPOT_BY_KEY } from '../lib/constants';
 import Reveal from '../components/Reveal';
 import PhotographerCard from '../components/PhotographerCard';
@@ -41,6 +42,82 @@ const SlidersIcon = ({ size = 17 }: { size?: number }) => (
   </svg>
 );
 
+/* ── V30 — স্লাইড-টু-বাজেট দুই-আঙুল রেঞ্জ স্লাইডার ── */
+const BUDGET_MIN = 0;
+const BUDGET_MAX = 30000;
+const BUDGET_STEP = 500;
+
+function BudgetSlider({ minP, maxP, onChange }: { minP: string; maxP: string; onChange: (min: string, max: string) => void }) {
+  const lo = minP ? Math.min(Number(minP), BUDGET_MAX) : BUDGET_MIN;
+  const hi = maxP ? Math.min(Number(maxP), BUDGET_MAX) : BUDGET_MAX;
+  const pctLo = ((lo - BUDGET_MIN) / (BUDGET_MAX - BUDGET_MIN)) * 100;
+  const pctHi = ((hi - BUDGET_MIN) / (BUDGET_MAX - BUDGET_MIN)) * 100;
+
+  return (
+    <div>
+      <div className="flex items-baseline justify-between mb-2">
+        <span className="text-[12.5px] font-bold text-white/85 tabular-nums">
+          ৳{lo.toLocaleString('en-IN')}
+        </span>
+        <span className="text-[11.5px] text-white/45">আপনার বাজেট স্লাইড করুন</span>
+        <span className="text-[12.5px] font-bold text-sunset-gold tabular-nums">
+          {hi >= BUDGET_MAX ? '৳৩০,০০০+' : `৳${hi.toLocaleString('en-IN')}`}
+        </span>
+      </div>
+      <div className="budget-range relative h-7 select-none">
+        <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-1.5 rounded-full bg-white/12 pointer-events-none" />
+        <div
+          className="absolute top-1/2 -translate-y-1/2 h-1.5 rounded-full bg-gradient-to-r from-amber-500 to-amber-300 pointer-events-none"
+          style={{ left: `${pctLo}%`, right: `${100 - pctHi}%` }}
+        />
+        <input
+          type="range"
+          min={BUDGET_MIN}
+          max={BUDGET_MAX}
+          step={BUDGET_STEP}
+          value={lo}
+          onChange={(e) => {
+            const v = Math.min(Number(e.target.value), hi - BUDGET_STEP);
+            onChange(v <= BUDGET_MIN ? '' : String(v), maxP);
+          }}
+          aria-label="সর্বনিম্ন বাজেট"
+          className="budget-thumb"
+        />
+        <input
+          type="range"
+          min={BUDGET_MIN}
+          max={BUDGET_MAX}
+          step={BUDGET_STEP}
+          value={hi}
+          onChange={(e) => {
+            const v = Math.max(Number(e.target.value), lo + BUDGET_STEP);
+            onChange(minP, v >= BUDGET_MAX ? '' : String(v));
+          }}
+          aria-label="সর্বোচ্চ বাজেট"
+          className="budget-thumb"
+        />
+      </div>
+      <div className="flex flex-wrap gap-1.5 mt-2">
+        {[
+          { label: '≤ ২,৫০০', min: '', max: '2500' },
+          { label: '≤ ৫,০০০', min: '', max: '5000' },
+          { label: '৫–১০ হাজার', min: '5000', max: '10000' },
+          { label: '১০ হাজার+', min: '10000', max: '' },
+        ].map((chip) => (
+          <button
+            key={chip.label}
+            type="button"
+            onClick={() => onChange(chip.min, chip.max)}
+            className={`chip !py-1 !px-2.5 !text-[11.5px] ${minP === chip.min && maxP === chip.max ? 'chip-active' : ''}`}
+          >
+            {chip.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function Search() {
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -58,6 +135,23 @@ export default function Search() {
   const [loading, setLoading] = useState(true);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const filterRef = useRef<HTMLDivElement | null>(null);
+
+  /* V30 — ডিরেক্টরি ItemList JSON-LD: Google-এ "cox bazar photographer" সার্চে তালিকা বুঝতে পারে */
+  useJsonLd('photographers-directory', (() => {
+    if (loading || photographers.length === 0) return null;
+    return {
+      '@context': 'https://schema.org',
+      '@type': 'ItemList',
+      name: 'কক্সবাজারের ভেরিফায়েড ফটোগ্রাফার',
+      numberOfItems: photographers.length,
+      itemListElement: photographers.slice(0, 20).map((p, i) => ({
+        '@type': 'ListItem',
+        position: i + 1,
+        name: p.display_name,
+        url: `https://photolagbe.pages.dev/photographer/${p.slug || p.id}`,
+      })),
+    };
+  })());
 
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -312,22 +406,12 @@ export default function Search() {
                   </select>
 
                   <label className="field-label !text-[12.5px]">💰 বাজেট (৳)</label>
-                  <div className="flex gap-2 mb-3">
-                    <input
-                      type="number"
-                      value={minP}
-                      onChange={(e) => setMinP(e.target.value)}
-                      placeholder="সর্বনিম্ন"
-                      className="glass-input"
-                    />
-                    <input
-                      type="number"
-                      value={maxP}
-                      onChange={(e) => setMaxP(e.target.value)}
-                      placeholder="সর্বোচ্চ"
-                      className="glass-input"
-                    />
-                  </div>
+                  <BudgetSlider
+                    minP={minP}
+                    maxP={maxP}
+                    onChange={(min, max) => { setMinP(min); setMaxP(max); }}
+                  />
+                  <div className="h-3" />
 
                   <label className="field-label !text-[12.5px]">⭐ রেটিং</label>
                   <div className="flex flex-wrap gap-2 mb-3">

@@ -48,6 +48,9 @@ export type Category = { id: number; name: string; slug: string; icon: string }
 
 export type PackageMedia = { url: string; type: 'image' | 'video'; thumb_url?: string }
 
+/** প্রাইসিং ইউনিট: event = মোট প্যাকেজ, hour = প্রতি ঘণ্টা, photo = প্রতি ছবি */
+export type PricingUnit = 'event' | 'hour' | 'photo'
+
 export type Package = {
   id: string
   photographer_id: string
@@ -55,6 +58,10 @@ export type Package = {
   description: string | null
   price: number
   duration_hours: number | null
+  /** V30 — দামের একক (event/hour/photo) */
+  pricing_unit?: PricingUnit | null
+  /** V30 — প্যাকেজে অন্তর্ভুক্ত ছবির সংখ্যা */
+  photo_count?: number | null
   features: string[]
   media?: PackageMedia[]
   sort_order?: number
@@ -73,7 +80,7 @@ export type Booking = {
   event_location: string | null
   notes: string | null
   status: 'pending' | 'accepted' | 'rejected' | 'cancelled' | 'completed'
-  package_snapshot?: { name: string; price: number; duration_hours?: number | null; cover_url?: string | null; features_count?: number } | null
+  package_snapshot?: { name: string; price: number; duration_hours?: number | null; cover_url?: string | null; features_count?: number; pricing_unit?: PricingUnit | null; unit_qty?: number | null; total?: number | null; photo_count?: number | null } | null
   shoot_spot?: string | null
   shoot_time_slot?: string | null
   status_history?: { status: string; at: string; note?: string }[]
