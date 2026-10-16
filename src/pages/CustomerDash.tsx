@@ -536,11 +536,11 @@ export default function CustomerDash() {
             <div
               key={n.id}
               className={`glass-card p-4 rounded-xl2 flex gap-3 items-start ${
-                !n.read ? 'border-sky-300/40' : ''
+                !n.read ? 'border-sunset-gold/40' : ''
               }`}
             >
               {!n.read && (
-                <span className="w-2 h-2 rounded-full bg-sky-300 shrink-0 mt-1.5" />
+                <span className="w-2 h-2 rounded-full bg-sunset-gold shrink-0 mt-1.5" />
               )}
               <div className="flex-1 min-w-0">
                 <p className="text-sm text-white/90 leading-relaxed">{n.message}</p>
@@ -558,38 +558,37 @@ export default function CustomerDash() {
   /* ═══════════ স্ট্যাট + মেনু বৃত্ত ═══════════ */
 
   const statItems: CircleItem[] = [
-    { key: 'st-bookings', label: 'বুকিং', icon: CIc.calendar(24), tint: 'sky', stat: toBn(totalBookings), onClick: () => setView('bookings') },
-    { key: 'st-accepted', label: 'গৃহীত', icon: CIc.checkCircle(24), tint: 'sea', stat: toBn(acceptedBookings), onClick: () => setView('bookings') },
-    { key: 'st-done', label: 'সম্পন্ন', icon: CIc.check(24), tint: 'hill', stat: toBn(completedBookings), onClick: () => setView('bookings') },
-    { key: 'st-spent', label: 'মোট খরচ', icon: CIc.wallet(24), tint: 'mist', stat: taka(totalSpent), onClick: () => setView('bookings') },
+    { key: 'st-bookings', label: 'বুকিং', icon: CIc.calendar(24), tint: 'gold', stat: toBn(totalBookings), onClick: () => setView('bookings') },
+    { key: 'st-accepted', label: 'গৃহীত', icon: CIc.checkCircle(24), tint: 'teal', stat: toBn(acceptedBookings), onClick: () => setView('bookings') },
+    { key: 'st-done', label: 'সম্পন্ন', icon: CIc.check(24), tint: 'emerald', stat: toBn(completedBookings), onClick: () => setView('bookings') },
+    { key: 'st-spent', label: 'মোট খরচ', icon: CIc.wallet(24), tint: 'coral', stat: taka(totalSpent), onClick: () => setView('bookings') },
   ];
 
   const menuItems: CircleItem[] = [
-    { key: 'bookings', label: 'আমার বুকিং', icon: CIc.calendar(), tint: 'sky', badge: bookings.length, onClick: () => setView('bookings') },
-    { key: 'favorites', label: 'প্রিয়', icon: CIc.heart(), tint: 'sea', badge: favoritePhotographers.length, onClick: () => setView('favorites') },
-    { key: 'reviews', label: 'রিভিউ', icon: CIc.star(), tint: 'hill', badge: myReviews.length, onClick: () => setView('reviews') },
-    { key: 'notifications', label: 'নোটিফিকেশন', icon: CIc.bell(), tint: 'mist', badge: unreadNotifs, onClick: () => setView('notifications') },
-    { key: 'profile', label: 'প্রোফাইল এডিট', icon: CIc.user(), tint: 'sky', onClick: () => setView('profile') },
+    { key: 'bookings', label: 'আমার বুকিং', icon: CIc.calendar(), tint: 'gold', badge: bookings.length, onClick: () => setView('bookings') },
+    { key: 'favorites', label: 'প্রিয়', icon: CIc.heart(), tint: 'crimson', badge: favoritePhotographers.length, onClick: () => setView('favorites') },
+    { key: 'reviews', label: 'রিভিউ', icon: CIc.star(), tint: 'berry', badge: myReviews.length, onClick: () => setView('reviews') },
+    { key: 'notifications', label: 'নোটিফিকেশন', icon: CIc.bell(), tint: 'teal', badge: unreadNotifs, onClick: () => setView('notifications') },
+    { key: 'profile', label: 'প্রোফাইল এডিট', icon: CIc.user(), tint: 'coral', onClick: () => setView('profile') },
     ...(profile.role === 'customer'
-      ? [{ key: 'migration', label: 'ফটোগ্রাফার হোন', icon: CIc.migration(), tint: 'sea' as const, onClick: () => setView('profile') }]
+      ? [{ key: 'migration', label: 'ফটোগ্রাফার হোন', icon: CIc.migration(), tint: 'gold' as const, onClick: () => setView('profile') }]
       : []),
     ...(profile.role === 'photographer'
       ? [
-          { key: 'studio', label: 'মাই স্টুডিও', icon: CIc.studio(), tint: 'mist' as const, onClick: () => navigate('/studio') },
-          { key: 'kyc', label: 'KYC', icon: CIc.shield(), tint: 'hill' as const, onClick: () => setView('kyc') },
+          { key: 'studio', label: 'মাই স্টুডিও', icon: CIc.studio(), tint: 'teal' as const, onClick: () => navigate('/studio') },
+          { key: 'kyc', label: 'KYC', icon: CIc.shield(), tint: 'crimson' as const, onClick: () => setView('kyc') },
         ]
       : []),
   ];
 
   return (
-    <div className="dash-coastal min-h-screen">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-28 pb-24">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-28 pb-24">
       {view === 'home' ? (
         <>
           {/* ── V25 হেডার: ফেসবুক-স্টাইল কভার ফটো + উপরে বৃত্তাকার ছবি + শুভেচ্ছা (ব্ল্যাক গ্লাস কার্ড) ── */}
           <header className="glass-card overflow-hidden mb-10">
             {/* কভার ব্যানার */}
-            <div className="relative h-36 sm:h-52 w-full bg-gradient-to-br from-sky-500/40 via-cyan-600/30 to-emerald-500/35">
+            <div className="relative h-36 sm:h-52 w-full bg-gradient-to-br from-sunset-gold/35 via-sunset-coral/30 to-sunset-crimson/35">
               {profile.cover_url ? (
                 <img src={profile.cover_url} alt="কভার ফটো" className="w-full h-full object-cover" />
               ) : (
@@ -597,7 +596,7 @@ export default function CustomerDash() {
                   className="w-full h-full"
                   style={{
                     background:
-                      'radial-gradient(420px 200px at 82% 0%, rgba(125,211,252,0.4), transparent 65%), radial-gradient(380px 220px at 12% 100%, rgba(110,231,183,0.28), transparent 60%), linear-gradient(135deg, rgba(14,42,66,0.9), rgba(12,40,66,0.85))',
+                      'radial-gradient(420px 200px at 82% 0%, rgba(251,191,36,0.32), transparent 65%), radial-gradient(380px 220px at 12% 100%, rgba(249,115,22,0.28), transparent 60%), linear-gradient(135deg, rgba(58,30,16,0.92), rgba(40,20,12,0.88))',
                   }}
                 />
               )}
@@ -610,7 +609,7 @@ export default function CustomerDash() {
                 onClick={() => coverInputRef.current?.click()}
                 disabled={coverBusy}
                 aria-label="কভার ফটো আপলোড করুন"
-                className="cover-cam-btn absolute bottom-3 right-3 flex items-center gap-2 rounded-full px-3.5 h-9 text-[12.5px] font-bold text-white transition-transform outline-none focus-visible:ring-2 focus-visible:ring-sky-300 disabled:opacity-60"
+                className="cover-cam-btn absolute bottom-3 right-3 flex items-center gap-2 rounded-full px-3.5 h-9 text-[12.5px] font-bold text-white transition-transform outline-none focus-visible:ring-2 focus-visible:ring-sunset-gold disabled:opacity-60"
               >
                 {coverBusy ? (
                   <span className="block size-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
@@ -649,7 +648,7 @@ export default function CustomerDash() {
               <p className="text-sm text-white/55 mt-1">
                 {profile.email}
               </p>
-              <span className="mt-2 rounded-full bg-sky-400/15 px-3 py-1 text-xs font-bold text-sky-300 ring-1 ring-sky-300/30">
+              <span className="mt-2 rounded-full bg-sunset-gold/15 px-3 py-1 text-xs font-bold text-sunset-gold ring-1 ring-sunset-gold/30">
                 {profile.role === 'photographer' ? 'ফটোগ্রাফার' : 'সাধারণ সদস্য'}
               </span>
             </div>
@@ -712,7 +711,6 @@ export default function CustomerDash() {
           )}
         </DetailShell>
       )}
-      </div>
     </div>
   );
 }

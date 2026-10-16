@@ -322,23 +322,23 @@ export default function StudioDash() {
 
   /* ── বৃত্তাকার স্ট্যাট + মেনু আইটেম (হোম ভিউ) ── */
   const studioStats: CircleItem[] = [
-    { key: 'st-bookings', label: 'বুকিং', icon: CIc.calendar(24), tint: 'sky', stat: toBn(totalBookings), onClick: () => setTab('bookings') },
-    { key: 'st-accepted', label: 'গৃহীত', icon: CIc.checkCircle(24), tint: 'sea', stat: toBn(acceptedBookings), onClick: () => setTab('bookings') },
-    { key: 'st-done', label: 'সম্পন্ন', icon: CIc.check(24), tint: 'hill', stat: toBn(completedBookings), onClick: () => setTab('bookings') },
-    { key: 'st-earn', label: 'মোট আয়', icon: CIc.wallet(24), tint: 'mist', stat: taka(totalEarnings), onClick: () => setTab('bookings') },
+    { key: 'st-bookings', label: 'বুকিং', icon: CIc.calendar(24), tint: 'gold', stat: toBn(totalBookings), onClick: () => setTab('bookings') },
+    { key: 'st-accepted', label: 'গৃহীত', icon: CIc.checkCircle(24), tint: 'teal', stat: toBn(acceptedBookings), onClick: () => setTab('bookings') },
+    { key: 'st-done', label: 'সম্পন্ন', icon: CIc.check(24), tint: 'emerald', stat: toBn(completedBookings), onClick: () => setTab('bookings') },
+    { key: 'st-earn', label: 'মোট আয়', icon: CIc.wallet(24), tint: 'coral', stat: taka(totalEarnings), onClick: () => setTab('bookings') },
   ];
 
   const studioMenuItems: CircleItem[] = [
-    { key: 'overview', label: 'ওভারভিউ', icon: CIc.grid(), tint: 'sky', onClick: () => setTab('overview') },
-    { key: 'bookings', label: 'বুকিং', icon: CIc.calendar(), tint: 'sea', badge: bookings.length, onClick: () => setTab('bookings') },
-    { key: 'schedule', label: 'সময়সূচি', icon: CIc.clock(), tint: 'mist', onClick: () => setTab('schedule') },
-    { key: 'posts', label: 'পোস্ট', icon: CIc.image(), tint: 'sky', badge: posts.length, onClick: () => setTab('posts') },
-    { key: 'packages', label: 'প্যাকেজ', icon: CIc.tag(), tint: 'sea', badge: packages.length, onClick: () => setTab('packages') },
-    { key: 'portfolio', label: 'ফটো গ্যালারি', icon: CIc.camera(), tint: 'hill', badge: portfolio.length, onClick: () => setTab('portfolio') },
-    { key: 'profile', label: 'প্রোফাইল', icon: CIc.user(), tint: 'sky', onClick: () => setTab('profile') },
+    { key: 'overview', label: 'ওভারভিউ', icon: CIc.grid(), tint: 'gold', onClick: () => setTab('overview') },
+    { key: 'bookings', label: 'বুকিং', icon: CIc.calendar(), tint: 'teal', badge: bookings.length, onClick: () => setTab('bookings') },
+    { key: 'schedule', label: 'সময়সূচি', icon: CIc.clock(), tint: 'crimson', onClick: () => setTab('schedule') },
+    { key: 'posts', label: 'পোস্ট', icon: CIc.image(), tint: 'berry', badge: posts.length, onClick: () => setTab('posts') },
+    { key: 'packages', label: 'প্যাকেজ', icon: CIc.tag(), tint: 'gold', badge: packages.length, onClick: () => setTab('packages') },
+    { key: 'portfolio', label: 'ফটো গ্যালারি', icon: CIc.camera(), tint: 'coral', badge: portfolio.length, onClick: () => setTab('portfolio') },
+    { key: 'profile', label: 'প্রোফাইল', icon: CIc.user(), tint: 'berry', onClick: () => setTab('profile') },
     kycSub?.status === 'approved'
-      ? { key: 'verification', label: 'ভেরিফায়েড', icon: CIc.check(), tint: 'hill' as const, onClick: () => setTab('verification') }
-      : { key: 'verification', label: 'ভেরিফিকেশন', icon: CIc.shield(), tint: 'mist' as const, onClick: () => setTab('verification') },
+      ? { key: 'verification', label: 'ভেরিফায়েড', icon: CIc.check(), tint: 'emerald' as const, onClick: () => setTab('verification') }
+      : { key: 'verification', label: 'ভেরিফিকেশন', icon: CIc.shield(), tint: 'crimson' as const, onClick: () => setTab('verification') },
   ];
 
   // Booking status update handler
@@ -614,8 +614,7 @@ export default function StudioDash() {
   };
 
   return (
-    <div className="dash-coastal min-h-screen">
-      <div className="max-w-6xl mx-auto px-6 pt-28 pb-24 space-y-8">
+    <div className="max-w-6xl mx-auto px-6 pt-28 pb-24 space-y-8">
       {/* Pending Approval Banner */}
       {isPending && (
         <div className="bdg-pending p-4 rounded-xl2 w-full justify-center text-sm shadow-glass-sm">
@@ -627,7 +626,7 @@ export default function StudioDash() {
       <>
       {/* Header Cover & Profile Bar — V25 ফেসবুক-স্টাইল (কভার + ক্যামেরা বাটন + ওভারল্যাপিং অ্যাভাটার) */}
       <div className="glass rounded-xl3 overflow-hidden shadow-glass-lg border border-white/[0.12]">
-        <div className="relative h-40 sm:h-56 w-full bg-gradient-to-br from-sky-500/35 via-cyan-600/25 to-emerald-500/30">
+        <div className="relative h-40 sm:h-56 w-full bg-gradient-to-br from-sunset-gold/35 via-sunset-coral/30 to-sunset-crimson/30">
           {photographer.cover_photo_url ? (
             <img src={photographer.cover_photo_url} alt="কভার" className="w-full h-full object-cover" />
           ) : (
@@ -635,7 +634,7 @@ export default function StudioDash() {
               className="w-full h-full"
               style={{
                 background:
-                  'radial-gradient(520px 240px at 85% 0%, rgba(125,211,252,0.4), transparent 65%), radial-gradient(440px 260px at 8% 100%, rgba(110,231,183,0.3), transparent 60%), linear-gradient(135deg, rgba(14,42,66,0.92), rgba(12,40,66,0.88))',
+                  'radial-gradient(520px 240px at 85% 0%, rgba(251,191,36,0.32), transparent 65%), radial-gradient(440px 260px at 8% 100%, rgba(249,115,22,0.3), transparent 60%), linear-gradient(135deg, rgba(58,30,16,0.94), rgba(40,20,12,0.9))',
               }}
             />
           )}
@@ -647,7 +646,7 @@ export default function StudioDash() {
             onClick={() => coverCamRef.current?.click()}
             disabled={coverCamBusy}
             aria-label="কভার ফটো আপলোড করুন"
-            className="cover-cam-btn absolute bottom-3 right-3 flex items-center gap-2 rounded-full px-3.5 h-9 text-[12.5px] font-bold text-white transition-transform outline-none focus-visible:ring-2 focus-visible:ring-sky-300 disabled:opacity-60"
+            className="cover-cam-btn absolute bottom-3 right-3 flex items-center gap-2 rounded-full px-3.5 h-9 text-[12.5px] font-bold text-white transition-transform outline-none focus-visible:ring-2 focus-visible:ring-sunset-gold disabled:opacity-60"
           >
             {coverCamBusy ? (
               <span className="block size-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
@@ -1168,17 +1167,17 @@ export default function StudioDash() {
           <div className="space-y-6">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h3 className="font-bold text-white text-lg">ফটো গ্যালারি</h3>
-              <span className="text-xs font-bold text-sky-300 bg-sky-400/10 ring-1 ring-sky-300/25 rounded-full px-3 py-1">
+              <span className="text-xs font-bold text-sunset-gold bg-sunset-gold/10 ring-1 ring-sunset-gold/25 rounded-full px-3 py-1">
                 ছবি {toBn(galleryCounts(withVideoFlag(portfolio)).photos)}/{toBn(GALLERY_MAX_PHOTOS)} · ভিডিও {toBn(galleryCounts(withVideoFlag(portfolio)).videos)}/{toBn(GALLERY_MAX_VIDEOS)}
               </span>
             </div>
 
             {/* গাইড ব্যানার */}
             <div className="glass-card p-4 rounded-xl2 flex gap-3 items-start">
-              <div className="w-10 h-10 rounded-xl bg-sky-400/[0.14] text-sky-300 grid place-items-center shrink-0 text-lg">🖼️</div>
+              <div className="w-10 h-10 rounded-xl bg-sunset-gold/[0.13] text-sunset-gold grid place-items-center shrink-0 text-lg">🖼️</div>
               <p className="text-[13px] text-white/65 leading-relaxed">
                 এই গ্যালারিটি আপনার <b className="text-white">পাবলিক প্রোফাইলে হোম পেজের মতো স্ক্রল-গ্যালারি</b> হিসেবে দেখাবে।
-                কমপক্ষে <b className="text-sky-300">৬টি ছবি ও ১টি ভিডিও</b> যোগ করুন — ভিডিও সর্বোচ্চ <b className="text-sky-300">৫০MB</b>।
+                কমপক্ষে <b className="text-sunset-gold">৬টি ছবি ও ১টি ভিডিও</b> যোগ করুন — ভিডিও সর্বোচ্চ <b className="text-sunset-gold">৫০MB</b>।
                 ছবি WebP-তে কনভার্ট হয়ে দ্রুত লোড হয়।
               </p>
             </div>
@@ -1211,7 +1210,7 @@ export default function StudioDash() {
                     className="glass-input"
                   />
                   {portUrl.trim() ? (
-                    <p className="text-[12px] text-sky-300/90 mt-1.5 font-semibold">
+                    <p className="text-[12px] text-sunset-gold/90 mt-1.5 font-semibold">
                       {isVideoUrl(portUrl) ? '▶ ভিডিও হিসেবে যোগ হবে' : '🖼️ ছবি হিসেবে যোগ হবে'} — ধরন লিংক থেকে অটো-ডিটেক্ট
                     </p>
                   ) : null}
@@ -1259,7 +1258,7 @@ export default function StudioDash() {
                             </span>
                           </span>
                         )}
-                        <span className={`absolute top-3 left-3 rounded-full text-[10.5px] font-extrabold px-2 py-0.5 ${isVid ? 'bg-sky-500 text-white' : 'bg-white/85 text-[#0a2338]'}`}>
+                        <span className={`absolute top-3 left-3 rounded-full text-[10.5px] font-extrabold px-2 py-0.5 ${isVid ? 'bg-[#1d4d3b]/90 text-white' : 'bg-white/85 text-[#2a1508]'}`}>
                           {isVid ? '▶ ভিডিও' : 'ছবি'}
                         </span>
                       </div>
@@ -1680,7 +1679,6 @@ export default function StudioDash() {
         body={pkgDeleting ? `"${pkgDeleting.name}" স্থায়ীভাবে মুছে যাবে — এটি আর ফিরিয়ে আনা যাবে না।` : undefined}
         busy={pkgSavingDel}
       />
-      </div>
     </div>
   );
 }

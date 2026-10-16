@@ -1236,70 +1236,19 @@
   }
 }
 
-/* ═══ V24 — প্রোফাইল কোস্টাল থিম (আকাশ × সাগর × পাহাড়) ═══
-   প্রোফাইল পেজ (CustomerDash + StudioDash) আর কালো-void নয় —
-   আকাশি নীলের নরম গ্রেডিয়েন্ট + সাগর/পাহাড়ের আভা। লেখা white-ই থাকে,
-   কিন্তু পুরো পরিবেশ আকাশ-সাগরের মতো হালকা-নীল। */
-.dash-coastal {
-  background:
-    radial-gradient(1100px 520px at 88% -12%, rgba(125, 211, 252, 0.16), transparent 62%),
-    radial-gradient(900px 500px at 4% 8%, rgba(94, 234, 212, 0.11), transparent 58%),
-    radial-gradient(820px 560px at 50% 112%, rgba(134, 239, 172, 0.09), transparent 60%),
-    linear-gradient(180deg, #0a1e33 0%, #0c2842 46%, #0a2338 78%, #081d30 100%);
-}
-
-/* V25 — কোস্টাল কার্ড = ব্ল্যাক ট্রান্সপারেন্ট গ্লাসমরফিজম (আকাশ-সাগর গ্রেডিয়েন্টের উপর গাঢ় বরফ-কাচ)
-   ব্যাকগ্রাউন্ডে আকাশ/সাগর/পাহাড়ের আভা থাকে, কার্ডগুলো সেটার উপর বসানো কালো স্বচ্ছ কাচ */
-.dash-coastal .glass-card {
-  background: rgba(4, 9, 18, 0.42);
-  backdrop-filter: blur(20px) saturate(1.4);
-  -webkit-backdrop-filter: blur(20px) saturate(1.4);
-  border-color: rgba(255, 255, 255, 0.13);
-  box-shadow:
-    0 14px 40px -10px rgba(2, 8, 18, 0.6),
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.14);
-}
-.dash-coastal .glass-card:hover {
-  border-color: rgba(125, 211, 252, 0.32);
-  background: rgba(6, 12, 24, 0.5);
-}
-
-/* V25 — সাধারণ .glass বক্সও (স্টুডিও কভার-হেডার ইত্যাদি) ব্ল্যাক গ্লাস */
-.dash-coastal .glass {
-  background: rgba(4, 9, 18, 0.42);
-  backdrop-filter: blur(20px) saturate(1.4);
-  -webkit-backdrop-filter: blur(20px) saturate(1.4);
-  border-color: rgba(255, 255, 255, 0.13);
-  box-shadow:
-    0 14px 40px -10px rgba(2, 8, 18, 0.6),
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.14);
-}
-
-/* কোস্টাল ইনপুট/সিলেক্ট — গাঢ় কাচ (ব্ল্যাক গ্লাস ফর্ম ফিল্ড) */
-.dash-coastal .glass-input,
-.dash-coastal .glass-select {
-  background-color: rgba(3, 8, 16, 0.55);
-  border-color: rgba(255, 255, 255, 0.14);
-}
-.dash-coastal .glass-input:focus,
-.dash-coastal .glass-select:focus {
-  border-color: rgba(125, 211, 252, 0.55);
-  box-shadow: 0 0 0 3px rgba(125, 211, 252, 0.14);
-}
+/* ═══ V26 — প্রোফাইল আবার dark-gold (sunset × twilight) ═══
+   CustomerDash + StudioDash আবার গ্লোবাল dark void (#06070d) ব্যাকগ্রাউন্ডে —
+   home/footer-এর মতোই sunset-gold অ্যাকসেন্ট; V24-এর coastal গ্রেডিয়েন্ট সরানো হয়েছে।
+   কভার-ফটো ফিচার (V25) অপরিবর্তিত — শুধু placeholder এখন sunset টোনে। */
 
 /* V25 — কভার ফটো ক্যামেরা বাটন (ফেসবুক স্টাইল) */
 .cover-cam-btn {
-  background: rgba(2, 6, 14, 0.62);
+  background: rgba(12, 8, 4, 0.62);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  box-shadow: 0 6px 18px -4px rgba(0, 0, 0, 0.55), inset 0 1px 0 0 rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(251, 191, 36, 0.28);
+  box-shadow: 0 6px 18px -4px rgba(0, 0, 0, 0.55), inset 0 1px 0 0 rgba(255, 255, 255, 0.14);
 }
 .cover-cam-btn:active {
   transform: scale(0.92);
-}
-
-/* কোস্টাল স্কাই-গ্লো শ্যাডো (অ্যাভাটার/বাটন হাইলাইট) */
-.shadow-sky-glow {
-  box-shadow: 0 0 26px rgba(56, 189, 248, 0.35), 0 4px 16px rgba(8, 20, 34, 0.5);
 }

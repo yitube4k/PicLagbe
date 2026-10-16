@@ -107,7 +107,7 @@ export function GalleryViewer({
           type="button"
           onClick={onClose}
           aria-label="বন্ধ করুন"
-          className="shrink-0 w-11 h-11 grid place-items-center rounded-full bg-white/10 ring-1 ring-white/20 transition-colors hover:bg-white/20 active:scale-90 outline-none focus-visible:ring-2 focus-visible:ring-sky-400"
+          className="shrink-0 w-11 h-11 grid place-items-center rounded-full bg-white/10 ring-1 ring-white/20 transition-colors hover:bg-white/20 active:scale-90 outline-none focus-visible:ring-2 focus-visible:ring-sunset-gold"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
             <path d="M18 6 6 18M6 6l12 12" />
@@ -171,7 +171,7 @@ export function GalleryViewer({
               onClick={() => setIndex(i)}
               aria-label={`ছবি ${toBn(i + 1)}`}
               className={`shrink-0 w-16 h-12 sm:w-20 sm:h-14 rounded-lg overflow-hidden ring-2 transition-all duration-150 ${
-                i === safeIndex ? 'ring-sky-400 opacity-100' : 'ring-white/15 opacity-50 hover:opacity-85'
+                i === safeIndex ? 'ring-sunset-gold opacity-100' : 'ring-white/15 opacity-50 hover:opacity-85'
               }`}
             >
               <img
