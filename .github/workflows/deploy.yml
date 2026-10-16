@@ -14,6 +14,7 @@ jobs:
       - run: npm install --ignore-scripts
       - run: npm rebuild esbuild 2>/dev/null || true
       - run: VITE_BASE=/PicLagbe/ VITE_SUPABASE_URL=https://fiixytfznzppwgsogmnm.supabase.co VITE_SUPABASE_ANON_KEY=sb_publishable_1k9ZQHtBPZKkxueeAaz9jQ_TaktMdL6 VITE_CLOUDINARY_CLOUD_NAME=yrxtdqyo VITE_CLOUDINARY_UPLOAD_PRESET=piclagbe_unsigned npx vite build
+      - run: node scripts/generate_sitemap.mjs
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
         with:

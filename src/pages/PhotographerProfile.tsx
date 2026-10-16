@@ -12,6 +12,7 @@ import MediaReviews from '../components/MediaReviews';
 import PostCard from '../components/PostCard';
 import { videoThumb } from '../components/PackageEditDialog';
 import { GalleryViewer, ViewerItem } from '../components/GalleryViewer';
+import { usePageMeta } from '../lib/seo';
 
 /* ── Small presentational helpers ─────────────────────────────── */
 
@@ -243,6 +244,9 @@ function ProfileGallery({ items, onOpen }: { items: GalleryMedia[]; onOpen: (m: 
 
 /* ── Page ─────────────────────────────────────────────────────── */
 
+// ── V27 region start — slug/UUID দুই মোডেই প্রোফাইল (SEO: /photographer/<slug> Google-ইনডেক্সেবল)
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export default function PhotographerProfile() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -265,38 +269,86 @@ export default function PhotographerProfile() {
 
   const viewCountedRef = useRef(false);
 
+  // V27 — প্রতি-পেজ SEO মেটা (টাইটেল/ডেসক্রিপশন/OG — Google ও AI-সার্চে প্রোফাইল আসার জন্য)
+  usePageMeta({
+    title: photographer
+      ? `${photographer.display_name} — কক্সবাজার ফটোগ্রাফার | ফটোলাগবে PicLagbe`
+      : 'ফটোগ্রাফার প্রোফাইল | ফটোলাগবে PicLagbe',
+    description: photographer
+      ? `${photographer.display_name} — কক্সবাজারের ভেরিফায়েড ফটোগ্রাফার। ${photographer.full_location || 'কক্সবাজার'}। প্যাকেজ দেখুন, পোর্টফোলিও দেখুন, অগ্রিম ছাড়াই বুকিং দিন — ফটোলাগবে।`
+      : undefined,
+    image: photographer?.cover_photo_url || photographer?.profile_photo_url || undefined,
+    path: `/photographer/${photographer?.slug || photographer?.id || id || ''}`,
+    type: 'profile',
+  });
+
   const loadProfile = useCallback(async () => {
     if (!id) return;
     setLoading(true);
     setLoadFailed(false);
 
     try {
-      const [photoRes, pkgRes, galRes] = await Promise.all([
-        supabase
-          .from('photographers')
-          .select('*, photographer_categories(category_id, categories(name, slug, icon))')
-          .eq('id', id)
-          .maybeSingle(),
-        supabase
-          .from('packages')
-          .select('*')
-          .eq('photographer_id', id)
-          .order('price', { ascending: true }),
-        supabase
-          .from('portfolio_images')
-          .select('*')
-          .eq('photographer_id', id)
-          .order('sort_order'),
-      ]);
+      // V27 — UUID হলে id কলামে, নাহলে slug কলামে (স্যানিটাইজড) লুকআপ
+      let queryCol: 'id' | 'slug' = 'id';
+      let queryVal = id;
+      if (!UUID_RE.test(id)) {
+        const trimmed = id.trim();
+        if (!/^[a-z0-9_-]{1,80}$/i.test(trimmed)) {
+          setPhotographer(null);
+          setLoadFailed(true);
+          setPackages([]);
+          setGallery([]);
+          setLoading(false);
+          return;
+        }
+        queryCol = 'slug';
+        queryVal = trimmed;
+      }
+
+      const photoRes = await supabase
+        .from('photographers')
+        .select('*, photographer_categories(category_id, categories(name, slug, icon))')
+        .eq(queryCol, queryVal)
+        .maybeSingle();
 
       if (photoRes.error || !photoRes.data) {
         console.error('Photographer profile fetch error:', photoRes.error);
         setPhotographer(null);
         setLoadFailed(true);
+        setPackages([]);
+        setGallery([]);
       } else {
         const pData = photoRes.data as Photographer;
         setPhotographer(pData);
         setLoadFailed(false);
+
+        // V27 — বাকি কোয়েরিগুলো রেজলভড UUID দিয়ে (slug প্যারামে চলবে না)
+        const [pkgRes, galRes] = await Promise.all([
+          supabase
+            .from('packages')
+            .select('*')
+            .eq('photographer_id', pData.id)
+            .order('price', { ascending: true }),
+          supabase
+            .from('portfolio_images')
+            .select('*')
+            .eq('photographer_id', pData.id)
+            .order('sort_order'),
+        ]);
+
+        if (pkgRes.error) {
+          console.error('Packages fetch error:', pkgRes.error);
+          setPackages([]);
+        } else {
+          setPackages((pkgRes.data as Package[]) || []);
+        }
+
+        if (galRes.error) {
+          console.error('Gallery fetch error:', galRes.error);
+          setGallery([]);
+        } else {
+          setGallery(withVideoFlag((galRes.data as PortfolioImage[]) || []));
+        }
 
         // Increment view count once per mount (existing behaviour preserved)
         if (!viewCountedRef.current) {
@@ -304,30 +356,18 @@ export default function PhotographerProfile() {
           supabase
             .from('photographers')
             .update({ profile_views: (pData.profile_views || 0) + 1 })
-            .eq('id', id)
+            .eq('id', pData.id)
             .then(({ error }) => {
               if (error) console.error('View increment error:', error);
             });
         }
       }
-
-      if (pkgRes.error) {
-        console.error('Packages fetch error:', pkgRes.error);
-        setPackages([]);
-      } else {
-        setPackages((pkgRes.data as Package[]) || []);
-      }
-
-      if (galRes.error) {
-        console.error('Gallery fetch error:', galRes.error);
-        setGallery([]);
-      } else {
-        setGallery(withVideoFlag((galRes.data as PortfolioImage[]) || []));
-      }
     } catch (err) {
       console.error('Profile load error:', err);
       setPhotographer(null);
       setLoadFailed(true);
+      setPackages([]);
+      setGallery([]);
     } finally {
       setLoading(false);
     }
@@ -339,14 +379,15 @@ export default function PhotographerProfile() {
     setCoverBroken(false);
   }, [loadProfile]);
 
-  // Completed-shoot counter — shown only when RLS permits and count > 0
+  // Completed-shoot counter — shown only when RLS permits and count > 0 (V27: resolved UUID)
   useEffect(() => {
-    if (!id) return;
+    const pId = photographer?.id;
+    if (!pId) return;
     let active = true;
     supabase
       .from('bookings')
       .select('id', { count: 'exact', head: true })
-      .eq('photographer_id', id)
+      .eq('photographer_id', pId)
       .eq('status', 'completed')
       .then(({ count, error }) => {
         if (active && !error && typeof count === 'number') setCompletedCount(count);
@@ -354,16 +395,17 @@ export default function PhotographerProfile() {
     return () => {
       active = false;
     };
-  }, [id]);
+  }, [photographer?.id]);
 
   // অ্যাপ্রুভড কাজের পোস্ট (অ্যাডমিন-অনুমোদিত ফিড)
   useEffect(() => {
-    if (!id) return;
+    const pId = photographer?.id;
+    if (!pId) return;
     let active = true;
     supabase
       .from('posts')
       .select('*, photographers(id, display_name, profile_photo_url)')
-      .eq('photographer_id', id)
+      .eq('photographer_id', pId)
       .eq('status', 'approved')
       .order('created_at', { ascending: false })
       .limit(12)
@@ -373,7 +415,7 @@ export default function PhotographerProfile() {
     return () => {
       active = false;
     };
-  }, [id]);
+  }, [photographer?.id]);
 
   // Body scroll lock for mobile booking sheet
   useEffect(() => {

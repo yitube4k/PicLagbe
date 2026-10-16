@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /dashboard
+Disallow: /studio
+Disallow: /chat
+Disallow: /auth
+
+Sitemap: https://photolagbe.pages.dev/sitemap.xml
