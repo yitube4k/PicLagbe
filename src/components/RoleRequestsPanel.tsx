@@ -1,7 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { toBn, bnDate } from '../lib/utils';
 import { logAction } from '../lib/audit';
+import {
+  AdminSheet, FullDialog, ConfirmDialog, FilterBar, OverflowMenu,
+  StatusPill, EmptyState, ListSkeleton, KV, waMe, telHref,
+  useAdminList, useSnack,
+} from './admin/kit';
+import { AIcon } from '../admin/icons';
 
 type RoleReq = {
   id: string;
@@ -20,197 +26,233 @@ type RoleReq = {
 };
 
 /**
- * অ্যাডমিন — ফটোগ্রাফার মাইগ্রেশন আবেদন (role_requests) রিভিউ।
- * Approve → approve_role_request RPC (photographers রো + profiles.role আপডেট + নোটিফিকেশন)
- * Reject  → reject_role_request RPC (রিভিউ নোট সহ)
+ * অ্যাডমিন — ফটোগ্রাফার মাইগ্রেশন আবেদন (role_requests) — Android style:
+ * card tap = view sheet, pending → inline অ্যাপ্রুভ; reject = full dialog w/ note;
+ * approve = M3 confirm. Approve → approve_role_request RPC.
  */
 export default function RoleRequestsPanel() {
-  const [reqs, setReqs] = useState<RoleReq[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [busyId, setBusyId] = useState<string | null>(null);
-  const [rejectingId, setRejectingId] = useState<string | null>(null);
-  const [rejectNote, setRejectNote] = useState('');
-  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [tab, setTab] = useState<'pending' | 'history'>('pending');
 
-  const load = async () => {
-    setLoading(true);
+  const fetcher = useCallback(async () => {
     const { data, error } = await supabase
       .from('role_requests')
       .select('*')
       .order('created_at', { ascending: false })
       .limit(50);
-    if (!error) setReqs((data as RoleReq[]) || []);
-    else console.error('Role requests load error:', error);
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    load();
+    if (error) console.error('Role requests load error:', error);
+    return (data as RoleReq[]) || [];
   }, []);
 
-  const pending = reqs.filter((r) => r.status === 'pending');
-  const history = reqs.filter((r) => r.status !== 'pending');
+  const list = useAdminList<RoleReq>(fetcher, []);
+  const { show } = useSnack();
 
-  const handleApprove = async (r: RoleReq) => {
-    if (!confirm(`"${r.display_name}"-এর আবেদন অনুমোদন করবেন? ফটোগ্রাফার প্রোফাইল অটো-তৈরি হবে।`)) return;
-    setBusyId(r.id);
-    setMsg(null);
+  const [viewing, setViewing] = useState<RoleReq | null>(null);
+  const [approving, setApproving] = useState<RoleReq | null>(null);
+  const [rejecting, setRejecting] = useState<RoleReq | null>(null);
+  const [rejectNote, setRejectNote] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const items = tab === 'pending' ? list.items.filter((r) => r.status === 'pending') : list.items.filter((r) => r.status !== 'pending');
+  const pendingCount = list.items.filter((r) => r.status === 'pending').length;
+
+  const handleApprove = async () => {
+    if (!approving) return;
+    const r = approving;
+    setBusy(true);
     const { error } = await supabase.rpc('approve_role_request', { req_id: r.id });
-    setBusyId(null);
+    setBusy(false);
     if (error) {
-      setMsg({ ok: false, text: 'অনুমোদন ব্যর্থ: ' + error.message });
+      show('অনুমোদন ব্যর্থ: ' + error.message, { tone: 'error' });
       console.error('approve_role_request error:', error);
-    } else {
-      logAction('approve', 'role_request', r.id, r.display_name, {
-        note: `ফটোগ্রাফার মাইগ্রেশন অনুমোদন: ${r.display_name} — প্রোফাইল অটো-তৈরি হয়েছে`,
-        meta: { phone: r.phone, experience_years: r.experience_years },
-      });
-      setMsg({ ok: true, text: `✅ "${r.display_name}" এখন ফটোগ্রাফার — প্রোফাইল তৈরি হয়েছে।` });
-      load();
+      return;
     }
+    logAction('approve', 'role_request', r.id, r.display_name, {
+      note: `ফটোগ্রাফার মাইগ্রেশন অনুমোদন: ${r.display_name} — প্রোফাইল অটো-তৈরি হয়েছে`,
+      meta: { phone: r.phone, experience_years: r.experience_years },
+    });
+    list.patch(r.id, { status: 'approved' } as Partial<RoleReq>);
+    show(`${r.display_name} এখন ফটোগ্রাফার — প্রোফাইল তৈরি হয়েছে ✓`);
+    setApproving(null);
+    setViewing((v) => (v && v.id === r.id ? { ...v, status: 'approved' } : v));
   };
 
-  const handleReject = async (r: RoleReq) => {
-    setBusyId(r.id);
-    setMsg(null);
+  const handleReject = async () => {
+    if (!rejecting) return;
+    const r = rejecting;
+    setBusy(true);
     const { error } = await supabase.rpc('reject_role_request', { req_id: r.id, note: rejectNote.trim() || 'রিভিউয়ে গ্রহণযোগ্য নয়' });
-    setBusyId(null);
-    setRejectingId(null);
-    setRejectNote('');
+    setBusy(false);
     if (error) {
-      setMsg({ ok: false, text: 'প্রত্যাখ্যান ব্যর্থ: ' + error.message });
+      show('প্রত্যাখ্যান ব্যর্থ: ' + error.message, { tone: 'error' });
       console.error('reject_role_request error:', error);
-    } else {
-      logAction('reject', 'role_request', r.id, r.display_name, {
-        note: `মাইগ্রেশন আবেদন প্রত্যাখ্যান: ${r.display_name}`,
-        meta: { review_note: rejectNote.trim() || 'রিভিউয়ে গ্রহণযোগ্য নয়' },
-      });
-      setMsg({ ok: true, text: 'আবেদন প্রত্যাখ্যাত হয়েছে।' });
-      load();
+      return;
     }
+    logAction('reject', 'role_request', r.id, r.display_name, {
+      note: `মাইগ্রেশন আবেদন প্রত্যাখ্যান: ${r.display_name}`,
+      meta: { review_note: rejectNote.trim() || 'রিভিউয়ে গ্রহণযোগ্য নয়' },
+    });
+    list.patch(r.id, { status: 'rejected', review_note: rejectNote.trim() || 'রিভিউয়ে গ্রহণযোগ্য নয়' } as Partial<RoleReq>);
+    show('আবেদন প্রত্যাখ্যাত হয়েছে');
+    setRejecting(null);
+    setViewing((v) => (v && v.id === r.id ? { ...v, status: 'rejected' } : v));
   };
 
   return (
-    <div className="space-y-6">
-      <h3 className="font-bold text-white text-lg">
-        🎬 ফটোগ্রাফার মাইগ্রেশন আবেদন{' '}
-        {pending.length > 0 && (
-          <span className="ml-1 text-xs font-bold bg-sunset-gradient text-[#1A0E06] rounded-full px-2.5 py-1">
-            {toBn(pending.length)} টি অপেক্ষমাণ
-          </span>
-        )}
-      </h3>
+    <div>
+      <FilterBar
+        chips={[
+          { key: 'pending', label: 'অপেক্ষমাণ', count: pendingCount },
+          { key: 'history', label: 'আগের সিদ্ধান্ত' },
+        ]}
+        activeChip={tab}
+        onChip={(k) => setTab(k as typeof tab)}
+      />
 
-      {msg && (
-        <p className={`text-xs ${msg.ok ? 'text-emerald-400' : 'text-red-400'}`}>{msg.text}</p>
-      )}
+      {list.error && <p className="text-sm text-rose-300 mb-3">{list.error}</p>}
 
-      {loading ? (
-        <div className="skeleton h-40 rounded-xl3" />
-      ) : pending.length === 0 ? (
-        <div className="glass-card p-10 text-center rounded-xl3">
-          <p className="text-white/60 text-sm">কোনো অপেক্ষমাণ আবেদন নেই।</p>
-        </div>
+      {list.loading ? (
+        <ListSkeleton />
+      ) : items.length === 0 ? (
+        <EmptyState
+          icon={tab === 'pending' ? '🎬' : '🗂️'}
+          title={tab === 'pending' ? 'কোনো অপেক্ষমাণ আবেদন নেই' : 'কোনো সিদ্ধান্ত নেই'}
+          sub={tab === 'pending' ? 'নতুন ফটোগ্রাফার আবেদন এলে এখানে দেখা যাবে।' : undefined}
+        />
       ) : (
-        <div className="space-y-4">
-          {pending.map((r) => (
-            <div key={r.id} className="glass-card p-5 rounded-xl3 space-y-3 border-sunset-gold/40">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <h4 className="font-bold text-white text-base">👤 {r.display_name}</h4>
-                  <p className="text-[12.5px] text-white/45 mt-0.5">আবেদন: {bnDate(r.created_at)}</p>
-                </div>
-                <span className="text-[11.5px] font-bold border border-sunset-gold/40 text-sunset-gold rounded-full px-2.5 py-1">
-                  অপেক্ষমাণ
+        <div className="space-y-2.5">
+          {items.map((r) => (
+            <div key={r.id} className={`glass rounded-xl2 p-3.5 flex items-center gap-2.5 ${r.status === 'pending' ? 'border-sunset-gold/30' : ''}`}>
+              <button type="button" onClick={() => setViewing(r)} className="flex items-center gap-3 min-w-0 flex-1 text-left">
+                <span className="w-11 h-11 rounded-full bg-sunset-gradient grid place-items-center text-sm font-extrabold text-[#1A0E06] shrink-0">
+                  {r.display_name.slice(0, 1)}
                 </span>
-              </div>
-
-              <div className="grid sm:grid-cols-2 gap-2 text-[14.5px]">
-                <Info label="📞 ফোন" value={r.phone} />
-                <Info label="💬 WhatsApp" value={r.whatsapp} />
-                <Info label="📍 এলাকা" value={r.city} />
-                <Info label="🎯 অভিজ্ঞতা" value={r.experience_years ? `${toBn(r.experience_years)} বছর` : null} />
-                <Info label="📷 যন্ত্রপাতি" value={r.equipment} />
-                <Info
-                  label="🔗 পোর্টফোলিও"
-                  value={r.portfolio_url}
-                  link={r.portfolio_url || undefined}
-                />
-              </div>
-
-              {r.note && (
-                <p className="text-[14.5px] text-white/70 bg-white/[0.03] p-3 rounded-xl2 leading-relaxed">
-                  📝 {r.note}
-                </p>
-              )}
-
-              {rejectingId === r.id ? (
-                <div className="glass rounded-xl2 p-4 space-y-3">
-                  <label className="field-label" htmlFor={`rn-${r.id}`}>প্রত্যাখ্যানের কারণ (ইউজার দেখতে পাবে)</label>
-                  <input
-                    id={`rn-${r.id}`}
-                    className="glass-input"
-                    value={rejectNote}
-                    onChange={(e) => setRejectNote(e.target.value)}
-                    placeholder="যেমন: পোর্টফোলিও যাচাই করা যায়নি — আরও ৩টি কাজের নমুনা দিন"
-                  />
-                  <div className="flex gap-2">
-                    <button type="button" onClick={() => { setRejectingId(null); setRejectNote(''); }} className="btn-ghost !py-1.5 !px-3 !text-xs">
-                      বাতিল
-                    </button>
-                    <button type="button" onClick={() => handleReject(r)} disabled={busyId === r.id} className="btn-danger !py-1.5 !px-4 !text-xs">
-                      {busyId === r.id ? 'হচ্ছে…' : 'প্রত্যাখ্যান নিশ্চিত'}
-                    </button>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="font-bold text-white text-[14.5px] truncate">{r.display_name}</span>
+                    <StatusPill status={r.status} />
                   </div>
+                  <span className="text-[12.5px] text-white/50 truncate block mt-0.5">
+                    {r.city || '—'} · {r.experience_years ? `${toBn(r.experience_years)} বছর` : 'অভিজ্ঞতা নেই'} · {bnDate(r.created_at)}
+                  </span>
                 </div>
-              ) : (
-                <div className="flex flex-wrap justify-end gap-2 pt-2 border-t border-white/[0.07]">
-                  <button type="button" onClick={() => setRejectingId(r.id)} disabled={busyId === r.id} className="btn-danger !py-1.5 !px-4 !text-xs">
-                    প্রত্যাখ্যান
-                  </button>
-                  <button type="button" onClick={() => handleApprove(r)} disabled={busyId === r.id} className="btn-primary !py-1.5 !px-4 !text-xs">
-                    {busyId === r.id ? 'প্রক্রিয়াধীন…' : '✅ অনুমোদন করুন'}
-                  </button>
-                </div>
+              </button>
+              {r.status === 'pending' && (
+                <button type="button" onClick={() => setApproving(r)} disabled={busy}
+                  title="অনুমোদন করুন" aria-label="অনুমোদন করুন"
+                  className="shrink-0 w-11 h-11 rounded-full grid place-items-center bg-emerald-400/15 border border-emerald-400/30 text-emerald-300 active:scale-90 transition-transform disabled:opacity-50">
+                  <AIcon name="check" size={19} strokeWidth={2.4} />
+                </button>
               )}
+              <OverflowMenu
+                items={[
+                  { icon: 'eye', label: 'বিস্তারিত দেখুন', onClick: () => setViewing(r) },
+                  { icon: 'check', label: 'অনুমোদন করুন', hide: r.status !== 'pending', onClick: () => setApproving(r) },
+                  { icon: 'xmark', label: 'প্রত্যাখ্যান করুন', hide: r.status !== 'pending', danger: true, onClick: () => { setRejecting(r); setRejectNote(''); } },
+                ]}
+              />
             </div>
           ))}
         </div>
       )}
 
-      {/* History */}
-      {history.length > 0 && (
-        <div className="glass-card rounded-xl3 p-5">
-          <h4 className="font-bold text-white text-sm mb-3">🗂️ আগের সিদ্ধান্ত</h4>
-          <div className="space-y-2">
-            {history.map((r) => (
-              <div key={r.id} className="glass rounded-xl2 p-3 flex flex-wrap items-center justify-between gap-2 text-[14.5px]">
-                <span className="font-semibold text-white">{r.display_name}</span>
-                <span className={`text-[11.5px] font-bold border rounded-full px-2 py-0.5 ${r.status === 'approved' ? 'border-emerald-400/40 text-emerald-400' : 'border-red-400/40 text-red-400'}`}>
-                  {r.status === 'approved' ? 'অনুমোদিত' : 'প্রত্যাখ্যাত'}
-                </span>
-                {r.review_note && <span className="text-[12.5px] text-white/50 basis-full">💬 {r.review_note}</span>}
+      {/* VIEW SHEET */}
+      <AdminSheet
+        open={!!viewing}
+        onClose={() => setViewing(null)}
+        header={
+          viewing ? (
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              <span className="w-11 h-11 rounded-full bg-sunset-gradient grid place-items-center text-sm font-extrabold text-[#1A0E06] shrink-0">
+                {viewing.display_name.slice(0, 1)}
+              </span>
+              <div className="min-w-0">
+                <h3 className="font-extrabold text-white text-[16px] leading-snug truncate">{viewing.display_name}</h3>
+                <div className="mt-0.5"><StatusPill status={viewing.status} /></div>
               </div>
-            ))}
+            </div>
+          ) : undefined
+        }
+        footer={
+          viewing && viewing.status === 'pending' ? (
+            <>
+              <button type="button" onClick={() => setApproving(viewing)} className="btn-primary flex-1 justify-center">
+                <AIcon name="check" size={16} strokeWidth={2.4} className="mr-1.5" /> অনুমোদন করুন
+              </button>
+              <button type="button" onClick={() => { setRejecting(viewing); setRejectNote(''); }} className="btn-ghost !px-4 !text-rose-300">
+                প্রত্যাখ্যান
+              </button>
+            </>
+          ) : undefined
+        }
+      >
+        {viewing && (
+          <div>
+            <KV k="ফোন" v={viewing.phone || '—'} />
+            <KV k="WhatsApp" v={viewing.whatsapp || '—'} />
+            <KV k="এলাকা" v={viewing.city || '—'} />
+            <KV k="অভিজ্ঞতা" v={viewing.experience_years ? `${toBn(viewing.experience_years)} বছর` : '—'} />
+            <KV k="যন্ত্রপাতি" v={viewing.equipment || '—'} />
+            <KV
+              k="পোর্টফোলিও"
+              v={viewing.portfolio_url ? (
+                <a href={viewing.portfolio_url} target="_blank" rel="noopener noreferrer" className="text-sunset-gold hover:underline break-all">
+                  {viewing.portfolio_url}
+                </a>
+              ) : '—'}
+            />
+            <KV k="আবেদনের তারিখ" v={bnDate(viewing.created_at)} />
+            {viewing.review_note && <KV k="রিভিউ নোট" v={viewing.review_note} />}
+            {viewing.note && (
+              <div className="mt-3">
+                <p className="field-label">আবেদনের নোট</p>
+                <p className="text-[13.5px] text-white/80 leading-relaxed mt-1 whitespace-pre-line">{viewing.note}</p>
+              </div>
+            )}
+          </div>
+        )}
+      </AdminSheet>
+
+      {/* APPROVE M3 CONFIRM */}
+      <ConfirmDialog
+        open={!!approving}
+        onClose={() => setApproving(null)}
+        onConfirm={handleApprove}
+        busy={busy}
+        tone="primary"
+        icon="check"
+        title={`"${approving?.display_name || ''}"-কে ফটোগ্রাফার করবেন?`}
+        body="অনুমোদন করলে ফটোগ্রাফার প্রোফাইল অটো-তৈরি হবে এবং ইউজার নোটিফিকেশন পাবে।"
+        confirmLabel="অনুমোদন করুন"
+        cancelLabel="বাতিল"
+      />
+
+      {/* REJECT FULL DIALOG */}
+      <FullDialog
+        open={!!rejecting}
+        onClose={() => setRejecting(null)}
+        title="আবেদন প্রত্যাখ্যান"
+        sub={rejecting?.display_name}
+        onSave={handleReject}
+        saving={busy}
+        saveLabel="প্রত্যাখ্যান নিশ্চিত করুন"
+        dirty
+      >
+        <div className="space-y-4">
+          <p className="text-[13.5px] text-white/60 leading-relaxed">
+            প্রত্যাখ্যানের কারণ ইউজার দেখতে পাবে — পরিষ্কারভাবে লিখুন যেন পরে আবার আবেদন করতে পারে।
+          </p>
+          <div className="[&_label]:!text-base">
+            <label className="field-label">প্রত্যাখ্যানের কারণ (ইউজার দেখতে পাবে)</label>
+            <textarea
+              className="glass-input resize-y !text-base mt-1"
+              value={rejectNote}
+              onChange={(e) => setRejectNote(e.target.value)}
+              rows={4}
+              placeholder="যেমন: পোর্টফোলিও যাচাই করা যায়নি — আরও ৩টি কাজের নমুনা দিন"
+            />
           </div>
         </div>
-      )}
+      </FullDialog>
     </div>
-  );
-}
-
-function Info({ label, value, link }: { label: string; value: string | null; link?: string }) {
-  if (!value) return <span className="text-white/35 text-[13.5px]">{label}: —</span>;
-  return (
-    <span className="text-white/75 truncate">
-      {label}:{' '}
-      {link ? (
-        <a href={link} target="_blank" rel="noopener noreferrer" className="text-sunset-gold hover:underline break-all">
-          {value}
-        </a>
-      ) : (
-        <b className="text-white font-semibold">{value}</b>
-      )}
-    </span>
   );
 }

@@ -1085,3 +1085,81 @@
     transition: none;
   }
 }
+
+/* ═══ V19 — Admin Android UI kit animations (Gemini 4 Argon spec) ═══ */
+@media (prefers-reduced-motion: no-preference) {
+  /* error rollback horizontal shake on a row card */
+  .admin-shake {
+    animation: adminShake 380ms cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+  }
+  @keyframes adminShake {
+    10%, 90% { transform: translateX(-1px); }
+    20%, 80% { transform: translateX(2px); }
+    30%, 50%, 70% { transform: translateX(-4px); }
+    40%, 60% { transform: translateX(4px); }
+  }
+
+  /* snackbar slide-up */
+  .admin-snack-enter {
+    animation: adminSnackUp 240ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  @keyframes adminSnackUp {
+    from { opacity: 0; transform: translateY(14px) scale(0.98); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  /* centered dialog pop (M3 emphasized) */
+  .admin-dialog-enter {
+    animation: adminDialogPop 200ms cubic-bezier(0.2, 0, 0, 1) both;
+  }
+  @keyframes adminDialogPop {
+    from { opacity: 0; transform: scale(0.92); }
+    to   { opacity: 1; transform: scale(1); }
+  }
+
+  /* full-screen dialog slide-up (edit forms) */
+  .admin-fs-enter {
+    animation: adminFsUp 240ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  @keyframes adminFsUp {
+    from { opacity: 0; transform: translateY(28px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* overflow menu expand */
+  .admin-menu-enter {
+    animation: adminMenuIn 140ms cubic-bezier(0.2, 0, 0, 1) both;
+    transform-origin: top right;
+  }
+  @keyframes adminMenuIn {
+    from { opacity: 0; transform: scale(0.9); }
+    to   { opacity: 1; transform: scale(1); }
+  }
+
+  /* image viewer fade */
+  .admin-viewer-enter {
+    animation: adminViewerIn 180ms ease both;
+  }
+  @keyframes adminViewerIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-shake, .admin-snack-enter, .admin-dialog-enter, .admin-fs-enter, .admin-menu-enter, .admin-viewer-enter {
+    animation: none;
+  }
+}
+
+/* optimistic micro-state: pill/toggle during network round-trip */
+.admin-busy {
+  opacity: 0.75;
+  animation: adminBusyPulse 900ms ease-in-out infinite;
+}
+@keyframes adminBusyPulse {
+  0%, 100% { opacity: 0.75; }
+  50% { opacity: 0.4; }
+}
+
+/* admin overflow menu / popup scrollbar — uses global .no-scrollbar (line 71) */

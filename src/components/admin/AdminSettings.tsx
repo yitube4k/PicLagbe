@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { useSiteSettings, saveSiteSetting, SETTING_LABELS, isOn } from '../../lib/settings';
 import { logAction } from '../../lib/audit';
+import { useSnack } from './kit';
+import { AIcon, type IconName } from '../../admin/icons';
 
-/** ⚙️ সাইট সেটিংস — admin নিয়ন্ত্রিত ফিচার enable/hide সুইচ */
+/** ⚙️ সাইট সেটিংস — Android settings-list স্টাইল; টগল লাইভ আপডেট হয় (refresh লাগে না) */
 export default function AdminSettings() {
   const { settings, ready } = useSiteSettings();
   const [saving, setSaving] = useState<string | null>(null);
-  const [flash, setFlash] = useState<string | null>(null);
+  const { show } = useSnack();
 
   const toggle = async (key: string) => {
     const next = isOn(settings[key], 'off') ? 'off' : 'on';
@@ -17,64 +19,74 @@ export default function AdminSettings() {
       logAction('update', 'system', key, `সাইট সেটিং: ${SETTING_LABELS[key] || key}`, {
         after: { value: next },
       });
-      setFlash(next === 'on' ? '✅ চালু হয়েছে' : '🚫 বন্ধ হয়েছে');
+      show(next === 'on' ? `${SETTING_LABELS[key]?.slice(0, 18) || key}… চালু হয়েছে` : 'ফিচারটি লুকানো হয়েছে', { tone: next === 'on' ? 'success' : 'info' });
     } else {
-      setFlash('⚠️ সেভ করা যায়নি — site_settings টেবিল/পলিসি চেক করুন');
+      show('সেভ করা যায়নি — site_settings টেবিল/পলিসি চেক করুন', { tone: 'error' });
     }
-    setTimeout(() => setFlash(null), 3500);
   };
+
+  const items: { key: string; icon: IconName; title: string }[] = [
+    { key: 'spot_minimap', icon: 'audit', title: 'স্পট পেজের মিনি ম্যাপ' },
+  ];
 
   return (
     <div className="space-y-4">
-      <div className="glass-card rounded-xl3 p-5">
-        <h3 className="font-bold text-white">⚙️ সাইট সেটিংস</h3>
-        <p className="text-sm text-white/55 mt-1 leading-relaxed">
-          সাইটের ফিচার এখন থেকে এখান থেকে চালু/বন্ধ করা যাবে। বদলানো প্রতিটি সেটিং অডিট লগে সেভ হয়।
-        </p>
+      <div className="glass rounded-xl3 p-4 sm:p-5 flex items-start gap-3.5">
+        <span className="w-11 h-11 rounded-xl2 bg-sunset-soft border border-sunset-gold/25 grid place-items-center text-sunset-gold shrink-0">
+          <AIcon name="tune" size={21} strokeWidth={2} />
+        </span>
+        <div className="min-w-0">
+          <h3 className="font-extrabold text-white text-[15.5px]">ফিচার নিয়ন্ত্রণ</h3>
+          <p className="text-[13px] text-white/55 mt-1 leading-relaxed">
+            সাইটের ফিচার এখান থেকে সাথে সাথে চালু/বন্ধ হয় — সব ভিজিটরের কাছে সাথে সাথে প্রযোজ্য হয়। প্রতিটি বদল অডিট লগে সেভ হয়।
+          </p>
+        </div>
       </div>
 
       {!ready ? (
-        <div className="glass rounded-xl3 p-6 text-white/60 text-sm">লোড হচ্ছে…</div>
+        <div className="space-y-2.5">
+          {Array.from({ length: 2 }).map((_, i) => (
+            <div key={i} className="skeleton h-20 rounded-xl2" />
+          ))}
+        </div>
       ) : (
-        <div className="glass rounded-xl3 divide-y divide-white/[0.07]">
-          {/* প্রতিটি টগল আইটেম */}
-          {(['spot_minimap'] as const).map((key) => {
+        <div className="glass rounded-xl3 divide-y divide-white/[0.07] overflow-hidden">
+          {items.map(({ key, icon, title }) => {
             const on = isOn(settings[key], 'off');
             return (
-              <div key={key} className="p-5 flex items-start justify-between gap-4">
-                <div className="min-w-0">
-                  <div className="font-semibold text-white text-[16.5px]">
-                    🗺️ স্পট পেজের মিনি ম্যাপ{' '}
-                    <span
-                      className={`badge ml-1 ${
-                        on
-                          ? 'bg-emerald-400/15 text-emerald-300 border-emerald-300/30'
-                          : 'bg-white/[0.06] text-white/50 border-white/10'
-                      }`}
-                    >
+              <div key={key} className="p-4 sm:p-5 flex items-center gap-3.5">
+                <span className="w-11 h-11 rounded-xl2 bg-white/[0.05] border border-white/10 grid place-items-center text-white/70 shrink-0">
+                  <AIcon name={icon} size={20} strokeWidth={1.9} />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-bold text-white text-[15px]">{title}</span>
+                    <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-bold whitespace-nowrap ${saving === key ? 'admin-busy' : ''} ${
+                      on
+                        ? 'border-emerald-400/30 bg-emerald-400/10 text-emerald-300'
+                        : 'border-white/15 bg-white/[0.05] text-white/50'
+                    }`}>
                       {on ? 'চালু আছে' : 'লুকানো'}
                     </span>
                   </div>
-                  <p className="text-[14.5px] text-white/50 mt-1.5 leading-relaxed">
-                    {SETTING_LABELS[key]} — ডিফল্টে বন্ধ (ব্লগ পড়ার সময় ম্যাপে চোখ না যায়)। চাইলে যেকোনো সময় চালু করুন।
-                  </p>
+                  <p className="text-[12.5px] text-white/50 mt-1 leading-relaxed">{SETTING_LABELS[key]}</p>
                 </div>
 
-                {/* iOS-style switch */}
+                {/* M3 switch — 48px touch target */}
                 <button
                   type="button"
                   role="switch"
                   aria-checked={on}
-                  aria-label="স্পট মিনি ম্যাপ চালু/বন্ধ"
+                  aria-label={`${title} চালু/বন্ধ`}
                   disabled={saving === key}
                   onClick={() => toggle(key)}
-                  className={`relative shrink-0 w-[54px] h-[30px] rounded-full transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-sunset-gold/50 ${
-                    on ? 'bg-sunset-gradient' : 'bg-white/[0.12]'
+                  className={`relative shrink-0 w-[54px] h-[32px] rounded-full transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-sunset-gold/50 disabled:opacity-60 ${
+                    on ? 'bg-sunset-gradient' : 'bg-white/[0.14]'
                   }`}
                 >
                   <span
-                    className={`absolute top-[3px] w-6 h-6 rounded-full bg-white shadow transition-all duration-200 ${
-                      on ? 'left-[27px]' : 'left-[3px]'
+                    className={`absolute top-[4px] w-6 h-6 rounded-full bg-white shadow-md transition-all duration-200 ${
+                      on ? 'left-[26px]' : 'left-[4px]'
                     }`}
                   />
                 </button>
@@ -82,12 +94,6 @@ export default function AdminSettings() {
             );
           })}
         </div>
-      )}
-
-      {flash && (
-        <p className={`text-sm font-semibold ${flash.startsWith('⚠️') ? 'text-amber-300' : 'text-emerald-300'}`}>
-          {flash}
-        </p>
       )}
     </div>
   );

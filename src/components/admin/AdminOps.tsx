@@ -1,31 +1,28 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { Booking } from '../../lib/types';
-import { bnDate, STATUS_BN } from '../../lib/utils';
-import { AdminModal, Field, StatusPill, EmptyState, SectionHead, DangerConfirm } from './kit';
+import { bnDate, bnDateTime, toBn, STATUS_BN } from '../../lib/utils';
+import {
+  AdminSheet, FullDialog, ConfirmDialog, FilterBar, OverflowMenu, MediaViewer,
+  Field, StatusPill, EmptyState, ListSkeleton, KV, waMe, telHref,
+  useAdminList, useSnack, useOptimistic,
+} from './kit';
 import { logAction } from '../../lib/audit';
+import { AIcon } from '../../admin/icons';
+
+/* ═══════════════ BOOKINGS — card tap = view sheet, quick status, edit, delete ═══════════════ */
 
 type AdminBooking = Booking & {
   photographers?: { display_name?: string | null } | null;
   profiles?: { full_name?: string | null } | null;
 };
 
-/* ═══════════════ BOOKINGS — status control + delete ═══════════════ */
-export function AdminBookings() {
-  const [list, setList] = useState<AdminBooking[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('');
-  const [editing, setEditing] = useState<AdminBooking | null>(null);
-  const [status, setStatus] = useState<Booking['status']>('pending');
-  const [date, setDate] = useState('');
-  const [loc, setLoc] = useState('');
-  const [notes, setNotes] = useState('');
-  const [saving, setSaving] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
-  const debounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+const BOOKING_STATUS_CHIPS = ['', 'pending', 'accepted', 'completed', 'rejected', 'cancelled'];
 
-  const load = useCallback(async () => {
-    setLoading(true);
+export function AdminBookings() {
+  const [filter, setFilter] = useState('');
+
+  const fetcher = useCallback(async () => {
     let query = supabase
       .from('bookings')
       .select('*, photographers(display_name), profiles(full_name)')
@@ -33,17 +30,26 @@ export function AdminBookings() {
       .limit(150);
     if (filter) query = query.eq('status', filter);
     const { data } = await query;
-    setList((data as AdminBooking[]) || []);
-    setLoading(false);
+    return (data as AdminBooking[]) || [];
   }, [filter]);
 
-  useEffect(() => {
-    if (debounce.current) clearTimeout(debounce.current);
-    debounce.current = setTimeout(load, 250);
-    return () => {
-      if (debounce.current) clearTimeout(debounce.current);
-    };
-  }, [load]);
+  const list = useAdminList<AdminBooking>(fetcher, [filter]);
+  const { show } = useSnack();
+  const opt = useOptimistic();
+
+  const [viewing, setViewing] = useState<AdminBooking | null>(null);
+  const [editing, setEditing] = useState<AdminBooking | null>(null);
+  const [deleting, setDeleting] = useState<AdminBooking | null>(null);
+  const [busyDelete, setBusyDelete] = useState(false);
+  const [busyId, setBusyId] = useState<string | null>(null);
+
+  const [status, setStatus] = useState<Booking['status']>('pending');
+  const [date, setDate] = useState('');
+  const [loc, setLoc] = useState('');
+  const [notes, setNotes] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const dirtyRef = useRef(false);
 
   const openEdit = (b: AdminBooking) => {
     setEditing(b);
@@ -51,6 +57,7 @@ export function AdminBookings() {
     setDate(b.event_date?.slice(0, 10) || '');
     setLoc(b.event_location || '');
     setNotes(b.notes || '');
+    dirtyRef.current = false;
     setErr(null);
   };
 
@@ -58,115 +65,211 @@ export function AdminBookings() {
     if (!editing) return;
     setSaving(true);
     setErr(null);
-    const { error } = await supabase
-      .from('bookings')
-      .update({
-        status,
-        event_date: date,
-        event_location: loc.trim() || null,
-        notes: notes.trim() || null,
-      })
-      .eq('id', editing.id);
+    const { error } = await supabase.from('bookings').update({
+      status,
+      event_date: date,
+      event_location: loc.trim() || null,
+      notes: notes.trim() || null,
+    }).eq('id', editing.id);
     setSaving(false);
     if (error) { setErr(error.message); return; }
-    logAction(status !== editing.status ? 'status_change' : 'update', 'booking', editing.id, `${editing.profiles?.full_name || 'গ্রাহক'} → ${editing.photographers?.display_name || 'ফটোগ্রাফার'}`, {
+    logAction(status !== editing.status ? 'status_change' : 'update', 'booking', editing.id,
+      `${editing.profiles?.full_name || 'গ্রাহক'} → ${editing.photographers?.display_name || 'ফটোগ্রাফার'}`, {
       note: status !== editing.status ? `বুকিং স্ট্যাটাস: ${editing.status} → ${status}` : 'বুকিং ডিটেইলস এডিট',
-      before: { status: editing.status },
-      after: { status, event_date: date },
+      before: { status: editing.status }, after: { status, event_date: date },
     });
+    list.patch(editing.id, {
+      status, event_date: date, event_location: loc.trim() || null, notes: notes.trim() || null,
+    } as Partial<AdminBooking>);
     setEditing(null);
-    load();
+    show('বুকিং আপডেট হয়েছে');
+    list.silentReload();
   };
 
-  const del = async (b: AdminBooking) => {
-    const { error } = await supabase.from('bookings').delete().eq('id', b.id);
-    if (error) { window.alert('ডিলিট ব্যর্থ: ' + error.message); return; }
-    logAction('delete', 'booking', b.id, `${b.profiles?.full_name || 'গ্রাহক'} → ${b.photographers?.display_name || 'ফটোগ্রাফার'}`, {
-      note: 'বুকিং ডিলিট',
+  /** optimistic quick status from view sheet / menu */
+  const quickStatus = async (b: AdminBooking, st: Booking['status']) => {
+    if (st === b.status) return;
+    const old = b.status;
+    setBusyId(b.id);
+    const ok = await opt.run({
+      patchFn: () => list.patch(b.id, { status: st } as Partial<AdminBooking>),
+      mutate: () => supabase.from('bookings').update({ status: st }).eq('id', b.id),
+      okMsg: `বুকিং → ${STATUS_BN[st] || st}`,
+      reload: () => list.silentReload(),
     });
-    load();
+    setBusyId(null);
+    if (ok) {
+      logAction('status_change', 'booking', b.id, `${b.profiles?.full_name || 'গ্রাহক'} → ${b.photographers?.display_name || 'ফটোগ্রাফার'}`, {
+        note: `বুকিং স্ট্যাটাস: ${old} → ${st}`,
+        before: { status: old }, after: { status: st },
+      });
+      setViewing((v) => (v && v.id === b.id ? { ...v, status: st } : v));
+    }
+  };
+
+  const del = async () => {
+    if (!deleting) return;
+    setBusyDelete(true);
+    const { error } = await supabase.from('bookings').delete().eq('id', deleting.id);
+    setBusyDelete(false);
+    if (error) { show('ডিলিট ব্যর্থ: ' + error.message, { tone: 'error' }); return; }
+    logAction('delete', 'booking', deleting.id, `${deleting.profiles?.full_name || 'গ্রাহক'} → ${deleting.photographers?.display_name || 'ফটোগ্রাফার'}`, { note: 'বুকিং ডিলিট' });
+    list.remove(deleting.id);
+    show('বুকিং মুছে ফেলা হয়েছে');
+    setDeleting(null);
+    setViewing((v) => (v && deleting && v.id === deleting.id ? null : v));
   };
 
   return (
     <div>
-      <SectionHead title="বুকিং ম্যানেজমেন্ট" sub="সব বুকিং — স্ট্যাটাস বদল, বিস্তারিত এডিট, ডিলিট" />
+      <FilterBar
+        chips={BOOKING_STATUS_CHIPS.map((st) => ({ key: st, label: st === '' ? 'সব' : STATUS_BN[st] || st }))}
+        activeChip={filter}
+        onChip={setFilter}
+      />
 
-      <div className="flex flex-wrap gap-2 mb-5">
-        {['', 'pending', 'accepted', 'rejected', 'cancelled', 'completed'].map((st) => (
-          <button key={st} type="button" onClick={() => setFilter(st)} className={filter === st ? 'chip-active' : 'chip'}>
-            {st === '' ? 'সব' : STATUS_BN[st] || st}
-          </button>
-        ))}
-      </div>
+      {list.error && <p className="text-sm text-rose-300 mb-3">{list.error}</p>}
 
-      {loading ? (
-        <div className="space-y-2">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="skeleton h-16 rounded-xl2" />
-          ))}
-        </div>
-      ) : list.length === 0 ? (
-        <EmptyState icon="📅" title="কোনো বুকিং নেই" />
+      {list.loading ? (
+        <ListSkeleton />
+      ) : list.items.length === 0 ? (
+        <EmptyState icon="📅" title="কোনো বুকিং নেই" sub="এই ফিল্টারে কোনো বুকিং পাওয়া যায়নি।" />
       ) : (
-        <div className="space-y-2">
-          {list.map((b) => (
-            <div key={b.id} className="glass rounded-xl2 p-3.5 flex items-center gap-3">
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-bold text-white text-sm truncate">
-                    {b.profiles?.full_name || 'গ্রাহক'} → {b.photographers?.display_name || 'ফটোগ্রাফার'}
-                  </span>
-                  <StatusPill status={b.status} />
-                </div>
-                <span className="text-xs text-white/50 truncate block">
-                  {bnDate(b.event_date)} {b.event_time || ''} · {b.packages ? b.packages.name : 'কাস্টম'}
+        <div className="space-y-2.5">
+          {list.items.map((b) => (
+            <div key={b.id} className={`glass rounded-xl2 p-3.5 flex items-center gap-2.5 ${list.shakeId === b.id ? 'admin-shake' : ''}`}>
+              <button type="button" onClick={() => setViewing(b)} className="flex items-center gap-3 min-w-0 flex-1 text-left">
+                <span className="w-11 h-11 rounded-xl2 bg-sunset-soft border border-sunset-gold/25 grid place-items-center text-sunset-gold shrink-0">
+                  <AIcon name="bookings" size={19} strokeWidth={1.9} />
                 </span>
-              </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <button type="button" onClick={() => openEdit(b)} className="text-xs font-semibold text-sunset-gold hover:underline">
-                  ✏️ এডিট
-                </button>
-                <DangerConfirm onConfirm={() => del(b)} message="বুকিংটি ডিলিট করবেন?" />
-              </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 min-w-0 flex-wrap">
+                    <span className="font-bold text-white text-[14.5px] truncate">
+                      {b.profiles?.full_name || 'গ্রাহক'} → {b.photographers?.display_name || 'ফটোগ্রাফার'}
+                    </span>
+                    <StatusPill status={b.status} busy={busyId === b.id} />
+                  </div>
+                  <span className="text-[12.5px] text-white/50 truncate block mt-0.5">
+                    {bnDate(b.event_date)}{b.event_time ? ` · ${b.event_time}` : ''} · {b.packages ? b.packages.name : 'কাস্টম'}
+                  </span>
+                </div>
+              </button>
+              <OverflowMenu
+                items={[
+                  { icon: 'eye', label: 'বিস্তারিত দেখুন', onClick: () => setViewing(b) },
+                  { icon: 'check', label: 'গ্রহণ করুন', hide: b.status === 'accepted', onClick: () => quickStatus(b, 'accepted') },
+                  { icon: 'posts', label: 'সম্পন্ন করুন', hide: b.status === 'completed', onClick: () => quickStatus(b, 'completed') },
+                  { icon: 'xmark', label: 'বাতিল করুন', hide: b.status === 'cancelled', onClick: () => quickStatus(b, 'cancelled') },
+                  { icon: 'edit', label: 'এডিট করুন', divider: true, onClick: () => openEdit(b) },
+                  { icon: 'trash', label: 'ডিলিট করুন', danger: true, divider: true, onClick: () => setDeleting(b) },
+                ]}
+              />
             </div>
           ))}
         </div>
       )}
 
-      <AdminModal open={!!editing} onClose={() => setEditing(null)} title="বুকিং এডিট">
+      {/* VIEW SHEET — contacts + quick status + edit */}
+      <AdminSheet
+        open={!!viewing}
+        onClose={() => setViewing(null)}
+        title="বুকিং বিস্তারিত"
+        sub={viewing ? `${viewing.profiles?.full_name || 'গ্রাহক'} → ${viewing.photographers?.display_name || 'ফটোগ্রাফার'}` : ''}
+        footer={
+          viewing && (
+            <>
+              <button type="button" onClick={() => openEdit(viewing)} className="btn-primary flex-1 justify-center">
+                <AIcon name="edit" size={16} strokeWidth={2} className="mr-1.5" /> এডিট করুন
+              </button>
+              <OverflowMenu
+                items={[
+                  { icon: 'check', label: 'গ্রহণ করুন', hide: viewing.status === 'accepted', onClick: () => quickStatus(viewing, 'accepted') },
+                  { icon: 'posts', label: 'সম্পন্ন করুন', hide: viewing.status === 'completed', onClick: () => quickStatus(viewing, 'completed') },
+                  { icon: 'xmark', label: 'বাতিল করুন', hide: viewing.status === 'cancelled', onClick: () => quickStatus(viewing, 'cancelled') },
+                  { icon: 'xmark', label: 'রিজেক্ট করুন', danger: true, hide: viewing.status === 'rejected', onClick: () => quickStatus(viewing, 'rejected') },
+                  { icon: 'trash', label: 'ডিলিট করুন', danger: true, divider: true, onClick: () => setDeleting(viewing) },
+                ]}
+              />
+            </>
+          )
+        }
+      >
+        {viewing && (
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <StatusPill status={viewing.status} busy={busyId === viewing.id} />
+              {/* quick status chips */}
+              {(['accepted', 'completed', 'rejected', 'cancelled'] as const).filter((s) => s !== viewing.status).map((s) => (
+                <button key={s} type="button" onClick={() => quickStatus(viewing, s)} disabled={busyId === viewing.id}
+                  className={`h-8 px-3 rounded-full text-[12px] font-bold border transition-colors active:scale-95 disabled:opacity-50 ${
+                    s === 'accepted' || s === 'completed'
+                      ? 'border-emerald-400/30 bg-emerald-400/10 text-emerald-300'
+                      : 'border-white/12 bg-white/[0.04] text-white/60'
+                  }`}>
+                  {STATUS_BN[s] || s}
+                </button>
+              ))}
+            </div>
+            <KV k="তারিখ" v={`${bnDate(viewing.event_date)}${viewing.event_time ? ` · ${viewing.event_time}` : ''}`} />
+            <KV k="প্যাকেজ" v={viewing.packages ? viewing.packages.name : 'কাস্টম'} />
+            <KV k="লোকেশন" v={viewing.event_location} />
+            <KV k="বুকিং আইডি" v={<span className="break-all">{viewing.id}</span>} mono />
+            {viewing.notes && (
+              <div className="mt-3">
+                <p className="field-label">নোট</p>
+                <p className="text-[13.5px] text-white/80 leading-relaxed mt-1 whitespace-pre-line">{viewing.notes}</p>
+              </div>
+            )}
+          </div>
+        )}
+      </AdminSheet>
+
+      {/* EDIT FULL DIALOG */}
+      <FullDialog
+        open={!!editing}
+        onClose={() => setEditing(null)}
+        title="বুকিং এডিট"
+        sub={editing ? `${editing.profiles?.full_name || 'গ্রাহক'} → ${editing.photographers?.display_name || 'ফটোগ্রাফার'}` : ''}
+        onSave={save}
+        saving={saving}
+        dirty={dirtyRef.current}
+        err={err}
+      >
         <div className="space-y-4">
           <Field label="স্ট্যাটাস">
-            <select value={status} onChange={(e) => setStatus(e.target.value as Booking['status'])} className="glass-select">
+            <select value={status} onChange={(e) => { setStatus(e.target.value as Booking['status']); dirtyRef.current = true; }} className="glass-select !text-base">
               {(['pending', 'accepted', 'rejected', 'cancelled', 'completed'] as const).map((st) => (
                 <option key={st} value={st}>{STATUS_BN[st] || st}</option>
               ))}
             </select>
           </Field>
           <Field label="ইভেন্ট তারিখ">
-            <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="glass-input" />
+            <input type="date" value={date} onChange={(e) => { setDate(e.target.value); dirtyRef.current = true; }} className="glass-input !text-base" />
           </Field>
           <Field label="লোকেশন">
-            <input value={loc} onChange={(e) => setLoc(e.target.value)} className="glass-input" />
+            <input value={loc} onChange={(e) => { setLoc(e.target.value); dirtyRef.current = true; }} className="glass-input !text-base" />
           </Field>
           <Field label="নোট">
-            <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} className="glass-input resize-y" />
+            <textarea value={notes} onChange={(e) => { setNotes(e.target.value); dirtyRef.current = true; }} rows={3} className="glass-input resize-y !text-base" />
           </Field>
-          {err && <p className="text-xs text-rose-400">{err}</p>}
-          <div className="flex gap-3">
-            <button type="button" onClick={save} disabled={saving} className="btn-primary flex-1">
-              {saving ? 'সেভ হচ্ছে…' : 'সেভ করুন'}
-            </button>
-            <button type="button" onClick={() => setEditing(null)} className="btn-ghost">
-              বাতিল
-            </button>
-          </div>
         </div>
-      </AdminModal>
+      </FullDialog>
+
+      {/* DELETE CONFIRM */}
+      <ConfirmDialog
+        open={!!deleting}
+        onClose={() => setDeleting(null)}
+        onConfirm={del}
+        busy={busyDelete}
+        title="বুকিংটি মুছে ফেলবেন?"
+        body="বুকিং রেকর্ড স্থায়ীভাবে মুছে যাবে — ফিরিয়ে আনা যাবে না।"
+      />
     </div>
   );
 }
 
-/* ═══════════════ KYC — approve/reject ═══════════════ */
+/* ═══════════════ KYC — approve/reject with full-screen doc viewer ═══════════════ */
+
 type KycSub = {
   id: string;
   photographer_id: string;
@@ -181,102 +284,108 @@ type KycSub = {
 };
 
 export function AdminKyc({ onChanged }: { onChanged?: () => void }) {
-  const [subs, setSubs] = useState<KycSub[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState(false);
-  const [rejecting, setRejecting] = useState<KycSub | null>(null);
-  const [note, setNote] = useState('');
-
-  const load = useCallback(async () => {
-    setLoading(true);
+  const fetcher = useCallback(async () => {
     const { data } = await supabase
       .from('kyc_submissions')
       .select('*, photographers(display_name, slug)')
       .eq('status', 'pending')
       .order('created_at', { ascending: false });
-    setSubs((data as KycSub[]) || []);
-    setLoading(false);
+    return (data as KycSub[]) || [];
   }, []);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  const list = useAdminList<KycSub>(fetcher, []);
+  const { show } = useSnack();
+  const [viewing, setViewing] = useState<KycSub | null>(null);
+  const [rejecting, setRejecting] = useState<KycSub | null>(null);
+  const [note, setNote] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [doc, setDoc] = useState<{ src: string; title: string } | null>(null);
 
   const approve = async (s: KycSub) => {
     setBusy(true);
-    await supabase
-      .from('kyc_submissions')
-      .update({ status: 'approved', review_note: null, reviewed_at: new Date().toISOString() })
-      .eq('id', s.id);
-    await supabase.from('photographers').update({ verified: true, profile_status: 'approved' }).eq('id', s.photographer_id);
+    const [r1] = await Promise.all([
+      supabase.from('kyc_submissions').update({ status: 'approved', review_note: null, reviewed_at: new Date().toISOString() }).eq('id', s.id),
+      supabase.from('photographers').update({ verified: true, profile_status: 'approved' }).eq('id', s.photographer_id),
+    ]);
+    setBusy(false);
+    if (r1.error) { show('অনুমোদন ব্যর্থ: ' + r1.error.message, { tone: 'error' }); return; }
     logAction('approve', 'kyc', s.id, s.photographers?.display_name || 'ফটোগ্রাফার', {
       note: `KYC অনুমোদন + ভেরিফাই (${s.photographers?.display_name || 'ফটোগ্রাফার'})`,
     });
-    setBusy(false);
-    load();
+    list.remove(s.id);
+    setViewing((v) => (v && v.id === s.id ? null : v));
+    show(`${s.photographers?.display_name || 'ফটোগ্রাফার'} ভেরিফায়েড হয়েছে ✓`);
     onChanged?.();
   };
 
   const reject = async () => {
     if (!rejecting) return;
     setBusy(true);
-    await supabase
+    const { error } = await supabase
       .from('kyc_submissions')
       .update({ status: 'rejected', review_note: note.trim() || null, reviewed_at: new Date().toISOString() })
       .eq('id', rejecting.id);
+    setBusy(false);
+    if (error) { show('বাতিল ব্যর্থ: ' + error.message, { tone: 'error' }); return; }
     logAction('reject', 'kyc', rejecting.id, rejecting.photographers?.display_name || 'ফটোগ্রাফার', {
       note: `KYC বাতিল${note.trim() ? ` — কারণ: ${note.trim()}` : ''}`,
     });
-    setBusy(false);
+    list.remove(rejecting.id);
+    show('KYC বাতিল করা হয়েছে');
     setRejecting(null);
-    load();
+    setViewing((v) => (v && rejecting && v.id === rejecting.id ? null : v));
     onChanged?.();
   };
 
+  const docs = (s: KycSub) => [
+    { src: s.nid_front_url, title: 'NID ফ্রন্ট' },
+    ...(s.nid_back_url ? [{ src: s.nid_back_url, title: 'NID ব্যাক' }] : []),
+    { src: s.selfie_url, title: 'সেলফি' },
+  ];
+
   return (
     <div>
-      <SectionHead title="KYC ভেরিফিকেশন" sub="পেন্ডিং KYC সাবমিশন — NID ও সেলফি যাচাই করে অ্যাপ্রুভ করুন" />
+      {list.error && <p className="text-sm text-rose-300 mb-3">{list.error}</p>}
 
-      {loading ? (
-        <div className="grid md:grid-cols-2 gap-4">
-          {Array.from({ length: 2 }).map((_, i) => (
-            <div key={i} className="skeleton h-72 rounded-xl3" />
-          ))}
-        </div>
-      ) : subs.length === 0 ? (
+      {list.loading ? (
+        <ListSkeleton rows={2} h="h-64" />
+      ) : list.items.length === 0 ? (
         <EmptyState icon="✅" title="কোনো পেন্ডিং KYC নেই" sub="সব সাবমিশন রিভিউ করা হয়েছে।" />
       ) : (
-        <div className="grid md:grid-cols-2 gap-4">
-          {subs.map((s) => (
-            <div key={s.id} className="glass-card rounded-xl3 p-5 space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-white">{s.photographers?.display_name || 'ফটোগ্রাফার'}</span>
-                <StatusPill status={s.status} />
+        <div className="space-y-2.5">
+          {list.items.map((s) => (
+            <div key={s.id} className="glass rounded-xl2 p-4">
+              {/* header row — tap → view sheet */}
+              <button type="button" onClick={() => setViewing(s)} className="w-full flex items-center gap-3 text-left">
+                <span className="w-11 h-11 rounded-full bg-sunset-soft border border-sunset-gold/25 grid place-items-center text-sunset-gold shrink-0">
+                  <AIcon name="shield" size={19} strokeWidth={2} />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <span className="font-bold text-white text-[14.5px] truncate block">{s.photographers?.display_name || 'ফটোগ্রাফার'}</span>
+                  <span className="text-[12.5px] text-white/50 truncate block mt-0.5">📞 {s.phone} · {bnDate(s.created_at)}</span>
+                </div>
+                <span className="w-11 h-11 rounded-full grid place-items-center text-white/35 shrink-0">
+                  <AIcon name="chevron" size={18} className="rotate-90" />
+                </span>
+              </button>
+              {/* doc thumbnails — tap → full viewer */}
+              <div className="grid grid-cols-3 gap-2 mt-3">
+                {docs(s).map((d) => (
+                  <button key={d.title} type="button" onClick={() => setDoc(d)}
+                    className="relative h-24 rounded-xl overflow-hidden bg-twilight-900 border border-white/10 active:scale-[0.97] transition-transform">
+                    <img src={d.src} alt={d.title} className="w-full h-full object-cover" loading="lazy" />
+                    <span className="absolute inset-x-0 bottom-0 bg-black/55 text-white text-[10.5px] font-bold py-0.5 text-center">{d.title}</span>
+                  </button>
+                ))}
               </div>
-              <p className="text-xs text-white/55">📞 {s.phone} · {bnDate(s.created_at)}</p>
-              <div className="grid grid-cols-3 gap-2">
-                <a href={s.nid_front_url} target="_blank" rel="noreferrer" className="block h-24 rounded-lg overflow-hidden bg-twilight-900 border border-white/10">
-                  <img src={s.nid_front_url} alt="NID ফ্রন্ট" className="w-full h-full object-cover" />
-                </a>
-                {s.nid_back_url ? (
-                  <a href={s.nid_back_url} target="_blank" rel="noreferrer" className="block h-24 rounded-lg overflow-hidden bg-twilight-900 border border-white/10">
-                    <img src={s.nid_back_url} alt="NID ব্যাক" className="w-full h-full object-cover" />
-                  </a>
-                ) : <div />}
-                <a href={s.selfie_url} target="_blank" rel="noreferrer" className="block h-24 rounded-lg overflow-hidden bg-twilight-900 border border-white/10">
-                  <img src={s.selfie_url} alt="সেলফি" className="w-full h-full object-cover" />
-                </a>
-              </div>
-              {s.note && <p className="text-xs text-white/55">নোট: {s.note}</p>}
-              <div className="flex gap-2 pt-1">
-                <button type="button" onClick={() => approve(s)} disabled={busy} className="btn-primary flex-1 !py-2 !text-xs">
-                  ✓ অ্যাপ্রুভ + ভেরিফাই
+              {/* footer actions — approve visible, reject in menu/sheet */}
+              <div className="flex gap-2 mt-3">
+                <button type="button" onClick={() => approve(s)} disabled={busy}
+                  className="btn-primary flex-1 justify-center !py-2.5 !text-[13.5px] disabled:opacity-50">
+                  <AIcon name="check" size={16} strokeWidth={2.4} className="mr-1.5" /> অ্যাপ্রুভ + ভেরিফাই
                 </button>
-                <button
-                  type="button"
-                  onClick={() => { setRejecting(s); setNote(''); }}
-                  className="btn-ghost !py-2 !text-xs"
-                >
+                <button type="button" onClick={() => { setRejecting(s); setNote(''); }}
+                  className="btn-ghost !py-2.5 !px-4 !text-[13.5px]">
                   ✕ বাতিল
                 </button>
               </div>
@@ -285,26 +394,77 @@ export function AdminKyc({ onChanged }: { onChanged?: () => void }) {
         </div>
       )}
 
-      <AdminModal open={!!rejecting} onClose={() => setRejecting(null)} title="KYC বাতিল করুন">
-        <div className="space-y-4">
-          <Field label="নোট (কারণ)">
-            <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} className="glass-input resize-y" />
-          </Field>
-          <div className="flex gap-3">
-            <button type="button" onClick={reject} disabled={busy} className="btn-danger flex-1">
-              {busy ? 'হচ্ছে…' : 'বাতিল করুন'}
-            </button>
-            <button type="button" onClick={() => setRejecting(null)} className="btn-ghost">
-              ফিরে যান
-            </button>
+      {/* VIEW SHEET — all docs + info */}
+      <AdminSheet
+        open={!!viewing}
+        onClose={() => setViewing(null)}
+        title={viewing?.photographers?.display_name || 'KYC সাবমিশন'}
+        sub={viewing ? `📞 ${viewing.phone} · ${bnDate(viewing.created_at)}` : ''}
+        footer={
+          viewing && (
+            <>
+              <button type="button" onClick={() => approve(viewing)} disabled={busy} className="btn-primary flex-1 justify-center disabled:opacity-50">
+                <AIcon name="check" size={16} strokeWidth={2.4} className="mr-1.5" /> অ্যাপ্রুভ + ভেরিফাই
+              </button>
+              <button type="button" onClick={() => { setRejecting(viewing); setNote(''); }} className="btn-ghost !px-4">
+                ✕ বাতিল
+              </button>
+            </>
+          )
+        }
+      >
+        {viewing && (
+          <div>
+            <div className="grid grid-cols-3 gap-2 mb-4">
+              {docs(viewing).map((d) => (
+                <button key={d.title} type="button" onClick={() => setDoc(d)}
+                  className="relative h-32 rounded-xl overflow-hidden bg-twilight-900 border border-white/10 active:scale-[0.97] transition-transform">
+                  <img src={d.src} alt={d.title} className="w-full h-full object-cover" />
+                  <span className="absolute inset-x-0 bottom-0 bg-black/55 text-white text-[10.5px] font-bold py-0.5 text-center">{d.title}</span>
+                </button>
+              ))}
+            </div>
+            <KV k="ফোন" v={viewing.phone} />
+            <KV k="সাবমিট" v={bnDateTime(viewing.created_at)} />
+            {viewing.note && (
+              <div className="mt-3">
+                <p className="field-label">নোট</p>
+                <p className="text-[13.5px] text-white/80 leading-relaxed mt-1 whitespace-pre-line">{viewing.note}</p>
+              </div>
+            )}
           </div>
+        )}
+      </AdminSheet>
+
+      {/* REJECT FULL DIALOG */}
+      <FullDialog
+        open={!!rejecting}
+        onClose={() => setRejecting(null)}
+        title="KYC বাতিল করুন"
+        sub={rejecting?.photographers?.display_name}
+        onSave={reject}
+        saving={busy}
+        saveLabel="বাতিল করুন"
+        dirty
+      >
+        <div className="space-y-4">
+          <p className="text-[13.5px] text-white/60 leading-relaxed">
+            <b className="text-white">{rejecting?.photographers?.display_name}</b> — বাতিল করার কারণ ফটোগ্রাফার দেখতে পাবেন। ডকুমেন্ট যাচাই করে নোট দিন।
+          </p>
+          <Field label="নোট (কারণ)">
+            <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={4} className="glass-input resize-y !text-base" placeholder="যেমন: NID ছবি অস্পষ্ট, সেলফি মিলছে না…" />
+          </Field>
         </div>
-      </AdminModal>
+      </FullDialog>
+
+      {/* DOC VIEWER */}
+      <MediaViewer src={doc?.src || null} title={doc?.title} onClose={() => setDoc(null)} />
     </div>
   );
 }
 
-/* ═══════════════ CHATS — monitor conversations ═══════════════ */
+/* ═══════════════ CHATS — conversation list → tap opens message sheet ═══════════════ */
+
 type Conv = {
   id: string;
   customer_id: string;
@@ -317,28 +477,26 @@ type Conv = {
 type Msg = { id: string; sender_id: string; body: string; created_at: string };
 
 export function AdminChats() {
-  const [convs, setConvs] = useState<Conv[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selId, setSelId] = useState<string | null>(null);
-  const [msgs, setMsgs] = useState<Msg[]>([]);
-
-  const load = useCallback(async () => {
-    setLoading(true);
+  const fetcher = useCallback(async () => {
     const { data } = await supabase
       .from('conversations')
       .select('*, customers:customer_id(full_name, avatar_url), photographers:photographer_id(display_name, profile_photo_url)')
       .order('last_message_at', { ascending: false })
       .limit(60);
-    setConvs((data as Conv[]) || []);
-    setLoading(false);
+    return (data as Conv[]) || [];
   }, []);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  const list = useAdminList<Conv>(fetcher, []);
+  const [selId, setSelId] = useState<string | null>(null);
+  const [msgs, setMsgs] = useState<Msg[]>([]);
+  const [msgsLoading, setMsgsLoading] = useState(false);
 
-  useEffect(() => {
+  const sel = list.items.find((c) => c.id === selId) || null;
+
+  React.useEffect(() => {
     if (!selId) { setMsgs([]); return; }
+    let alive = true;
+    setMsgsLoading(true);
     (async () => {
       const { data } = await supabase
         .from('messages')
@@ -346,67 +504,70 @@ export function AdminChats() {
         .eq('conversation_id', selId)
         .order('created_at', { ascending: true })
         .limit(200);
-      setMsgs((data as Msg[]) || []);
+      if (alive) { setMsgs((data as Msg[]) || []); setMsgsLoading(false); }
     })();
+    return () => { alive = false; };
   }, [selId]);
 
   return (
     <div>
-      <SectionHead title="চ্যাট মনিটর" sub="ইউজার ↔ ফটোগ্রাফার কথোপকথন পর্যবেক্ষণ" />
-
-      {loading ? (
-        <div className="space-y-2">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="skeleton h-14 rounded-xl2" />
-          ))}
-        </div>
-      ) : convs.length === 0 ? (
+      {list.loading ? (
+        <ListSkeleton />
+      ) : list.items.length === 0 ? (
         <EmptyState icon="💬" title="কোনো কথোপকথন নেই" />
       ) : (
-        <div className="grid lg:grid-cols-[320px_1fr] gap-4 items-start">
-          <div className="space-y-2">
-            {convs.map((c) => (
-              <button
-                key={c.id}
-                type="button"
-                onClick={() => setSelId(c.id)}
-                className={`w-full text-left glass rounded-xl2 p-3 flex items-center gap-3 transition ${selId === c.id ? '!border-sunset-gold/50 bg-sunset-soft' : 'hover:border-white/25'}`}
-              >
-                {c.customers?.avatar_url ? (
-                  <img src={c.customers.avatar_url} alt="" className="w-8 h-8 rounded-full object-cover shrink-0" />
-                ) : (
-                  <div className="w-8 h-8 rounded-full bg-sunset-gradient shrink-0" />
-                )}
-                <div className="min-w-0 flex-1">
-                  <span className="text-sm font-bold text-white truncate block">
-                    {c.customers?.full_name || 'ইউজার'} ↔ {c.photographers?.display_name || 'ফটোগ্রাফার'}
-                  </span>
-                  <span className="text-[12.5px] text-white/45">{bnDate(c.last_message_at)}</span>
-                </div>
-              </button>
-            ))}
-          </div>
-
-          <div className="glass rounded-xl3 p-4 min-h-[300px] max-h-[70vh] overflow-y-auto">
-            {selId ? (
-              msgs.length === 0 ? (
-                <p className="text-sm text-white/50 text-center py-8">মেসেজ নেই</p>
+        <div className="space-y-2.5">
+          {list.items.map((c) => (
+            <button
+              key={c.id}
+              type="button"
+              onClick={() => setSelId(c.id)}
+              className={`w-full text-left glass rounded-xl2 p-3.5 flex items-center gap-3 transition-colors active:scale-[0.99] ${selId === c.id ? '!border-sunset-gold/50 bg-sunset-soft' : ''}`}
+            >
+              {c.customers?.avatar_url ? (
+                <img src={c.customers.avatar_url} alt="" className="w-11 h-11 rounded-full object-cover ring-2 ring-sunset-gold/25 shrink-0" />
               ) : (
-                <div className="space-y-2.5">
-                  {msgs.map((m) => (
-                    <div key={m.id} className="glass rounded-xl2 px-3 py-2">
-                      <p className="text-sm text-white/85 whitespace-pre-line">{m.body}</p>
-                      <span className="text-[11.5px] text-white/40">{bnDate(m.created_at)}</span>
-                    </div>
-                  ))}
+                <div className="w-11 h-11 rounded-full bg-sunset-gradient grid place-items-center text-sm font-extrabold text-[#1A0E06] shrink-0">
+                  {(c.customers?.full_name || 'ই').slice(0, 1)}
                 </div>
-              )
-            ) : (
-              <p className="text-sm text-white/50 text-center py-8">বাম থেকে একটি কথোপকথন বাছুন</p>
-            )}
-          </div>
+              )}
+              <div className="min-w-0 flex-1">
+                <span className="text-[14.5px] font-bold text-white truncate block">
+                  {c.customers?.full_name || 'ইউজার'} ↔ {c.photographers?.display_name || 'ফটোগ্রাফার'}
+                </span>
+                <span className="text-[12.5px] text-white/45">{bnDateTime(c.last_message_at)}</span>
+              </div>
+              <span className="w-9 h-9 rounded-full grid place-items-center text-white/35 shrink-0">
+                <AIcon name="chevron" size={17} className="rotate-90" />
+              </span>
+            </button>
+          ))}
         </div>
       )}
+
+      {/* MESSAGES SHEET */}
+      <AdminSheet
+        open={!!sel}
+        onClose={() => setSelId(null)}
+        title={sel ? `${sel.customers?.full_name || 'ইউজার'} ↔ ${sel.photographers?.display_name || 'ফটোগ্রাফার'}` : ''}
+        sub={sel ? bnDateTime(sel.last_message_at) : ''}
+        wide
+      >
+        {msgsLoading ? (
+          <ListSkeleton rows={3} h="h-14" />
+        ) : msgs.length === 0 ? (
+          <p className="text-sm text-white/50 text-center py-8">মেসেজ নেই</p>
+        ) : (
+          <div className="space-y-2.5">
+            {msgs.map((m) => (
+              <div key={m.id} className="glass rounded-xl2 px-3.5 py-2.5">
+                <p className="text-[13.5px] text-white/85 whitespace-pre-line leading-relaxed">{m.body}</p>
+                <span className="text-[11.5px] text-white/40 mt-1 block">{bnDateTime(m.created_at)}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </AdminSheet>
     </div>
   );
 }

@@ -8,6 +8,7 @@ import {
   ADMIN_NAV_BY_SLUG, BOTTOM_SLUGS, MORE_SHEET_SLUGS, NAV_GROUPS, adminPath, type AdminSlug,
 } from './nav';
 import { AdminCountsProvider, useAdminCounts } from './counts';
+import { SnackbarProvider } from '../components/admin/kit';
 
 /* ═══ V18 AdminLayout — full-screen app shell (no site navbar/footer) ═══
    Android-style: mobile top app bar + bottom nav (4 + আরও sheet) + safe-area;
@@ -16,7 +17,9 @@ import { AdminCountsProvider, useAdminCounts } from './counts';
 export default function AdminLayout() {
   return (
     <AdminCountsProvider>
-      <AdminShell />
+      <SnackbarProvider>
+        <AdminShell />
+      </SnackbarProvider>
     </AdminCountsProvider>
   );
 }

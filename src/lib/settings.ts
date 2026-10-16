@@ -20,6 +20,13 @@ export const SETTING_LABELS: Record<string, string> = {
 // ছোট module-level cache — এক পেজে একাধিক কম্পোনেন্ট একই কোয়েরি না চালায়
 let cache: SiteSettings | null = null;
 let inflight: Promise<SiteSettings> | null = null;
+// V19: subscribers — saveSiteSetting কল হলে সব হুক সাথে সাথে আপডেট হয় (refresh ছাড়াই)
+const listeners = new Set<(s: SiteSettings) => void>();
+
+function notify() {
+  if (!cache) return;
+  listeners.forEach((cb) => cb(cache!));
+}
 
 export async function fetchSiteSettings(): Promise<SiteSettings> {
   if (cache) return cache;
@@ -45,7 +52,7 @@ export async function fetchSiteSettings(): Promise<SiteSettings> {
   return inflight;
 }
 
-/** এক/একাধিক সেটিং পড়ার হুক — টেবিল/নেটওয়ার্ক ফেল হলে ডিফল্ট */
+/** এক/একাধিক সেটিং পড়ার হুক — টেবিল/নেটওয়ার্ক ফেল হলে ডিফল্ট; সেভ হলে লাইভ আপডেট */
 export function useSiteSettings(): { settings: SiteSettings; ready: boolean } {
   const [settings, setSettings] = useState<SiteSettings>({ ...SETTING_DEFAULTS });
   const [ready, setReady] = useState(false);
@@ -58,8 +65,11 @@ export function useSiteSettings(): { settings: SiteSettings; ready: boolean } {
         setReady(true);
       }
     });
+    const cb = (s: SiteSettings) => setSettings({ ...s });
+    listeners.add(cb);
     return () => {
       active = false;
+      listeners.delete(cb);
     };
   }, []);
 
@@ -78,6 +88,7 @@ export async function saveSiteSetting(key: string, value: string): Promise<boole
     .upsert({ key, value, updated_at: new Date().toISOString() }, { onConflict: 'key' });
   if (!error) {
     cache = { ...(cache || { ...SETTING_DEFAULTS }), [key]: value };
+    notify(); // V19: সব খোলা হুক সাথে সাথে আপডেট — refresh লাগে না
   }
   return !error;
 }
