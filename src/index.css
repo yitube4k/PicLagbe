@@ -95,9 +95,10 @@
 }
 
 .glass-strong {
-  background: rgba(10, 14, 26, 0.85);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  /* V24: ফিল্টার/ড্রপডাউন মেনু আগে বেশি স্বচ্ছ ছিল (0.85) — এখন প্রায় অপাক */
+  background: rgba(9, 13, 25, 0.97);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
   border: 1px solid rgba(255, 255, 255, 0.13);
   border-radius: 22px;
   box-shadow:
@@ -1233,4 +1234,42 @@
     0%, 100% { transform: translateY(0); opacity: 0.55; }
     50% { transform: translateY(6px); opacity: 1; }
   }
+}
+
+/* ═══ V24 — প্রোফাইল কোস্টাল থিম (আকাশ × সাগর × পাহাড়) ═══
+   প্রোফাইল পেজ (CustomerDash + StudioDash) আর কালো-void নয় —
+   আকাশি নীলের নরম গ্রেডিয়েন্ট + সাগর/পাহাড়ের আভা। লেখা white-ই থাকে,
+   কিন্তু পুরো পরিবেশ আকাশ-সাগরের মতো হালকা-নীল। */
+.dash-coastal {
+  background:
+    radial-gradient(1100px 520px at 88% -12%, rgba(125, 211, 252, 0.16), transparent 62%),
+    radial-gradient(900px 500px at 4% 8%, rgba(94, 234, 212, 0.11), transparent 58%),
+    radial-gradient(820px 560px at 50% 112%, rgba(134, 239, 172, 0.09), transparent 60%),
+    linear-gradient(180deg, #0a1e33 0%, #0c2842 46%, #0a2338 78%, #081d30 100%);
+}
+
+/* কোস্টাল কার্ড — glass-card এর নীলচে-সফট ভ্যারিয়েন্ট (প্রোফাইল পেজে) */
+.dash-coastal .glass-card {
+  background: linear-gradient(180deg, rgba(148, 197, 253, 0.10), rgba(125, 211, 252, 0.05));
+  border-color: rgba(147, 197, 253, 0.16);
+}
+.dash-coastal .glass-card:hover {
+  border-color: rgba(147, 197, 253, 0.30);
+}
+
+/* কোস্টাল ইনপুট/সিলেক্ট — নীলচে গাঢ় (সাইটের glass-input এর হালকা ভ্যারিয়েন্ট) */
+.dash-coastal .glass-input,
+.dash-coastal .glass-select {
+  background-color: rgba(8, 24, 42, 0.72);
+  border-color: rgba(147, 197, 253, 0.18);
+}
+.dash-coastal .glass-input:focus,
+.dash-coastal .glass-select:focus {
+  border-color: rgba(125, 211, 252, 0.55);
+  box-shadow: 0 0 0 3px rgba(125, 211, 252, 0.14);
+}
+
+/* কোস্টাল স্কাই-গ্লো শ্যাডো (অ্যাভাটার/বাটন হাইলাইট) */
+.shadow-sky-glow {
+  box-shadow: 0 0 26px rgba(56, 189, 248, 0.35), 0 4px 16px rgba(8, 20, 34, 0.5);
 }

@@ -1,13 +1,19 @@
 import React, { useRef } from 'react';
 
 /* ═══════════════════════════════════════════════════════════════════
-   CircularMenu — বৃত্তাকার আইকন মেনু কিট (থিম-ম্যাচড: sunset × twilight)
-   রেফারেন্স: গোল প্যাস্টেল আইকন + নিচে লেবেল + সোনালি স্ট্যাট + কোরাল ব্যাজ
+   CircularMenu — বৃত্তাকার আইকন মেনু কিট (V24 কোস্টাল থিম: আকাশ × সাগর × পাহাড়)
+   রেফারেন্স: গোল প্যাস্টেল আইকন + নিচে লেবেল + আকাশি স্ট্যাট + স্কাই ব্যাজ
    ═══════════════════════════════════════════════════════════════════ */
 
-export type CircleTint = 'gold' | 'coral' | 'crimson' | 'berry' | 'teal' | 'emerald';
+export type CircleTint = 'sky' | 'sea' | 'hill' | 'mist' | 'gold' | 'coral' | 'crimson' | 'berry' | 'teal' | 'emerald';
 
+/* V24 কোস্টাল প্যালেট — আকাশ (sky), সাগর (sea), পাহাড় (hill), ধোঁয়াশা (mist);
+   পুরনো sunset টিন্টগুলো রাখা আছে (backward-compat) কিন্তু প্রোফাইলে আর ব্যবহার হয় না */
 const TINT_CLASS: Record<CircleTint, string> = {
+  sky: 'bg-sky-400/[0.16] text-sky-300 ring-sky-300/30',
+  sea: 'bg-cyan-400/[0.15] text-cyan-300 ring-cyan-300/28',
+  hill: 'bg-emerald-400/[0.14] text-emerald-300 ring-emerald-300/26',
+  mist: 'bg-indigo-400/[0.15] text-indigo-300 ring-indigo-300/26',
   gold: 'bg-sunset-gold/[0.13] text-sunset-gold ring-sunset-gold/25',
   coral: 'bg-sunset-coral/[0.14] text-orange-400 ring-sunset-coral/25',
   crimson: 'bg-sunset-crimson/[0.14] text-rose-400 ring-sunset-crimson/25',
@@ -22,9 +28,9 @@ export type CircleItem = {
   /** আইকন — <CIc.calendar /> জাতীয় */
   icon: React.ReactNode;
   tint: CircleTint;
-  /** গোল বাটনের নিচে সোনালি সংখ্যা/স্ট্যাট */
+  /** গোল বাটনের নিচে আকাশি সংখ্যা/স্ট্যাট */
   stat?: string;
-  /** বৃত্তের কোণায় কোরাল ব্যাজ (count / "রিভিউ") */
+  /** বৃত্তের কোণায় স্কাই ব্যাজ (count / "রিভিউ") */
   badge?: string | number;
   onClick: () => void;
 };
@@ -77,7 +83,7 @@ export function CircleButton({ item, small = false }: { item: CircleItem; small?
       type="button"
       onClick={item.onClick}
       aria-label={item.label}
-      className="group flex flex-col items-center gap-2 rounded-2xl px-1 py-1.5 text-center min-h-11 min-w-11 outline-none focus-visible:ring-2 focus-visible:ring-sunset-gold/50 transition-transform duration-150 active:scale-[0.94]"
+      className="group flex flex-col items-center gap-2 rounded-2xl px-1 py-1.5 text-center min-h-11 min-w-11 outline-none focus-visible:ring-2 focus-visible:ring-sky-400/50 transition-transform duration-150 active:scale-[0.94]"
     >
       <span className="relative">
         <span
@@ -86,13 +92,13 @@ export function CircleButton({ item, small = false }: { item: CircleItem; small?
           {item.icon}
         </span>
         {item.badge !== undefined && item.badge !== '' && item.badge !== 0 ? (
-          <span className="absolute -top-1.5 -right-1.5 min-w-5 max-w-14 truncate rounded-full bg-sunset-coral px-1.5 py-0.5 text-[11px] font-extrabold leading-none text-white shadow-glass-sm ring-1 ring-twilight-900">
+          <span className="absolute -top-1.5 -right-1.5 min-w-5 max-w-14 truncate rounded-full bg-sky-500 px-1.5 py-0.5 text-[11px] font-extrabold leading-none text-white shadow-glass-sm ring-1 ring-[#0a2338]">
             {item.badge}
           </span>
         ) : null}
       </span>
       <span className="text-[13.5px] leading-tight font-semibold text-white/85">{item.label}</span>
-      {item.stat ? <span className="text-[13.5px] leading-none font-extrabold text-sunset-gold">{item.stat}</span> : null}
+      {item.stat ? <span className="text-[13.5px] leading-none font-extrabold text-sky-300">{item.stat}</span> : null}
     </button>
   );
 }
@@ -119,7 +125,7 @@ export function CircleStatGrid({ items }: { items: CircleItem[] }) {
   );
 }
 
-/* ── ডিটেইল শেল — স্টিকি গোল ব্যাক-বাটন হেডার + কনটেন্ট ── */
+/* ── ডিটেইল শেল — স্টিকি গোল ব্যাক-বাটন হেডার + কনটেন্ট (কোস্টাল টিন্ট) ── */
 export function DetailShell({
   title,
   subtitle,
@@ -133,18 +139,18 @@ export function DetailShell({
 }) {
   return (
     <div className="circle-detail-enter">
-      <div className="sticky top-[72px] z-30 -mx-4 sm:-mx-6 mb-6 flex items-center gap-3 glass-strong border-b border-white/[0.08] px-4 sm:px-6 py-3">
+      <div className="sticky top-[72px] z-30 -mx-4 sm:-mx-6 mb-6 flex items-center gap-3 glass-strong border-b border-sky-300/[0.12] px-4 sm:px-6 py-3">
         <button
           type="button"
           onClick={onBack}
           aria-label="পিছনে"
-          className="grid size-11 shrink-0 place-items-center rounded-full bg-white/[0.08] ring-1 ring-white/10 text-white transition-transform active:scale-90"
+          className="grid size-11 shrink-0 place-items-center rounded-full bg-sky-400/[0.12] ring-1 ring-sky-300/25 text-sky-200 transition-transform active:scale-90"
         >
           {CIc.arrowLeft(20)}
         </button>
         <div className="min-w-0">
           <h2 className="text-base sm:text-lg font-extrabold text-white truncate">{title}</h2>
-          {subtitle ? <p className="text-xs text-white/50 truncate">{subtitle}</p> : null}
+          {subtitle ? <p className="text-xs text-sky-100/60 truncate">{subtitle}</p> : null}
         </div>
       </div>
       {children}
@@ -152,7 +158,7 @@ export function DetailShell({
   );
 }
 
-/* ── বৃত্রাকার প্রোফাইল ছবি + ক্যামেরা ব্যাজ (কুইক আপলোড) ── */
+/* ── বৃত্রাকার প্রোফাইল ছবি + ক্যামেরা ব্যাজ (কুইক আপলোড) — কোস্টাল আকাশি রিং ── */
 export function CircleAvatar({
   url,
   initials,
@@ -172,20 +178,20 @@ export function CircleAvatar({
       <button
         type="button"
         onClick={() => inputRef.current?.click()}
-        className="block size-full overflow-hidden rounded-full bg-sunset-gradient ring-[3px] ring-sunset-gold/60 ring-offset-[3px] ring-offset-twilight-950 shadow-sunset-glow outline-none focus-visible:ring-4 focus-visible:ring-sunset-gold transition-all duration-200 active:scale-[0.97]"
+        className="block size-full overflow-hidden rounded-full bg-gradient-to-br from-sky-400 via-cyan-500 to-emerald-500 ring-[3px] ring-sky-300/70 ring-offset-[3px] ring-offset-[#0a2338] shadow-sky-glow outline-none focus-visible:ring-4 focus-visible:ring-sky-300 transition-all duration-200 active:scale-[0.97]"
         aria-label="প্রোফাইল ছবি বদলান"
       >
         {url ? (
           <img src={url} alt={initials} className="size-full object-cover" />
         ) : (
-          <span className="grid size-full place-items-center text-3xl font-extrabold text-[#1A0E06]">{initials}</span>
+          <span className="grid size-full place-items-center text-3xl font-extrabold text-[#062033]">{initials}</span>
         )}
       </button>
       <button
         type="button"
         onClick={() => inputRef.current?.click()}
         aria-label="ছবি আপলোড করুন"
-        className="absolute -bottom-0.5 -right-0.5 grid size-9 place-items-center rounded-full bg-sunset-coral text-white ring-2 ring-twilight-950 shadow-glass-sm transition-transform active:scale-90"
+        className="absolute -bottom-0.5 -right-0.5 grid size-9 place-items-center rounded-full bg-sky-500 text-white ring-2 ring-[#0a2338] shadow-glass-sm transition-transform active:scale-90"
       >
         {busy ? (
           <span className="block size-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />

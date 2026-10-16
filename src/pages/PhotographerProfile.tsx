@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
-import { Photographer, Package, Post } from '../lib/types';
+import { Photographer, Package, Post, PortfolioImage } from '../lib/types';
+import { GalleryMedia, galleryCaption, withVideoFlag } from '../lib/gallery';
 import { toBn, taka } from '../lib/utils';
 import { SPOT_BY_KEY } from '../lib/constants';
 import { waLink, cldUrl } from '../lib/cloudinary';
@@ -114,6 +115,131 @@ function WhatsAppIcon({ size = 18 }: { size?: number }) {
   );
 }
 
+/* ── V24 — পাবলিক ফটো গ্যালারি (হোম-স্টাইল: হরাইজন্টাল স্ন্যাপ-স্ট্রিপ + দৃশ্যমান prev/next, লাইট থিম) ── */
+function GalleryNavBtn({ dir, enabled, onClick }: { dir: 'L' | 'R'; enabled: boolean; onClick: (d: 'L' | 'R') => void }) {
+  return (
+    <button
+      type="button"
+      onClick={() => enabled && onClick(dir)}
+      aria-label={dir === 'L' ? 'আগের ছবি' : 'পরের ছবি'}
+      disabled={!enabled}
+      className={`grid size-11 place-items-center rounded-full bg-white border border-[#e6ddcc] text-[#26231e] shadow-sm transition-all duration-200 ${
+        enabled ? 'hover:bg-[#f1e8d8] hover:border-[#cfc4ac] active:scale-90' : 'opacity-40 cursor-default'
+      }`}
+    >
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        {dir === 'L' ? (
+          <><line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" /></>
+        ) : (
+          <><line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" /></>
+        )}
+      </svg>
+    </button>
+  );
+}
+
+function ProfileGallery({ items, onOpen }: { items: GalleryMedia[]; onOpen: (m: GalleryMedia) => void }) {
+  const trackRef = useRef<HTMLDivElement | null>(null);
+  const [canL, setCanL] = useState(false);
+  const [canR, setCanR] = useState(true);
+
+  const update = useCallback(() => {
+    const el = trackRef.current;
+    if (!el) return;
+    setCanL(el.scrollLeft > 4);
+    setCanR(el.scrollLeft < el.scrollWidth - el.clientWidth - 4);
+  }, []);
+
+  useEffect(() => {
+    const el = trackRef.current;
+    if (!el) return;
+    update();
+    el.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update);
+    return () => {
+      el.removeEventListener('scroll', update);
+      window.removeEventListener('resize', update);
+    };
+  }, [update]);
+
+  const go = (dir: 'L' | 'R') => {
+    const el = trackRef.current;
+    if (!el) return;
+    el.scrollBy({ left: dir === 'L' ? -el.clientWidth * 0.8 : el.clientWidth * 0.8, behavior: 'smooth' });
+  };
+
+  const photos = items.filter((i) => !i.isVideo).length;
+  const videos = items.length - photos;
+
+  return (
+    <section className="pf-card p-5 md:p-6" aria-labelledby="pf-gallery-h">
+      <div className="flex items-end justify-between gap-3 mb-4">
+        <div>
+          <h2 id="pf-gallery-h" className="pf-serif text-lg font-bold text-[#26231e]">ফটো গ্যালারি</h2>
+          <p className="text-sm text-[#6b6357] mt-0.5">
+            আমার ক্যামেরায় কক্সবাজার — ছবি {toBn(photos)}{videos > 0 ? ` · ভিডিও ${toBn(videos)}` : ''}
+          </p>
+        </div>
+        {/* ডেস্কটপ: শিরোনামের পাশেই দৃশ্যমান prev/next */}
+        <div className="hidden sm:flex items-center gap-2.5 shrink-0">
+          <GalleryNavBtn dir="L" enabled={canL} onClick={go} />
+          <GalleryNavBtn dir="R" enabled={canR} onClick={go} />
+        </div>
+      </div>
+
+      <div
+        ref={trackRef}
+        className="no-scrollbar flex gap-3.5 overflow-x-auto snap-x snap-mandatory scroll-smooth pb-1"
+      >
+        {items.map((m, i) => {
+          const cap = galleryCaption(m.caption);
+          return (
+            <button
+              key={m.id}
+              type="button"
+              onClick={() => onOpen(m)}
+              className="relative shrink-0 snap-start w-[240px] h-[180px] sm:w-[300px] sm:h-[212px] rounded-2xl overflow-hidden border border-[#e2ddd2] bg-[#f2efe8] group/tile text-left"
+              aria-label={`${cap || 'গ্যালারি'} ${toBn(i + 1)} — বড় করে দেখুন`}
+            >
+              <img
+                src={m.isVideo ? videoThumb(m.url) : cldUrl(m.url, { w: 640, c: 'fill' })}
+                alt={cap || `গ্যালারি ${toBn(i + 1)}`}
+                loading={i < 3 ? 'eager' : 'lazy'}
+                decoding="async"
+                className="w-full h-full object-cover transition-transform duration-500 group-hover/tile:scale-[1.05]"
+              />
+              {m.isVideo && (
+                <span className="absolute inset-0 grid place-items-center pointer-events-none">
+                  <span className="w-12 h-12 rounded-full bg-black/50 backdrop-blur-sm grid place-items-center text-white ring-2 ring-white/40">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg>
+                  </span>
+                </span>
+              )}
+              <span className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-transparent pointer-events-none" />
+              {m.isVideo && (
+                <span className="absolute top-2.5 left-2.5 rounded-full bg-[#1d4d3b]/90 text-white text-[10.5px] font-extrabold px-2 py-0.5">▶ ভিডিও</span>
+              )}
+              {cap && (
+                <span className="absolute bottom-2.5 left-2.5 right-2.5">
+                  <span className="inline-block max-w-full truncate rounded-full bg-black/45 backdrop-blur-sm text-white text-[11.5px] font-semibold px-2.5 py-1">
+                    {cap}
+                  </span>
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* মোবাইল: স্ট্রিপের নিচে দৃশ্যমান prev/next */}
+      <div className="sm:hidden flex justify-center gap-3 mt-4">
+        <GalleryNavBtn dir="L" enabled={canL} onClick={go} />
+        <GalleryNavBtn dir="R" enabled={canR} onClick={go} />
+      </div>
+    </section>
+  );
+}
+
 /* ── Page ─────────────────────────────────────────────────────── */
 
 export default function PhotographerProfile() {
@@ -132,6 +258,7 @@ export default function PhotographerProfile() {
   const [avatarBroken, setAvatarBroken] = useState(false);
   const [coverBroken, setCoverBroken] = useState(false);
   const [posts, setPosts] = useState<Post[]>([]);
+  const [gallery, setGallery] = useState<GalleryMedia[]>([]); // V24 portfolio_images (ছবি+ভিডিও)
   const [viewerMedia, setViewerMedia] = useState<{ url: string; type: 'image' | 'video'; title?: string } | null>(null); // V21 package reference viewer
 
   const viewCountedRef = useRef(false);
@@ -142,7 +269,7 @@ export default function PhotographerProfile() {
     setLoadFailed(false);
 
     try {
-      const [photoRes, pkgRes] = await Promise.all([
+      const [photoRes, pkgRes, galRes] = await Promise.all([
         supabase
           .from('photographers')
           .select('*, photographer_categories(category_id, categories(name, slug, icon))')
@@ -153,6 +280,11 @@ export default function PhotographerProfile() {
           .select('*')
           .eq('photographer_id', id)
           .order('price', { ascending: true }),
+        supabase
+          .from('portfolio_images')
+          .select('*')
+          .eq('photographer_id', id)
+          .order('sort_order'),
       ]);
 
       if (photoRes.error || !photoRes.data) {
@@ -182,6 +314,13 @@ export default function PhotographerProfile() {
         setPackages([]);
       } else {
         setPackages((pkgRes.data as Package[]) || []);
+      }
+
+      if (galRes.error) {
+        console.error('Gallery fetch error:', galRes.error);
+        setGallery([]);
+      } else {
+        setGallery(withVideoFlag((galRes.data as PortfolioImage[]) || []));
       }
     } catch (err) {
       console.error('Profile load error:', err);
@@ -580,6 +719,28 @@ export default function PhotographerProfile() {
               <WhatsAppContactCard number={photographer.phone} waHref={waHref} />
             </div>
           )}
+
+          {/* V24 — ফটো গ্যালারি (হোম-স্টাইল স্ক্রল-স্ট্রিপ + দৃশ্যমান prev/next + ভিডিও) */}
+          {gallery.length > 0 ? (
+            <ProfileGallery
+              items={gallery}
+              onOpen={(m) =>
+                setViewerMedia({
+                  url: m.url,
+                  type: m.isVideo ? 'video' : 'image',
+                  title: galleryCaption(m.caption) || photographer.display_name,
+                })
+              }
+            />
+          ) : isOwnProfile ? (
+            <section className="pf-card p-6 text-center" aria-label="গ্যালারি খালি">
+              <p className="text-2xl mb-1.5">📸</p>
+              <p className="pf-serif font-bold text-[#26231e]">আপনার ফটো গ্যালারি এখনো খালি</p>
+              <p className="text-sm text-[#6b6357] mt-1 leading-relaxed">
+                স্টুডিও ড্যাশবোর্ড → ফটো গ্যালারি থেকে অন্তত ৬টি ছবি ও ১টি ভিডিও (সর্বোচ্চ ৫০MB) যোগ করুন — এখানে হোম পেজের মতো দেখাবে।
+              </p>
+            </section>
+          ) : null}
 
           {/* About */}
           <section className="pf-card p-6" aria-labelledby="pf-about-h">

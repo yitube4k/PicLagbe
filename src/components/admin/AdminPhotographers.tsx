@@ -1,11 +1,13 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { Photographer, Package } from '../../lib/types';
+import { Photographer, Package, PortfolioImage } from '../../lib/types';
 import { COX_SPOTS } from '../../lib/constants';
 import { bnDate, taka, toBn } from '../../lib/utils';
 import { openApp } from '../../lib/base';
 import { cldUrl } from '../../lib/cloudinary';
 import PackageEditDialog, { videoThumb } from '../PackageEditDialog';
+import CldUploadField from '../CldUploadField';
+import { GalleryMedia, galleryCaption, isVideoUrl, withVideoFlag, GALLERY_VIDEO_MAX_MB, GALLERY_IMAGE_MAX_MB } from '../../lib/gallery';
 import {
   AdminSheet, FullDialog, ConfirmDialog, FilterBar, OverflowMenu,
   Field, StatusPill, EmptyState, ListSkeleton, KV, ProgressiveRows, waMe, telHref,
@@ -66,6 +68,17 @@ export default function AdminPhotographers({ onChanged }: { onChanged?: () => vo
   const [pkgDeleting, setPkgDeleting] = useState<Package | null>(null);
   const [pkgDelBusy, setPkgDelBusy] = useState(false);
 
+  // V24 — view-sheet gallery (portfolio_images: ছবি+ভিডিও) management
+  const [viewGal, setViewGal] = useState<GalleryMedia[]>([]);
+  const [viewGalLoading, setViewGalLoading] = useState(false);
+  const [galAddOpen, setGalAddOpen] = useState(false);
+  const [galUrl, setGalUrl] = useState('');
+  const [galCaption, setGalCaption] = useState('');
+  const [galSaving, setGalSaving] = useState(false);
+  const [galErr, setGalErr] = useState<string | null>(null);
+  const [galDeleting, setGalDeleting] = useState<GalleryMedia | null>(null);
+  const [galDelBusy, setGalDelBusy] = useState(false);
+
   useEffect(() => {
     if (!viewing) { setViewPkgs([]); return; }
     let dead = false;
@@ -84,6 +97,69 @@ export default function AdminPhotographers({ onChanged }: { onChanged?: () => vo
     const { data } = await supabase.from('packages').select('*').eq('photographer_id', viewing.id).order('sort_order').order('price');
     setViewPkgs((data as Package[]) || []);
   }, [viewing]);
+
+  // V24 — gallery load on view change
+  useEffect(() => {
+    if (!viewing) { setViewGal([]); setGalAddOpen(false); setGalErr(null); return; }
+    let dead = false;
+    setViewGalLoading(true);
+    supabase
+      .from('portfolio_images')
+      .select('*')
+      .eq('photographer_id', viewing.id)
+      .order('sort_order')
+      .then(({ data }) => {
+        if (!dead) {
+          setViewGal(withVideoFlag((data as PortfolioImage[]) || []));
+          setViewGalLoading(false);
+        }
+      });
+    return () => { dead = true; };
+  }, [viewing]);
+
+  const handleAdminGalAdd = async () => {
+    if (!viewing || !galUrl.trim()) return;
+    const url = galUrl.trim();
+    setGalSaving(true);
+    setGalErr(null);
+    const { data, error } = await supabase
+      .from('portfolio_images')
+      .insert({
+        photographer_id: viewing.id,
+        url,
+        caption: galCaption.trim() || null,
+        sort_order: viewGal.length + 1,
+      })
+      .select()
+      .single();
+    setGalSaving(false);
+    if (error || !data) { setGalErr(error?.message || 'যোগ করা যায়নি'); return; }
+    const created = data as PortfolioImage;
+    setViewGal((prev) => [...prev, { ...created, isVideo: isVideoUrl(url) }]);
+    setGalUrl('');
+    setGalCaption('');
+    setGalAddOpen(false);
+    show('গ্যালারিতে যোগ হয়েছে ✓');
+    logAction('create', 'gallery', created.id, galleryCaption(created.caption) || 'গ্যালারি আইটেম', {
+      meta: { photographer: viewing.display_name, type: isVideoUrl(url) ? 'video' : 'image' },
+    });
+  };
+
+  const handleAdminGalDelete = async () => {
+    if (!galDeleting) return;
+    setGalDelBusy(true);
+    const { error } = await supabase.from('portfolio_images').delete().eq('id', galDeleting.id);
+    setGalDelBusy(false);
+    if (error) { show('ডিলিট ব্যর্থ: ' + error.message, { tone: 'error' }); return; }
+    setViewGal((prev) => prev.filter((g) => g.id !== galDeleting.id));
+    show('গ্যালারি আইটেম মুছে ফেলা হয়েছে');
+    if (viewing) {
+      logAction('delete', 'gallery', galDeleting.id, galleryCaption(galDeleting.caption) || 'গ্যালারি আইটেম', {
+        meta: { photographer: viewing.display_name },
+      });
+    }
+    setGalDeleting(null);
+  };
 
   const handleAdminPkgSaved = (pkg: Package, mode: 'created' | 'updated') => {
     setViewPkgs((prev) => (mode === 'created' ? [...prev, pkg] : prev.map((p) => (p.id === pkg.id ? pkg : p))));
@@ -500,6 +576,102 @@ export default function AdminPhotographers({ onChanged }: { onChanged?: () => vo
                 </div>
               )}
             </div>
+
+            {/* V24 — ফটো গ্যালারি (ছবি+ভিডিও, অ্যাডমিন ম্যানেজ) */}
+            <div className="mt-5 pt-4 border-t border-white/[0.08]">
+              <div className="flex items-center justify-between gap-2 mb-3">
+                <p className="field-label !mb-0">ফটো গ্যালারি ({toBn(viewGal.length)})</p>
+                <button
+                  type="button"
+                  onClick={() => { setGalAddOpen((v) => !v); setGalErr(null); }}
+                  className="h-9 px-3 rounded-full bg-sunset-soft text-sunset-gold text-xs font-bold hover:bg-sunset-gold hover:text-white transition flex items-center gap-1"
+                >
+                  <AIcon name="plus" size={13} strokeWidth={2.4} /> {galAddOpen ? 'বন্ধ করুন' : 'যোগ করুন'}
+                </button>
+              </div>
+
+              {galAddOpen && (
+                <div className="rounded-xl border border-white/10 bg-white/[0.04] p-3 mb-3 space-y-3">
+                  <CldUploadField
+                    label="ছবি / ভিডিও (ভিডিও সর্বোচ্চ ৫০MB)"
+                    value={galUrl}
+                    onChange={setGalUrl}
+                    accept="both"
+                    folder="piclagbe/gallery"
+                    maxImageMb={GALLERY_IMAGE_MAX_MB}
+                    maxVideoMb={GALLERY_VIDEO_MAX_MB}
+                  />
+                  <input
+                    value={galCaption}
+                    onChange={(e) => setGalCaption(e.target.value)}
+                    placeholder="ক্যাপশন (ঐচ্ছিক)"
+                    className="glass-input !text-sm"
+                  />
+                  {galErr && <p className="text-xs text-rose-400">{galErr}</p>}
+                  <div className="flex gap-2 justify-end">
+                    <button
+                      type="button"
+                      onClick={() => { setGalAddOpen(false); setGalErr(null); }}
+                      className="h-9 px-3 rounded-full border border-white/15 text-white/70 text-xs font-bold"
+                    >
+                      বাতিল
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleAdminGalAdd}
+                      disabled={galSaving || !galUrl.trim()}
+                      className="h-9 px-4 rounded-full bg-sunset-gradient text-[#1A0E06] text-xs font-extrabold disabled:opacity-50"
+                    >
+                      {galSaving ? 'যোগ হচ্ছে…' : 'যোগ করুন'}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {viewGalLoading ? (
+                <p className="text-xs text-white/40 py-3">লোড হচ্ছে…</p>
+              ) : viewGal.length === 0 ? (
+                <p className="text-xs text-white/45 py-3 rounded-xl border border-dashed border-white/15 text-center px-3">
+                  গ্যালারি খালি — ছবি/ভিডিও যোগ করে দিন (ফটোগ্রাফারের প্রোফাইলে হোম-স্টাইল গ্যালারি হিসেবে দেখাবে)
+                </p>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {viewGal.map((g) => (
+                    <div key={g.id} className="relative rounded-xl overflow-hidden border border-white/10 bg-twilight-800">
+                      <img
+                        src={g.isVideo ? videoThumb(g.url) : cldUrl(g.url, { w: 240, h: 160, c: 'fill' })}
+                        alt=""
+                        className="w-full h-20 object-cover"
+                        loading="lazy"
+                      />
+                      {g.isVideo && (
+                        <span className="absolute inset-0 grid place-items-center pointer-events-none">
+                          <span className="w-7 h-7 rounded-full bg-black/55 grid place-items-center text-white">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg>
+                          </span>
+                        </span>
+                      )}
+                      <span className="absolute top-1 left-1 rounded bg-black/60 text-white text-[9px] font-extrabold px-1 py-0.5">
+                        {g.isVideo ? '▶ ভিডিও' : 'ছবি'}
+                      </span>
+                      {galleryCaption(g.caption) && (
+                        <span className="absolute bottom-0 inset-x-0 bg-black/55 text-white text-[10px] px-1.5 py-0.5 truncate">
+                          {galleryCaption(g.caption)}
+                        </span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => setGalDeleting(g)}
+                        aria-label="গ্যালারি আইটেম ডিলিট করুন"
+                        className="absolute top-1 right-1 w-7 h-7 rounded-full bg-black/55 text-white/85 grid place-items-center hover:text-rose-300 active:scale-90 transition"
+                      >
+                        <AIcon name="trash" size={13} strokeWidth={2} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
       </AdminSheet>
@@ -523,6 +695,16 @@ export default function AdminPhotographers({ onChanged }: { onChanged?: () => vo
         title="প্যাকেজটি মুছে ফেলবেন?"
         body={pkgDeleting ? `"${pkgDeleting.name}" (ফটোগ্রাফার: ${viewing?.display_name}) স্থায়ীভাবে মুছে যাবে।` : undefined}
         busy={pkgDelBusy}
+      />
+
+      {/* V24 — গ্যালারি আইটেম ডিলিট কনফার্ম */}
+      <ConfirmDialog
+        open={!!galDeleting}
+        onClose={() => setGalDeleting(null)}
+        onConfirm={handleAdminGalDelete}
+        busy={galDelBusy}
+        title="গ্যালারি আইটেমটি মুছে ফেলবেন?"
+        body="ফটোগ্রাফারের পাবলিক প্রোফাইলের গ্যালারি থেকেও সরে যাবে।"
       />
 
       {/* EDIT FULL DIALOG */}

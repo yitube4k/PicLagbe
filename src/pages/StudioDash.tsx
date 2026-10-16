@@ -14,6 +14,16 @@ import { ConfirmDialog } from '../components/admin/kit';
 import { AIcon } from '../admin/icons';
 import { cldUrl, waLink, uploadToCloudinary } from '../lib/cloudinary';
 import {
+  isVideoUrl,
+  galleryCaption,
+  galleryCounts,
+  withVideoFlag,
+  GALLERY_VIDEO_MAX_MB,
+  GALLERY_IMAGE_MAX_MB,
+  GALLERY_MAX_PHOTOS,
+  GALLERY_MAX_VIDEOS,
+} from '../lib/gallery';
+import {
   CIc,
   CircleItem,
   CircleMenuGrid,
@@ -32,7 +42,7 @@ const STUDIO_TITLES: Record<StudioTab, string> = {
   schedule: 'সময়সূচি',
   posts: 'কাজের পোস্ট',
   packages: 'প্যাকেজ ম্যানেজমেন্ট',
-  portfolio: 'পোর্টফোলিও',
+  portfolio: 'ফটো গ্যালারি',
   profile: 'স্টুডিও প্রোফাইল',
   verification: 'ভেরিফিকেশন',
 };
@@ -106,10 +116,12 @@ export default function StudioDash() {
   const [pkgFlash, setPkgFlash] = useState<string | null>(null);
   const [pkgSavingDel, setPkgSavingDel] = useState(false);
 
-  // Portfolio add form state
+  // Gallery (portfolio_images) add form state — V24: ছবি+ভিডিও, ধরন URL থেকে অটো-ডিটেক্ট
   const [portUrl, setPortUrl] = useState('');
   const [portCaption, setPortCaption] = useState('');
-  const [portType, setPortType] = useState<'photo' | 'video' | 'demo'>('photo');
+  const [portFlash, setPortFlash] = useState<string | null>(null);
+  const [portDeleting, setPortDeleting] = useState<PortfolioImage | null>(null);
+  const [portDelBusy, setPortDelBusy] = useState(false);
 
   // Profile edit form state
   const [profName, setProfName] = useState('');
@@ -307,23 +319,23 @@ export default function StudioDash() {
 
   /* ── বৃত্তাকার স্ট্যাট + মেনু আইটেম (হোম ভিউ) ── */
   const studioStats: CircleItem[] = [
-    { key: 'st-bookings', label: 'বুকিং', icon: CIc.calendar(24), tint: 'gold', stat: toBn(totalBookings), onClick: () => setTab('bookings') },
-    { key: 'st-accepted', label: 'গৃহীত', icon: CIc.checkCircle(24), tint: 'teal', stat: toBn(acceptedBookings), onClick: () => setTab('bookings') },
-    { key: 'st-done', label: 'সম্পন্ন', icon: CIc.check(24), tint: 'emerald', stat: toBn(completedBookings), onClick: () => setTab('bookings') },
-    { key: 'st-earn', label: 'মোট আয়', icon: CIc.wallet(24), tint: 'coral', stat: taka(totalEarnings), onClick: () => setTab('bookings') },
+    { key: 'st-bookings', label: 'বুকিং', icon: CIc.calendar(24), tint: 'sky', stat: toBn(totalBookings), onClick: () => setTab('bookings') },
+    { key: 'st-accepted', label: 'গৃহীত', icon: CIc.checkCircle(24), tint: 'sea', stat: toBn(acceptedBookings), onClick: () => setTab('bookings') },
+    { key: 'st-done', label: 'সম্পন্ন', icon: CIc.check(24), tint: 'hill', stat: toBn(completedBookings), onClick: () => setTab('bookings') },
+    { key: 'st-earn', label: 'মোট আয়', icon: CIc.wallet(24), tint: 'mist', stat: taka(totalEarnings), onClick: () => setTab('bookings') },
   ];
 
   const studioMenuItems: CircleItem[] = [
-    { key: 'overview', label: 'ওভারভিউ', icon: CIc.grid(), tint: 'gold', onClick: () => setTab('overview') },
-    { key: 'bookings', label: 'বুকিং', icon: CIc.calendar(), tint: 'teal', badge: bookings.length, onClick: () => setTab('bookings') },
-    { key: 'schedule', label: 'সময়সূচি', icon: CIc.clock(), tint: 'crimson', onClick: () => setTab('schedule') },
-    { key: 'posts', label: 'পোস্ট', icon: CIc.image(), tint: 'berry', badge: posts.length, onClick: () => setTab('posts') },
-    { key: 'packages', label: 'প্যাকেজ', icon: CIc.tag(), tint: 'gold', badge: packages.length, onClick: () => setTab('packages') },
-    { key: 'portfolio', label: 'পোর্টফোলিও', icon: CIc.camera(), tint: 'coral', badge: portfolio.length, onClick: () => setTab('portfolio') },
-    { key: 'profile', label: 'প্রোফাইল', icon: CIc.user(), tint: 'berry', onClick: () => setTab('profile') },
+    { key: 'overview', label: 'ওভারভিউ', icon: CIc.grid(), tint: 'sky', onClick: () => setTab('overview') },
+    { key: 'bookings', label: 'বুকিং', icon: CIc.calendar(), tint: 'sea', badge: bookings.length, onClick: () => setTab('bookings') },
+    { key: 'schedule', label: 'সময়সূচি', icon: CIc.clock(), tint: 'mist', onClick: () => setTab('schedule') },
+    { key: 'posts', label: 'পোস্ট', icon: CIc.image(), tint: 'sky', badge: posts.length, onClick: () => setTab('posts') },
+    { key: 'packages', label: 'প্যাকেজ', icon: CIc.tag(), tint: 'sea', badge: packages.length, onClick: () => setTab('packages') },
+    { key: 'portfolio', label: 'ফটো গ্যালারি', icon: CIc.camera(), tint: 'hill', badge: portfolio.length, onClick: () => setTab('portfolio') },
+    { key: 'profile', label: 'প্রোফাইল', icon: CIc.user(), tint: 'sky', onClick: () => setTab('profile') },
     kycSub?.status === 'approved'
-      ? { key: 'verification', label: 'ভেরিফায়েড', icon: CIc.check(), tint: 'emerald' as const, onClick: () => setTab('verification') }
-      : { key: 'verification', label: 'ভেরিফিকেশন', icon: CIc.shield(), tint: 'crimson' as const, onClick: () => setTab('verification') },
+      ? { key: 'verification', label: 'ভেরিফায়েড', icon: CIc.check(), tint: 'hill' as const, onClick: () => setTab('verification') }
+      : { key: 'verification', label: 'ভেরিফিকেশন', icon: CIc.shield(), tint: 'mist' as const, onClick: () => setTab('verification') },
   ];
 
   // Booking status update handler
@@ -384,27 +396,36 @@ export default function StudioDash() {
     );
   };
 
-  // Portfolio handlers
+  // Gallery handlers — V24 (ছবি ≤১২ + ভিডিও ≤২, ভিডিও ≤50MB, ধরন URL থেকে অটো)
+  const flashPort = (msg: string) => {
+    setPortFlash(msg);
+    window.setTimeout(() => setPortFlash(null), 3500);
+  };
+
   const handleAddPortfolio = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!portUrl.trim()) return;
+    if (!portUrl.trim() || !photographer) return;
 
-    let finalCaption = portCaption.trim();
-    if (portType === 'video') {
-      finalCaption = `video: ${finalCaption}`;
-    } else if (portType === 'demo') {
-      finalCaption = `demo: ${finalCaption}`;
+    const url = portUrl.trim();
+    const isVideo = isVideoUrl(url);
+    const { photos, videos } = galleryCounts(withVideoFlag(portfolio));
+
+    if (isVideo && videos >= GALLERY_MAX_VIDEOS) {
+      flashPort(`ভিডিও সর্বোচ্চ ${toBn(GALLERY_MAX_VIDEOS)}টি যোগ করা যায়`);
+      return;
     }
-
-    const nextOrder = portfolio.length + 1;
+    if (!isVideo && photos >= GALLERY_MAX_PHOTOS) {
+      flashPort(`ছবি সর্বোচ্চ ${toBn(GALLERY_MAX_PHOTOS)}টি যোগ করা যায়`);
+      return;
+    }
 
     const { data, error } = await supabase
       .from('portfolio_images')
       .insert({
         photographer_id: photographer.id,
-        url: portUrl.trim(),
-        caption: finalCaption || null,
-        sort_order: nextOrder,
+        url,
+        caption: portCaption.trim() || null,
+        sort_order: portfolio.length + 1,
       })
       .select()
       .single();
@@ -413,15 +434,21 @@ export default function StudioDash() {
       setPortfolio((prev) => [...prev, data as PortfolioImage]);
       setPortUrl('');
       setPortCaption('');
-      setPortType('photo');
+      flashPort(isVideo ? 'ভিডিও গ্যালারিতে যোগ হয়েছে ✓' : 'ছবি গ্যালারিতে যোগ হয়েছে ✓');
+    } else {
+      flashPort('যোগ করা যায়নি — আবার চেষ্টা করুন');
     }
   };
 
-  const handleDeletePortfolio = async (imgId: string) => {
-    if (!window.confirm('এই ছবিটি ডিলিট করতে চান?')) return;
-    const { error } = await supabase.from('portfolio_images').delete().eq('id', imgId);
+  const handleDeletePortfolio = async () => {
+    if (!portDeleting) return;
+    setPortDelBusy(true);
+    const { error } = await supabase.from('portfolio_images').delete().eq('id', portDeleting.id);
+    setPortDelBusy(false);
     if (!error) {
-      setPortfolio((prev) => prev.filter((item) => item.id !== imgId));
+      setPortfolio((prev) => prev.filter((item) => item.id !== portDeleting.id));
+      flashPort('গ্যালারি থেকে মুছে ফেলা হয়েছে');
+      setPortDeleting(null);
     }
   };
 
@@ -563,7 +590,8 @@ export default function StudioDash() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-6 pt-28 pb-24 space-y-8">
+    <div className="dash-coastal min-h-screen">
+      <div className="max-w-6xl mx-auto px-6 pt-28 pb-24 space-y-8">
       {/* Pending Approval Banner */}
       {isPending && (
         <div className="bdg-pending p-4 rounded-xl2 w-full justify-center text-sm shadow-glass-sm">
@@ -575,7 +603,7 @@ export default function StudioDash() {
       <>
       {/* Header Cover & Profile Bar */}
       <div className="glass rounded-xl3 overflow-hidden shadow-glass-lg border border-white/[0.12]">
-        <div className="relative h-32 sm:h-40 w-full bg-twilight-800">
+        <div className="relative h-32 sm:h-40 w-full bg-gradient-to-br from-sky-500/25 via-cyan-600/15 to-emerald-500/20 bg-[#0a2338]">
           {photographer.cover_photo_url ? (
             <img src={photographer.cover_photo_url} alt="কভার" className="w-full h-full object-cover" />
           ) : (
@@ -1075,99 +1103,127 @@ export default function StudioDash() {
           </div>
         )}
 
-        {/* PORTFOLIO TAB */}
+        {/* PORTFOLIO TAB — V24 ফটো গ্যালারি (ছবি + ভিডিও, পাবলিক প্রোফাইলে হোম-স্টাইলে দেখাবে) */}
         {tab === 'portfolio' && (
           <div className="space-y-6">
-            <h3 className="font-bold text-white text-lg">পোর্টফোলিও ম্যানেজমেন্ট</h3>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h3 className="font-bold text-white text-lg">ফটো গ্যালারি</h3>
+              <span className="text-xs font-bold text-sky-300 bg-sky-400/10 ring-1 ring-sky-300/25 rounded-full px-3 py-1">
+                ছবি {toBn(galleryCounts(withVideoFlag(portfolio)).photos)}/{toBn(GALLERY_MAX_PHOTOS)} · ভিডিও {toBn(galleryCounts(withVideoFlag(portfolio)).videos)}/{toBn(GALLERY_MAX_VIDEOS)}
+              </span>
+            </div>
 
-            {/* Add Portfolio Form — Cloudinary hosting (f_auto → WebP) */}
-            <form onSubmit={handleAddPortfolio} className="glass-card p-5 rounded-xl3 space-y-4">
-              <h4 className="font-bold text-white text-sm">নতুন কাজ বা ছবি যোগ করুন</h4>
-              <p className="text-[12.5px] text-white/50 -mt-2">
-                ফাইল আপলোড করলে Cloudinary-তে হোস্ট হবে — স্বয়ংক্রিয়ভাবে WebP-তে কনভার্ট হয়ে মোবাইলে দ্রুত লোড হবে।
+            {/* গাইড ব্যানার */}
+            <div className="glass-card p-4 rounded-xl2 flex gap-3 items-start">
+              <div className="w-10 h-10 rounded-xl bg-sky-400/[0.14] text-sky-300 grid place-items-center shrink-0 text-lg">🖼️</div>
+              <p className="text-[13px] text-white/65 leading-relaxed">
+                এই গ্যালারিটি আপনার <b className="text-white">পাবলিক প্রোফাইলে হোম পেজের মতো স্ক্রল-গ্যালারি</b> হিসেবে দেখাবে।
+                কমপক্ষে <b className="text-sky-300">৬টি ছবি ও ১টি ভিডিও</b> যোগ করুন — ভিডিও সর্বোচ্চ <b className="text-sky-300">৫০MB</b>।
+                ছবি WebP-তে কনভার্ট হয়ে দ্রুত লোড হয়।
               </p>
+            </div>
+
+            {portFlash && (
+              <div className="bdg-accepted p-3 rounded-xl2 text-sm w-full justify-center">{portFlash}</div>
+            )}
+
+            {/* যোগ করার ফর্ম — Cloudinary হোস্টিং, ভিডিও 50MB গার্ড */}
+            <form onSubmit={handleAddPortfolio} className="glass-card p-5 rounded-xl3 space-y-4">
+              <h4 className="font-bold text-white text-sm">নতুন ছবি বা ভিডিও যোগ করুন</h4>
               <div className="grid sm:grid-cols-2 gap-3">
                 <CldUploadField
                   label="ছবি / ভিডিও (Cloudinary আপলোড বা লিংক)"
                   value={portUrl}
                   onChange={setPortUrl}
                   accept="both"
-                  folder="piclagbe/portfolio"
-                  placeholder="https://… (Cloudinary / Imgur / যেকোনো লিংক)"
-                  onUploaded={(rt) => {
-                    if (rt === 'video' && portType === 'photo') setPortType('video');
-                  }}
+                  folder="piclagbe/gallery"
+                  placeholder="https://… (Cloudinary / যেকোনো লিংক)"
+                  maxImageMb={GALLERY_IMAGE_MAX_MB}
+                  maxVideoMb={GALLERY_VIDEO_MAX_MB}
                 />
-                <div className="space-y-3">
-                  <div>
-                    <label className="field-label">ধরন</label>
-                    <select
-                      value={portType}
-                      onChange={(e) => setPortType(e.target.value as 'photo' | 'video' | 'demo')}
-                      className="glass-select"
-                    >
-                      <option value="photo">ছবি (Photo)</option>
-                      <option value="video">ভিডিও (Video)</option>
-                      <option value="demo">ডেমো শুট (Demo)</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="field-label">ক্যাপশন</label>
-                    <input
-                      type="text"
-                      value={portCaption}
-                      onChange={(e) => setPortCaption(e.target.value)}
-                      placeholder="যেমন: লাবণী পয়েন্ট সানসেট"
-                      className="glass-input"
-                    />
-                  </div>
+                <div>
+                  <label className="field-label">ক্যাপশন (ঐচ্ছিক)</label>
+                  <input
+                    type="text"
+                    value={portCaption}
+                    onChange={(e) => setPortCaption(e.target.value)}
+                    placeholder="যেমন: লাবণী পয়েন্ট সানসেট"
+                    className="glass-input"
+                  />
+                  {portUrl.trim() ? (
+                    <p className="text-[12px] text-sky-300/90 mt-1.5 font-semibold">
+                      {isVideoUrl(portUrl) ? '▶ ভিডিও হিসেবে যোগ হবে' : '🖼️ ছবি হিসেবে যোগ হবে'} — ধরন লিংক থেকে অটো-ডিটেক্ট
+                    </p>
+                  ) : null}
                 </div>
               </div>
               <button type="submit" disabled={!portUrl.trim()} className="btn-primary w-full justify-center sm:w-auto">
-                যোগ করুন
+                গ্যালারিতে যোগ করুন
               </button>
             </form>
 
-            {/* Portfolio Grid */}
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {portfolio.map((item) => {
-                const cap = item.caption || '';
-                let typeBadge = 'ছবি';
-                if (cap.toLowerCase().startsWith('video:')) typeBadge = 'ভিডিও';
-                else if (cap.toLowerCase().startsWith('demo:')) typeBadge = 'ডেমো';
+            {/* গ্যালারি গ্রিড — ভিডিওতে পোস্টার + প্লে ব্যাজ */}
+            {portfolio.length === 0 ? (
+              <div className="glass-card p-10 rounded-xl3 text-center">
+                <p className="text-3xl mb-2">📸</p>
+                <p className="font-bold text-white">গ্যালারি এখনো খালি</p>
+                <p className="text-sm text-white/55 mt-1">উপরের ফর্ম থেকে আপনার সেরা কাজগুলো যোগ করুন</p>
+              </div>
+            ) : (
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                {portfolio.map((item) => {
+                  const isVid = isVideoUrl(item.url);
+                  const cap = galleryCaption(item.caption);
+                  return (
+                    <div key={item.id} className="glass-card overflow-hidden rounded-xl3 relative group">
+                      <button
+                        type="button"
+                        onClick={() => setPortDeleting(item)}
+                        aria-label="গ্যালারি আইটেম ডিলিট করুন"
+                        className="absolute top-3 right-3 z-10 glass rounded-full w-8 h-8 flex items-center justify-center text-white/85 hover:text-rose-400 hover:border-rose-400/40"
+                      >
+                        ✕
+                      </button>
 
-                return (
-                  <div key={item.id} className="glass-card overflow-hidden rounded-xl3 relative group">
-                    <button
-                      type="button"
-                      onClick={() => handleDeletePortfolio(item.id)}
-                      aria-label="ছবি ডিলিট করুন"
-                      className="absolute top-3 right-3 z-10 glass rounded-full w-7 h-7 flex items-center justify-center text-white/80 hover:text-rose-400"
-                    >
-                      ✕
-                    </button>
+                      <div className="h-40 w-full bg-twilight-800 overflow-hidden relative">
+                        <img
+                          src={isVid ? videoThumb(item.url) : item.url}
+                          alt={cap || 'গ্যালারি'}
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                        />
+                        {isVid && (
+                          <span className="absolute inset-0 grid place-items-center pointer-events-none">
+                            <span className="w-12 h-12 rounded-full bg-black/55 backdrop-blur-sm grid place-items-center text-white ring-2 ring-white/30">
+                              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg>
+                            </span>
+                          </span>
+                        )}
+                        <span className={`absolute top-3 left-3 rounded-full text-[10.5px] font-extrabold px-2 py-0.5 ${isVid ? 'bg-sky-500 text-white' : 'bg-white/85 text-[#0a2338]'}`}>
+                          {isVid ? '▶ ভিডিও' : 'ছবি'}
+                        </span>
+                      </div>
 
-                    <div className="h-40 w-full bg-twilight-800 overflow-hidden relative">
-                      <img
-                        src={item.url}
-                        alt="পোর্টফোলিও"
-                        className="w-full h-full object-cover"
-                        loading="lazy"
-                      />
+                      <div className="p-3">
+                        <span className="text-[13px] text-white/80 truncate block">{cap || 'কক্সবাজার শ্যুট'}</span>
+                      </div>
                     </div>
-
-                    <div className="p-3 flex items-center justify-between text-xs">
-                      <span className="text-white/80 truncate">{cap.replace(/^(video|demo):\s*/i, '') || 'কক্সবাজার শ্যুট'}</span>
-                      <span className="badge bg-sunset-soft text-sunset-gold border-sunset-gold/30 shrink-0">
-                        {typeBadge}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
+
+        {/* গ্যালারি ডিলিট কনফার্ম (M3) */}
+        <ConfirmDialog
+          open={!!portDeleting}
+          onClose={() => setPortDeleting(null)}
+          onConfirm={handleDeletePortfolio}
+          busy={portDelBusy}
+          title="গ্যালারি থেকে মুছে ফেলবেন?"
+          body={portDeleting ? `${galleryCaption(portDeleting.caption) || 'এই আইটেমটি'} আপনার পাবলিক প্রোফাইলের গ্যালারি থেকেও সরে যাবে।` : undefined}
+        />
 
         {/* PROFILE TAB */}
         {tab === 'profile' && (
@@ -1564,6 +1620,7 @@ export default function StudioDash() {
         body={pkgDeleting ? `"${pkgDeleting.name}" স্থায়ীভাবে মুছে যাবে — এটি আর ফিরিয়ে আনা যাবে না।` : undefined}
         busy={pkgSavingDel}
       />
+      </div>
     </div>
   );
 }

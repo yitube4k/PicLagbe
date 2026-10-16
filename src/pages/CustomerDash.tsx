@@ -514,11 +514,11 @@ export default function CustomerDash() {
             <div
               key={n.id}
               className={`glass-card p-4 rounded-xl2 flex gap-3 items-start ${
-                !n.read ? 'border-sunset-gold/40' : ''
+                !n.read ? 'border-sky-300/40' : ''
               }`}
             >
               {!n.read && (
-                <span className="w-2 h-2 rounded-full bg-sunset-gold shrink-0 mt-1.5" />
+                <span className="w-2 h-2 rounded-full bg-sky-300 shrink-0 mt-1.5" />
               )}
               <div className="flex-1 min-w-0">
                 <p className="text-sm text-white/90 leading-relaxed">{n.message}</p>
@@ -536,31 +536,32 @@ export default function CustomerDash() {
   /* ═══════════ স্ট্যাট + মেনু বৃত্ত ═══════════ */
 
   const statItems: CircleItem[] = [
-    { key: 'st-bookings', label: 'বুকিং', icon: CIc.calendar(24), tint: 'gold', stat: toBn(totalBookings), onClick: () => setView('bookings') },
-    { key: 'st-accepted', label: 'গৃহীত', icon: CIc.checkCircle(24), tint: 'teal', stat: toBn(acceptedBookings), onClick: () => setView('bookings') },
-    { key: 'st-done', label: 'সম্পন্ন', icon: CIc.check(24), tint: 'emerald', stat: toBn(completedBookings), onClick: () => setView('bookings') },
-    { key: 'st-spent', label: 'মোট খরচ', icon: CIc.wallet(24), tint: 'coral', stat: taka(totalSpent), onClick: () => setView('bookings') },
+    { key: 'st-bookings', label: 'বুকিং', icon: CIc.calendar(24), tint: 'sky', stat: toBn(totalBookings), onClick: () => setView('bookings') },
+    { key: 'st-accepted', label: 'গৃহীত', icon: CIc.checkCircle(24), tint: 'sea', stat: toBn(acceptedBookings), onClick: () => setView('bookings') },
+    { key: 'st-done', label: 'সম্পন্ন', icon: CIc.check(24), tint: 'hill', stat: toBn(completedBookings), onClick: () => setView('bookings') },
+    { key: 'st-spent', label: 'মোট খরচ', icon: CIc.wallet(24), tint: 'mist', stat: taka(totalSpent), onClick: () => setView('bookings') },
   ];
 
   const menuItems: CircleItem[] = [
-    { key: 'bookings', label: 'আমার বুকিং', icon: CIc.calendar(), tint: 'gold', badge: bookings.length, onClick: () => setView('bookings') },
-    { key: 'favorites', label: 'প্রিয়', icon: CIc.heart(), tint: 'crimson', badge: favoritePhotographers.length, onClick: () => setView('favorites') },
-    { key: 'reviews', label: 'রিভিউ', icon: CIc.star(), tint: 'berry', badge: myReviews.length, onClick: () => setView('reviews') },
-    { key: 'notifications', label: 'নোটিফিকেশন', icon: CIc.bell(), tint: 'teal', badge: unreadNotifs, onClick: () => setView('notifications') },
-    { key: 'profile', label: 'প্রোফাইল এডিট', icon: CIc.user(), tint: 'coral', onClick: () => setView('profile') },
+    { key: 'bookings', label: 'আমার বুকিং', icon: CIc.calendar(), tint: 'sky', badge: bookings.length, onClick: () => setView('bookings') },
+    { key: 'favorites', label: 'প্রিয়', icon: CIc.heart(), tint: 'sea', badge: favoritePhotographers.length, onClick: () => setView('favorites') },
+    { key: 'reviews', label: 'রিভিউ', icon: CIc.star(), tint: 'hill', badge: myReviews.length, onClick: () => setView('reviews') },
+    { key: 'notifications', label: 'নোটিফিকেশন', icon: CIc.bell(), tint: 'mist', badge: unreadNotifs, onClick: () => setView('notifications') },
+    { key: 'profile', label: 'প্রোফাইল এডিট', icon: CIc.user(), tint: 'sky', onClick: () => setView('profile') },
     ...(profile.role === 'customer'
-      ? [{ key: 'migration', label: 'ফটোগ্রাফার হোন', icon: CIc.migration(), tint: 'gold' as const, onClick: () => setView('profile') }]
+      ? [{ key: 'migration', label: 'ফটোগ্রাফার হোন', icon: CIc.migration(), tint: 'sea' as const, onClick: () => setView('profile') }]
       : []),
     ...(profile.role === 'photographer'
       ? [
-          { key: 'studio', label: 'মাই স্টুডিও', icon: CIc.studio(), tint: 'teal' as const, onClick: () => navigate('/studio') },
-          { key: 'kyc', label: 'KYC', icon: CIc.shield(), tint: 'crimson' as const, onClick: () => setView('kyc') },
+          { key: 'studio', label: 'মাই স্টুডিও', icon: CIc.studio(), tint: 'mist' as const, onClick: () => navigate('/studio') },
+          { key: 'kyc', label: 'KYC', icon: CIc.shield(), tint: 'hill' as const, onClick: () => setView('kyc') },
         ]
       : []),
   ];
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-28 pb-24">
+    <div className="dash-coastal min-h-screen">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-28 pb-24">
       {view === 'home' ? (
         <>
           {/* ── হেডার: বৃত্তাকার ছবি + শুভেচ্ছা ── */}
@@ -578,7 +579,7 @@ export default function CustomerDash() {
             <p className="text-sm text-white/55 mt-1">
               {profile.email}
             </p>
-            <span className="mt-2 rounded-full bg-sunset-gold/15 px-3 py-1 text-xs font-bold text-sunset-gold ring-1 ring-sunset-gold/30">
+            <span className="mt-2 rounded-full bg-sky-400/15 px-3 py-1 text-xs font-bold text-sky-300 ring-1 ring-sky-300/30">
               {profile.role === 'photographer' ? 'ফটোগ্রাফার' : 'সাধারণ সদস্য'}
             </span>
           </header>
@@ -640,6 +641,7 @@ export default function CustomerDash() {
           )}
         </DetailShell>
       )}
+      </div>
     </div>
   );
 }

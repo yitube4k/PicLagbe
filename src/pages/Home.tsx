@@ -257,10 +257,6 @@ export default function Home() {
         {/* Hero Content */}
         <div className="max-w-7xl mx-auto px-6 relative z-10 w-full text-center">
           <Reveal>
-            <span className="chip mb-6 inline-flex">
-              🌊 কক্সবাজার — বিশ্বের দীর্ঘতম প্রাকৃতিক সমুদ্র সৈকত
-            </span>
-
             <h1 className="text-[clamp(2.6rem,6vw,4.6rem)] font-extrabold leading-[1.1] text-white tracking-tight">
               <span className="block">কক্সবাজারের প্রিমিয়াম</span>
               <span className="block grad-text py-1">ফটোগ্রাফার খুঁজুন</span>

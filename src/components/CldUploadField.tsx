@@ -14,6 +14,9 @@ interface CldUploadFieldProps {
   onUploaded?: (resourceType: 'image' | 'video') => void;
   /** Show a small preview thumbnail (images only) */
   preview?: boolean;
+  /** V24 — ফাইল সাইজ গার্ড (MB); null/undefined হলে চেক হয় না */
+  maxImageMb?: number;
+  maxVideoMb?: number;
 }
 
 /**
@@ -30,6 +33,8 @@ export default function CldUploadField({
   placeholder = 'https://…',
   onUploaded,
   preview = true,
+  maxImageMb,
+  maxVideoMb,
 }: CldUploadFieldProps) {
   const fileRef = useRef<HTMLInputElement | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -43,6 +48,15 @@ export default function CldUploadField({
 
   const handleFile = (file: File, withFolder = true) => {
     setErr(null);
+
+    /* V24 — সাইজ গার্ড (আপলোড শুরুর আগেই) */
+    const isVideo0 = file.type.startsWith('video/');
+    const maxMb = isVideo0 ? maxVideoMb : maxImageMb;
+    if (maxMb && file.size > maxMb * 1024 * 1024) {
+      setErr(`ফাইল খুব বড় — সর্বোচ্চ ${maxMb}MB দেওয়া যায় (এই ফাইল ${(file.size / 1048576).toFixed(1)}MB)`);
+      return;
+    }
+
     setUploading(true);
     setPct(0);
 

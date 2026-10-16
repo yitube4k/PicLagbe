@@ -24,6 +24,7 @@ export type AuditEntity =
   | 'role_request'
   | 'chat'
   | 'package'
+  | 'gallery'
   | 'system';
 
 export interface AuditDetails {
@@ -111,6 +112,7 @@ export const ENTITY_BN: Record<string, string> = {
   role_request: 'রোল রিকোয়েস্ট',
   chat: 'চ্যাট',
   package: 'প্যাকেজ',
+  gallery: 'ফটো গ্যালারি',
   system: 'সিস্টেম',
 };
 
