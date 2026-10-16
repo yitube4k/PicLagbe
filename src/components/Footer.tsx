@@ -181,6 +181,17 @@ export default function Footer() {
                   <circle cx="12" cy="10" r="3" />
                 </svg>
               </Link>
+
+              <Link
+                to="/admin"
+                aria-label="অ্যাডমিন প্যানেল"
+                title="অ্যাডমিন প্যানেল"
+                className="w-8 h-8 glass !rounded-lg flex items-center justify-center text-white/40 hover:text-sunset-gold hover:border-sunset-gold/40 transition"
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                </svg>
+              </Link>
             </div>
           </div>
         </div>

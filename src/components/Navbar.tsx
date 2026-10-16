@@ -103,6 +103,20 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Google-স্টাইল শর্টকাট: "/" চাপলেই সার্চ খুলবে (ইনপুটে টাইপ করা অবস্থায় নয়)
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      const typing = !!t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable);
+      if (e.key === '/' && !typing) {
+        e.preventDefault();
+        setSearchOpen(true);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
   useEffect(() => {
     setDrawerOpen(false);
     setMenuOpen(false);
@@ -259,7 +273,8 @@ export default function Navbar() {
             ))}
           </nav>
 
-          {/* ═══ ALWAYS-ON SEARCH (desktop pill + mobile icon) ═══ */}
+          {/* ═══ RIGHT CLUSTER — সার্চ (অপশন মেনুর কাচাকাচি) + চ্যাট + অ্যাভাটার + হ্যামবার্গার ═══ */}
+          <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
           <div ref={searchWrapRef} className="nav-search-wrap">
             {/* Desktop trigger */}
             <button
@@ -308,7 +323,6 @@ export default function Navbar() {
                   ফটোগ্রাফার খুঁজুন
                 </p>
                 <SearchPanel
-                  variant="dropdown"
                   autoFocus
                   onDone={() => setSearchOpen(false)}
                 />
@@ -316,8 +330,8 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* Right Desktop Auth / User Action */}
-          <div className="hidden lg:flex items-center gap-3">
+          {/* চ্যাট + অ্যাভাটার অপশন মেনু — সার্চের ঠিক পাশেই */}
+          <div className="hidden lg:flex items-center gap-2">
             {!session ? (
               <>
                 <Link
@@ -450,6 +464,7 @@ export default function Navbar() {
               />
             </div>
           </button>
+          </div>{/* /right-cluster */}
         </div>
       </header>
 

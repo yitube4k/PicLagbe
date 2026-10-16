@@ -8,7 +8,6 @@ import { SPOT_PHOTOS, HERO_SLIDE_KEYS } from '../lib/spotPhotos';
 import { SPOT_GUIDES, spotCostSummary } from '../lib/spotGuides';
 import { cldUrl } from '../lib/cloudinary';
 import Reveal from '../components/Reveal';
-import SearchPanel from '../components/SearchPanel';
 import PhotographerCard from '../components/PhotographerCard';
 
 const SPOT_KIND_EMOJI: Record<string, string> = {
@@ -253,11 +252,16 @@ export default function Home() {
             <p className="text-white/70 max-w-2xl mx-auto mt-5 text-lg leading-relaxed">
               লাবণী থেকে সেন্ট মার্টিন — ভেরিফায়েড ফটোগ্রাফার, স্বচ্ছ বাজেট, রিয়েল রিভিউ। প্রি-ওয়েডিং, বিয়ে, ফ্যামিলি বা ট্রাভেল শুট — ফটোলাগবে-ই যথেষ্ট।
             </p>
-          </Reveal>
 
-          {/* Search Bar — প্রিমিয়াম শেয়ার্ড সার্চ প্যানেল */}
-          <Reveal delay={100}>
-            <SearchPanel variant="hero" />
+            {/* সার্চ এখন হেডারে (অপশন মেনুর পাশে) — হোমপেজে বড় ফর্ম নেই */}
+            <div className="flex flex-wrap items-center justify-center gap-4 mt-8">
+              <Link to="/photographers" className="btn-primary px-8">
+                ফটোগ্রাফার খুঁজুন
+              </Link>
+              <Link to="/finder" className="btn-ghost px-8">
+                ম্যাপে দেখুন
+              </Link>
+            </div>
           </Reveal>
         </div>
       </section>

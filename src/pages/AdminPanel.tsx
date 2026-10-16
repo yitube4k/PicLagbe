@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
 import { toBn } from '../lib/utils';
@@ -9,7 +9,6 @@ import AdminPhotographers from '../components/admin/AdminPhotographers';
 import AdminPosts from '../components/admin/AdminPosts';
 import { AdminBlog, AdminCategories, AdminReviews } from '../components/admin/AdminContent';
 import { AdminBookings, AdminKyc, AdminChats } from '../components/admin/AdminOps';
-import { EmptyState } from '../components/admin/kit';
 
 type AdminSection =
   | 'overview'
@@ -107,8 +106,50 @@ export default function AdminPanel() {
 
   if (!session || profile?.role !== 'admin') {
     return (
-      <div className="min-h-screen max-w-lg mx-auto px-6 pt-36 pb-20">
-        <EmptyState icon="🔒" title="শুধু অ্যাডমিনের জন্য" sub="এই প্যানেলে প্রবেশ করার অনুমতি আপনার নেই।" />
+      <div className="min-h-screen max-w-xl mx-auto px-6 pt-36 pb-20">
+        <div className="glass-card !rounded-xl3 p-8 text-center space-y-5">
+          <div className="w-16 h-16 mx-auto rounded-2xl glass flex items-center justify-center text-3xl">🔒</div>
+          <div>
+            <h2 className="text-xl font-extrabold text-white">শুধু অ্যাডমিনের জন্য</h2>
+            <p className="text-sm text-white/55 mt-2 leading-relaxed">
+              {session
+                ? <>আপনি লগইন করেছেন: <span className="text-white/85 font-semibold">{profile?.email || session.user?.email || '—'}</span><br />কিন্তু এই অ্যাকাউন্টে অ্যাডমিন অনুমতি (role) নেই।</>
+                : 'প্রথমে অ্যাডমিন অ্যাকাউন্ট দিয়ে লগইন করুন।'}
+            </p>
+          </div>
+
+          {!session && (
+            <Link to="/auth?mode=login" className="btn-primary w-full justify-center">
+              লগইন করুন
+            </Link>
+          )}
+
+          {session && (
+            <div className="text-left bg-black/30 border border-white/[0.08] rounded-xl2 p-4 space-y-3">
+              <p className="text-xs font-bold uppercase tracking-[0.14em] text-sunset-gold">
+                অ্যাডমিন বানানোর নিয়ম (একবারই করতে হয়)
+              </p>
+              <ol className="text-[13px] text-white/70 space-y-2 list-decimal list-inside leading-relaxed">
+                <li>Supabase Dashboard খুলুন → আপনার প্রজেক্ট → <span className="text-white/90 font-semibold">SQL Editor</span></li>
+                <li>নিচের SQL রান করুন (আপনার ইমেইল বসিয়ে):</li>
+              </ol>
+              <pre className="text-[11px] leading-relaxed bg-twilight-950/80 border border-white/[0.08] rounded-lg p-3 overflow-x-auto text-emerald-300 whitespace-pre">{`update public.profiles
+   set role = 'admin'
+ where email = 'আপনার-ইমেইল@gmail.com';`}</pre>
+              <ol className="text-[13px] text-white/70 space-y-2 list-decimal list-inside leading-relaxed" start={3}>
+                <li>এই পেজ <span className="text-white/90 font-semibold">Reload</span> দিন — তারপর হেডারে অ্যাভাটারে ক্লিক করলে <span className="text-sunset-gold font-semibold">🛡️ অ্যাডমিন প্যানেল</span> মেনু দেখাবে, অথবা সরাসরি <span className="text-white/90 font-semibold">/admin</span> ঠিকানায় যান।</li>
+              </ol>
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="btn-ghost w-full justify-center"
+          >
+            ↻ Reload করুন
+          </button>
+        </div>
       </div>
     );
   }
