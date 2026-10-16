@@ -30,9 +30,10 @@ npm run dev
 ## ☁️ Deploy (Cloudflare Pages)
 ```bash
 npm run build   # dist/ তৈরি হবে
-npx wrangler pages deploy dist --project-name=photolagbe
+cp dist/index.html dist/404.html   # Cloudflare SPA fallback (repo-র 404.html শুধু GitHub-Pages redirect)
+CLOUDFLARE_API_TOKEN=... CLOUDFLARE_ACCOUNT_ID=... npx wrangler pages deploy dist --project-name=photolagbe --branch=main
 ```
-Build config: build command `npm run build`, output `dist`। SPA fallback `public/_redirects` এ আছে।
+Build config: build command `npm run build`, output `dist`। Live: **https://photolagbe.pages.dev**
 
 ## 🔐 Admin
 প্রথম signup: `yitube4k@gmail.com` দিয়ে করলে trigger স্বয়ংক্রিয়ভাবে admin role দেবে (`handle_new_user` ফাংশনে তালিকাভুক্ত)।
