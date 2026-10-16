@@ -523,6 +523,15 @@ export default function StudioDash() {
     }
   };
 
+  /* প্রোফাইল স্ট্যাটাস ব্যাজ (photographers.profile_status: pending/approved/rejected) */
+  const getProfileBadge = (status: string) => {
+    if (status === 'approved')
+      return <span className="badge badge-verified bg-emerald-500/20 text-emerald-300">অনুমোদিত</span>;
+    if (status === 'rejected')
+      return <span className="bdg-rejected">প্রত্যাখ্যাত</span>;
+    return <span className="bdg-pending">অপেক্ষমাণ</span>;
+  };
+
   const getInitials = (name?: string | null) => {
     if (!name || !name.trim()) return 'ফ';
     const parts = name.trim().split(/\s+/);
@@ -600,7 +609,7 @@ export default function StudioDash() {
             </div>
           </div>
 
-          <div>{getStatusBadge(photographer.profile_status || 'pending')}</div>
+          <div>{getProfileBadge(photographer.profile_status || 'pending')}</div>
         </div>
       </div>
 
