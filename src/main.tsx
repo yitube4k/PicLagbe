@@ -1,3 +1,4 @@
+import './lib/authBridge' // V32: must run FIRST — bounces auth landings back to photolagbe.pages.dev
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App'
