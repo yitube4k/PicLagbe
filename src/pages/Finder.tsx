@@ -10,8 +10,9 @@ import "leaflet/dist/leaflet.css";
 import { supabase } from "../lib/supabase";
 import { Photographer } from "../lib/types";
 import { toBn } from "../lib/utils";
-import { COX_SPOTS } from "../lib/constants";
+import { COX_SPOTS, Spot } from "../lib/constants";
 import { openApp } from "../lib/base";
+import SpotFullscreen from "../components/SpotFullscreen";
 
 const SPOT_KIND_EMOJI: Record<string, string> = {
   beach: "🏖️",
@@ -71,6 +72,7 @@ export default function Finder() {
   >("idle");
   const [photographers, setPhotographers] = useState<Photographer[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fullscreenSpot, setFullscreenSpot] = useState<Spot | null>(null);
 
   const mapElRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
@@ -148,15 +150,10 @@ export default function Finder() {
     );
   }, [filteredSpots, spotCounts, userLoc]);
 
-  // Currently selected spot object
-  const activeSpot = useMemo(() => {
-    if (!selectedSpotKey) return null;
-    return COX_SPOTS.find((s) => s.key === selectedSpotKey) || null;
-  }, [selectedSpotKey]);
-
-  // Select spot and fly to coordinates
+  // Select spot → fullscreen spot view + fly inline map
   const selectSpot = useCallback((s: (typeof COX_SPOTS)[number]) => {
     setSelectedSpotKey(s.key);
+    setFullscreenSpot(s);
     const map = mapInstanceRef.current;
     if (map) {
       map.flyTo([s.lat, s.lng], 13, { duration: 0.7 });
@@ -355,7 +352,7 @@ export default function Finder() {
       // Hover tooltip: spot name + live photographer count + distance + direction hint
       const d = userDistTo(s.lat, s.lng);
       marker.bindTooltip(
-        `<b>${s.nameBn}</b> · ${count > 0 ? toBn(count) + " জন ফটোগ্রাফার" : "খালি"}${d !== null ? ` · ~${toBn(d.toFixed(1))} কিমি` : ""}<br/><span style="color:#8fd3ff">ক্লিক করুন → স্পট প্যানেল ও ডিরেকশন</span>`,
+        `<b>${s.nameBn}</b> · ${count > 0 ? toBn(count) + " জন ফটোগ্রাফার" : "খালি"}${d !== null ? ` · ~${toBn(d.toFixed(1))} কিমি` : ""}<br/><span style="color:#8fd3ff">ক্লিক করুন → ফুল-স্ক্রিন স্পট ভিউ</span>`,
         {
           direction: "top",
           offset: [0, -16],
@@ -632,168 +629,27 @@ export default function Finder() {
               ফটোগ্রাফার
             </p>
           </div>
-
-          {/* ══ PREMIUM IN-MAP SPOT PANEL ══ */}
-          {activeSpot && (
-            <div
-              className="absolute z-[600] inset-x-2 bottom-2 rounded-2xl max-h-[62vh] lg:inset-x-auto lg:top-4 lg:bottom-4 lg:right-4 lg:w-[360px] lg:max-h-none lg:rounded-2xl bg-[#06070d]/92 backdrop-blur-xl border border-sunset-gold/25 shadow-glass-lg flex flex-col overflow-hidden"
-              style={{ animation: "spotPanelIn 0.22s ease-out" }}
-            >
-              {/* Thin gold top line */}
-              <div className="h-[2px] w-full bg-gradient-to-r from-transparent via-sunset-gold to-transparent shrink-0" />
-
-              {/* Scrollable Container */}
-              <div className="p-4 sm:p-5 overflow-y-auto flex-1 space-y-4">
-                {/* a. Header Row */}
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <span
-                      aria-hidden="true"
-                      className="bg-sunset-soft w-11 h-11 rounded-xl2 grid place-items-center text-xl shrink-0"
-                    >
-                      {SPOT_KIND_EMOJI[activeSpot.kind] || "📍"}
-                    </span>
-                    <div className="min-w-0">
-                      <h4 className="text-white font-bold text-base truncate">
-                        {activeSpot.nameBn}
-                      </h4>
-                      <p className="text-xs text-white/50 truncate">
-                        {activeSpot.nameEn}
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedSpotKey(null)}
-                    aria-label="প্যানেল বন্ধ করুন"
-                    className="w-9 h-9 rounded-full border border-white/10 bg-white/[0.06] text-white/70 hover:text-white hover:bg-white/10 grid place-items-center shrink-0 transition-colors"
-                  >
-                    ✕
-                  </button>
-                </div>
-
-                {/* b. Kind badge row */}
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="badge bg-sunset-soft text-sunset-gold border-sunset-gold/30">
-                    {SPOT_KIND_BN[activeSpot.kind] || activeSpot.kind}
-                  </span>
-                  {userDistTo(activeSpot.lat, activeSpot.lng) !== null && (
-                    <span className="badge bg-sunset-soft text-sunset-gold border-sunset-gold/30">
-                      📏 ~
-                      {toBn(
-                        userDistTo(activeSpot.lat, activeSpot.lng)!.toFixed(1),
-                      )}{" "}
-                      কিমি
-                    </span>
-                  )}
-                </div>
-
-                {/* c. descBn paragraph */}
-                {activeSpot.descBn && (
-                  <p className="text-[13px] text-white/70 leading-relaxed">
-                    {activeSpot.descBn}
-                  </p>
-                )}
-
-                {/* d. Photographer count line */}
-                <div className="flex items-center gap-2 text-xs">
-                  {(spotCounts[activeSpot.key] || 0) > 0 ? (
-                    <>
-                      <span className="w-2 h-2 rounded-full bg-sunset-gold shrink-0 animate-pulse" />
-                      <span className="text-white/85 font-medium">
-                        {toBn(spotCounts[activeSpot.key] || 0)} জন ফটোগ্রাফার
-                        এখানে কাজ করেন
-                      </span>
-                    </>
-                  ) : (
-                    <span className="text-white/45">
-                      এখনো কোনো ফটোগ্রাফার নেই — গাইড দেখে নিন
-                    </span>
-                  )}
-                </div>
-
-                {/* e. Photographer mini-cards */}
-                {(photographersBySpot[activeSpot.key] || []).length > 0 && (
-                  <div className="space-y-1.5 pt-1">
-                    {(photographersBySpot[activeSpot.key] || []).map((p) => {
-                      const pid = p.id || p.slug;
-                      return (
-                        <button
-                          key={p.id}
-                          type="button"
-                          onClick={() => {
-                            if (pid) openApp(`/photographer/${pid}`);
-                          }}
-                          className="w-full text-left hover:bg-white/[0.05] rounded-xl p-2 transition flex items-center gap-3 group"
-                        >
-                          {p.profile_photo_url ? (
-                            <img
-                              src={p.profile_photo_url}
-                              alt={p.display_name || "ফটোগ্রাফার"}
-                              className="w-10 h-10 rounded-full object-cover shrink-0 border border-sunset-gold/30"
-                            />
-                          ) : (
-                            <div className="w-10 h-10 rounded-full bg-sunset-soft text-sunset-gold font-bold grid place-items-center shrink-0 border border-sunset-gold/30 text-sm">
-                              {(p.display_name || "ফ").charAt(0)}
-                            </div>
-                          )}
-
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-white text-sm font-semibold truncate group-hover:text-sunset-gold transition-colors">
-                                {p.display_name || "ফটোগ্রাফার"}
-                              </span>
-                              {(p as any).verified && (
-                                <span
-                                  className="text-emerald-400 text-xs shrink-0"
-                                  title="ভেরিফাইড"
-                                >
-                                  ✓
-                                </span>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-1.5 text-xs text-white/50 mt-0.5">
-                              <span className="text-sunset-gold font-medium">
-                                ★ {Number(p.rating_avg || 0).toFixed(1)}
-                              </span>
-                              <span>({toBn(p.rating_count || 0)} রিভিউ)</span>
-                            </div>
-                          </div>
-
-                          <span className="text-white/30 group-hover:text-white/80 group-hover:translate-x-0.5 transition-all text-sm shrink-0">
-                            ›
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-
-                {/* f. Divider and ACTION BUTTONS */}
-                <div className="pt-2 border-t border-white/10 space-y-2">
-                  <button
-                    type="button"
-                    onClick={() => openApp(`/spot/${activeSpot.key}`)}
-                    className="bg-sunset-gradient text-[#1A0E06] rounded-xl py-2.5 font-bold w-full text-center hover:opacity-95 transition-opacity"
-                  >
-                    স্পট গাইড ও ফটোগ্রাফার
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      openDirections(activeSpot.lat, activeSpot.lng, userLoc)
-                    }
-                    className="glass border-white/15 text-white rounded-xl py-2.5 font-semibold w-full text-center hover:border-sunset-gold/40 hover:bg-white/[0.07] transition-colors"
-                  >
-                    🗺️ গুগল ম্যাপে ডিরেকশন
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       </div>
+
+      {/* ══ ফুল-স্ক্রিন স্পট ভিউ — স্পট ক্লিকে খোলে ══ */}
+      {fullscreenSpot && (
+        <SpotFullscreen
+          spot={fullscreenSpot}
+          spots={COX_SPOTS}
+          photographers={photographers}
+          userLoc={userLoc}
+          onClose={() => setFullscreenSpot(null)}
+          onSelectSpot={(s) => {
+            setSelectedSpotKey(s.key);
+            setFullscreenSpot(s);
+            const map = mapInstanceRef.current;
+            if (map) {
+              map.flyTo([s.lat, s.lng], 13, { duration: 0.7 });
+            }
+          }}
+        />
+      )}
     </div>
   );
 }
