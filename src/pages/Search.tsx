@@ -1,12 +1,12 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
-import { Photographer } from '../lib/types';
-import { toBn } from '../lib/utils';
-import { useJsonLd } from '../lib/seo';
-import { COX_SPOTS, SPOT_BY_KEY } from '../lib/constants';
-import Reveal from '../components/Reveal';
-import PhotographerCard from '../components/PhotographerCard';
+import React, { useState, useEffect, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
+import { supabase } from "../lib/supabase";
+import { Photographer } from "../lib/types";
+import { toBn } from "../lib/utils";
+import { useJsonLd } from "../lib/seo";
+import { COX_SPOTS, SPOT_BY_KEY } from "../lib/constants";
+import Reveal from "../components/Reveal";
+import PhotographerCard from "../components/PhotographerCard";
 
 interface CategoryItem {
   id: string;
@@ -16,20 +16,30 @@ interface CategoryItem {
 }
 
 const STATIC_CATEGORIES = [
-  { slug: 'wedding', label: 'বিয়ের ফটোগ্রাফি' },
-  { slug: 'pre-wedding', label: 'প্রি-ওয়েডিং' },
-  { slug: 'birthday', label: 'জন্মদিন' },
-  { slug: 'event', label: 'ইভেন্ট' },
-  { slug: 'portrait', label: 'পোর্ট্রেট' },
-  { slug: 'fashion', label: 'ফ্যাশন' },
-  { slug: 'product', label: 'প্রোডাক্ট' },
-  { slug: 'travel', label: 'ট্রাভেল' },
-  { slug: 'corporate', label: 'কর্পোরেট' },
-  { slug: 'videography', label: 'ভিডিওগ্রাফি' },
+  { slug: "wedding", label: "বিয়ের ফটোগ্রাফি" },
+  { slug: "pre-wedding", label: "প্রি-ওয়েডিং" },
+  { slug: "birthday", label: "জন্মদিন" },
+  { slug: "event", label: "ইভেন্ট" },
+  { slug: "portrait", label: "পোর্ট্রেট" },
+  { slug: "fashion", label: "ফ্যাশন" },
+  { slug: "product", label: "প্রোডাক্ট" },
+  { slug: "travel", label: "ট্রাভেল" },
+  { slug: "corporate", label: "কর্পোরেট" },
+  { slug: "videography", label: "ভিডিওগ্রাফি" },
 ];
 
 const SlidersIcon = ({ size = 17 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.1"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
     <line x1="4" y1="21" x2="4" y2="14" />
     <line x1="4" y1="10" x2="4" y2="3" />
     <line x1="12" y1="21" x2="12" y2="12" />
@@ -47,7 +57,15 @@ const BUDGET_MIN = 0;
 const BUDGET_MAX = 30000;
 const BUDGET_STEP = 500;
 
-function BudgetSlider({ minP, maxP, onChange }: { minP: string; maxP: string; onChange: (min: string, max: string) => void }) {
+function BudgetSlider({
+  minP,
+  maxP,
+  onChange,
+}: {
+  minP: string;
+  maxP: string;
+  onChange: (min: string, max: string) => void;
+}) {
   const lo = minP ? Math.min(Number(minP), BUDGET_MAX) : BUDGET_MIN;
   const hi = maxP ? Math.min(Number(maxP), BUDGET_MAX) : BUDGET_MAX;
   const pctLo = ((lo - BUDGET_MIN) / (BUDGET_MAX - BUDGET_MIN)) * 100;
@@ -57,11 +75,13 @@ function BudgetSlider({ minP, maxP, onChange }: { minP: string; maxP: string; on
     <div>
       <div className="flex items-baseline justify-between mb-2">
         <span className="text-[12.5px] font-bold text-white/85 tabular-nums">
-          ৳{lo.toLocaleString('en-IN')}
+          ৳{lo.toLocaleString("en-IN")}
         </span>
-        <span className="text-[11.5px] text-white/45">আপনার বাজেট স্লাইড করুন</span>
+        <span className="text-[11.5px] text-white/45">
+          আপনার বাজেট স্লাইড করুন
+        </span>
         <span className="text-[12.5px] font-bold text-sunset-gold tabular-nums">
-          {hi >= BUDGET_MAX ? '৳৩০,০০০+' : `৳${hi.toLocaleString('en-IN')}`}
+          {hi >= BUDGET_MAX ? "৳৩০,০০০+" : `৳${hi.toLocaleString("en-IN")}`}
         </span>
       </div>
       <div className="budget-range relative h-7 select-none">
@@ -78,7 +98,7 @@ function BudgetSlider({ minP, maxP, onChange }: { minP: string; maxP: string; on
           value={lo}
           onChange={(e) => {
             const v = Math.min(Number(e.target.value), hi - BUDGET_STEP);
-            onChange(v <= BUDGET_MIN ? '' : String(v), maxP);
+            onChange(v <= BUDGET_MIN ? "" : String(v), maxP);
           }}
           aria-label="সর্বনিম্ন বাজেট"
           className="budget-thumb"
@@ -91,7 +111,7 @@ function BudgetSlider({ minP, maxP, onChange }: { minP: string; maxP: string; on
           value={hi}
           onChange={(e) => {
             const v = Math.max(Number(e.target.value), lo + BUDGET_STEP);
-            onChange(minP, v >= BUDGET_MAX ? '' : String(v));
+            onChange(minP, v >= BUDGET_MAX ? "" : String(v));
           }}
           aria-label="সর্বোচ্চ বাজেট"
           className="budget-thumb"
@@ -99,16 +119,16 @@ function BudgetSlider({ minP, maxP, onChange }: { minP: string; maxP: string; on
       </div>
       <div className="flex flex-wrap gap-1.5 mt-2">
         {[
-          { label: '≤ ২,৫০০', min: '', max: '2500' },
-          { label: '≤ ৫,০০০', min: '', max: '5000' },
-          { label: '৫–১০ হাজার', min: '5000', max: '10000' },
-          { label: '১০ হাজার+', min: '10000', max: '' },
+          { label: "≤ ২,৫০০", min: "", max: "2500" },
+          { label: "≤ ৫,০০০", min: "", max: "5000" },
+          { label: "৫–১০ হাজার", min: "5000", max: "10000" },
+          { label: "১০ হাজার+", min: "10000", max: "" },
         ].map((chip) => (
           <button
             key={chip.label}
             type="button"
             onClick={() => onChange(chip.min, chip.max)}
-            className={`chip !py-1 !px-2.5 !text-[11.5px] ${minP === chip.min && maxP === chip.max ? 'chip-active' : ''}`}
+            className={`chip !py-1 !px-2.5 !text-[11.5px] ${minP === chip.min && maxP === chip.max ? "chip-active" : ""}`}
           >
             {chip.label}
           </button>
@@ -122,13 +142,13 @@ export default function Search() {
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Filter states
-  const [q, setQ] = useState(searchParams.get('q') || '');
-  const [spot, setSpot] = useState(searchParams.get('spot') || '');
-  const [cat, setCat] = useState(searchParams.get('cat') || '');
-  const [minP, setMinP] = useState(searchParams.get('minP') || '');
-  const [maxP, setMaxP] = useState(searchParams.get('maxP') || '');
-  const [minR, setMinR] = useState(Number(searchParams.get('minR') || 0));
-  const [sort, setSort] = useState(searchParams.get('sort') || 'rating');
+  const [q, setQ] = useState(searchParams.get("q") || "");
+  const [spot, setSpot] = useState(searchParams.get("spot") || "");
+  const [cat, setCat] = useState(searchParams.get("cat") || "");
+  const [minP, setMinP] = useState(searchParams.get("minP") || "");
+  const [maxP, setMaxP] = useState(searchParams.get("maxP") || "");
+  const [minR, setMinR] = useState(Number(searchParams.get("minR") || 0));
+  const [sort, setSort] = useState(searchParams.get("sort") || "rating");
 
   const [categories, setCategories] = useState<CategoryItem[]>([]);
   const [photographers, setPhotographers] = useState<Photographer[]>([]);
@@ -136,22 +156,28 @@ export default function Search() {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const filterRef = useRef<HTMLDivElement | null>(null);
 
+  /* V36 — স্পট-ভিত্তিক ফটোগ্রাফার সংখ্যা (চিপ ব্যাজ) */
+  const [spotCounts, setSpotCounts] = useState<Record<string, number>>({});
+
   /* V30 — ডিরেক্টরি ItemList JSON-LD: Google-এ "cox bazar photographer" সার্চে তালিকা বুঝতে পারে */
-  useJsonLd('photographers-directory', (() => {
-    if (loading || photographers.length === 0) return null;
-    return {
-      '@context': 'https://schema.org',
-      '@type': 'ItemList',
-      name: 'কক্সবাজারের ভেরিফায়েড ফটোগ্রাফার',
-      numberOfItems: photographers.length,
-      itemListElement: photographers.slice(0, 20).map((p, i) => ({
-        '@type': 'ListItem',
-        position: i + 1,
-        name: p.display_name,
-        url: `https://photolagbe.pages.dev/photographer/${p.slug || p.id}`,
-      })),
-    };
-  })());
+  useJsonLd(
+    "photographers-directory",
+    (() => {
+      if (loading || photographers.length === 0) return null;
+      return {
+        "@context": "https://schema.org",
+        "@type": "ItemList",
+        name: "কক্সবাজারের ভেরিফায়েড ফটোগ্রাফার",
+        numberOfItems: photographers.length,
+        itemListElement: photographers.slice(0, 20).map((p, i) => ({
+          "@type": "ListItem",
+          position: i + 1,
+          name: p.display_name,
+          url: `https://photolagbe.pages.dev/photographer/${p.slug || p.id}`,
+        })),
+      };
+    })(),
+  );
 
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -159,13 +185,37 @@ export default function Search() {
   useEffect(() => {
     let active = true;
     async function loadCategories() {
-      const { data, error } = await supabase.from('categories').select('*');
+      const { data, error } = await supabase.from("categories").select("*");
       if (!active) return;
       if (!error && data) {
         setCategories(data as CategoryItem[]);
       }
     }
     loadCategories();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  // V36 — স্পট ব্যাজের জন্য হালকা কাউন্ট কোয়েরি (আলাদা, ফিল্টার ছাড়া)
+  useEffect(() => {
+    let active = true;
+    async function loadSpotCounts() {
+      const { data, error } = await supabase
+        .from("photographers")
+        .select("id, home_spot")
+        .eq("profile_status", "approved");
+      if (!active) return;
+      if (!error && data) {
+        const counts: Record<string, number> = {};
+        (data as { id: string; home_spot: string | null }[]).forEach((item) => {
+          if (item.home_spot)
+            counts[item.home_spot] = (counts[item.home_spot] || 0) + 1;
+        });
+        setSpotCounts(counts);
+      }
+    }
+    loadSpotCounts();
     return () => {
       active = false;
     };
@@ -179,24 +229,24 @@ export default function Search() {
         setFiltersOpen(false);
       }
     };
-    document.addEventListener('mousedown', onDown);
-    document.addEventListener('touchstart', onDown, { passive: true });
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("touchstart", onDown, { passive: true });
     return () => {
-      document.removeEventListener('mousedown', onDown);
-      document.removeEventListener('touchstart', onDown);
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("touchstart", onDown);
     };
   }, [filtersOpen]);
 
   // Sync URL params whenever filters change
   useEffect(() => {
     const params = new URLSearchParams();
-    if (q.trim()) params.set('q', q.trim());
-    if (spot) params.set('spot', spot);
-    if (cat) params.set('cat', cat);
-    if (minP) params.set('minP', minP);
-    if (maxP) params.set('maxP', maxP);
-    if (minR > 0) params.set('minR', String(minR));
-    if (sort && sort !== 'rating') params.set('sort', sort);
+    if (q.trim()) params.set("q", q.trim());
+    if (spot) params.set("spot", spot);
+    if (cat) params.set("cat", cat);
+    if (minP) params.set("minP", minP);
+    if (maxP) params.set("maxP", maxP);
+    if (minR > 0) params.set("minR", String(minR));
+    if (sort && sort !== "rating") params.set("sort", sort);
 
     setSearchParams(params, { replace: true });
   }, [q, spot, cat, minP, maxP, minR, sort, setSearchParams]);
@@ -213,41 +263,54 @@ export default function Search() {
       setLoading(true);
       try {
         let query = supabase
-          .from('photographers')
-          .select('*, photographer_categories(category_id, categories(name, slug, icon))')
-          .eq('profile_status', 'approved');
+          .from("photographers")
+          .select(
+            "*, photographer_categories(category_id, categories(name, slug, icon))",
+          )
+          .eq("profile_status", "approved");
 
         if (q.trim()) {
-          query = query.or(`display_name.ilike.%${q.trim()}%,bio.ilike.%${q.trim()}%`);
+          query = query.or(
+            `display_name.ilike.%${q.trim()}%,bio.ilike.%${q.trim()}%`,
+          );
         }
 
         if (spot) {
-          query = query.eq('home_spot', spot);
+          query = query.eq("home_spot", spot);
         }
 
         if (minP) {
           const numMin = Number(minP);
-          if (!isNaN(numMin)) query = query.gte('starting_price', numMin);
+          if (!isNaN(numMin)) query = query.gte("starting_price", numMin);
         }
 
         if (maxP) {
           const numMax = Number(maxP);
-          if (!isNaN(numMax)) query = query.lte('starting_price', numMax);
+          if (!isNaN(numMax)) query = query.lte("starting_price", numMax);
         }
 
         if (minR > 0) {
-          query = query.gte('rating_avg', minR);
+          query = query.gte("rating_avg", minR);
         }
 
         // Sorting
-        if (sort === 'rating') {
-          query = query.order('rating_avg', { ascending: false, nullsFirst: false });
-        } else if (sort === 'price_asc') {
-          query = query.order('starting_price', { ascending: true, nullsFirst: false });
-        } else if (sort === 'price_desc') {
-          query = query.order('starting_price', { ascending: false, nullsFirst: false });
-        } else if (sort === 'new') {
-          query = query.order('created_at', { ascending: false });
+        if (sort === "rating") {
+          query = query.order("rating_avg", {
+            ascending: false,
+            nullsFirst: false,
+          });
+        } else if (sort === "price_asc") {
+          query = query.order("starting_price", {
+            ascending: true,
+            nullsFirst: false,
+          });
+        } else if (sort === "price_desc") {
+          query = query.order("starting_price", {
+            ascending: false,
+            nullsFirst: false,
+          });
+        } else if (sort === "new") {
+          query = query.order("created_at", { ascending: false });
         }
 
         query = query.limit(24);
@@ -257,7 +320,7 @@ export default function Search() {
         if (isCancelled) return;
 
         if (error) {
-          console.error('Error fetching filtered photographers:', error);
+          console.error("Error fetching filtered photographers:", error);
           setPhotographers([]);
         } else {
           let results = (data as Photographer[]) || [];
@@ -265,7 +328,9 @@ export default function Search() {
           // Client-side category filtering if relational join filter isn't fully isolating via eq on embedded resource
           if (cat) {
             results = results.filter((p) =>
-              p.photographer_categories?.some((pc) => pc.categories?.slug === cat)
+              p.photographer_categories?.some(
+                (pc) => pc.categories?.slug === cat,
+              ),
             );
           }
 
@@ -273,7 +338,7 @@ export default function Search() {
         }
       } catch (err) {
         if (!isCancelled) {
-          console.error('Search fetch error:', err);
+          console.error("Search fetch error:", err);
           setPhotographers([]);
         }
       } finally {
@@ -292,13 +357,13 @@ export default function Search() {
   }, [q, spot, cat, minP, maxP, minR, sort]);
 
   const handleResetFilters = () => {
-    setQ('');
-    setSpot('');
-    setCat('');
-    setMinP('');
-    setMaxP('');
+    setQ("");
+    setSpot("");
+    setCat("");
+    setMinP("");
+    setMaxP("");
     setMinR(0);
-    setSort('rating');
+    setSort("rating");
   };
 
   const categoryListToUse: { slug: string; label: string }[] =
@@ -306,18 +371,35 @@ export default function Search() {
       ? categories.map((c) => ({ slug: c.slug || c.id, label: c.name }))
       : STATIC_CATEGORIES;
 
-  const activeFilterCount = (spot ? 1 : 0) + (cat ? 1 : 0) + (minP ? 1 : 0) + (maxP ? 1 : 0) + (minR > 0 ? 1 : 0) + (sort !== 'rating' ? 1 : 0);
+  const activeFilterCount =
+    (spot ? 1 : 0) +
+    (cat ? 1 : 0) +
+    (minP ? 1 : 0) +
+    (maxP ? 1 : 0) +
+    (minR > 0 ? 1 : 0) +
+    (sort !== "rating" ? 1 : 0);
 
-  const catLabel = (slug: string) => categoryListToUse.find((c) => c.slug === slug)?.label || slug;
+  const catLabel = (slug: string) =>
+    categoryListToUse.find((c) => c.slug === slug)?.label || slug;
 
   return (
     <div className="min-h-screen max-w-7xl mx-auto px-4 sm:px-6 pt-24 pb-20">
-      {/* Page Header */}
-      <div className="mb-6 text-center">
-        <h2 className="section-head">ফটোগ্রাফার খুঁজুন</h2>
-        <p className="section-sub mt-1">
-          কক্সবাজারের ভেরিফায়েড প্রফেশনালদের ফিল্টার করুন
-        </p>
+      {/* ═══ হিরো ব্যান্ড (V36 — রেফারেন্স স্টাইল) ═══ */}
+      <div className="relative rounded-[24px] overflow-hidden mb-6 border border-white/[0.09]">
+        <div className="absolute inset-0 bg-gradient-to-br from-[#221607] via-[#120f1c] to-[#06070d]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_85%_20%,rgba(251,191,36,0.16),transparent_50%)] pointer-events-none" />
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-sunset-gold/70 to-transparent" />
+        <div className="relative z-10 px-5 sm:px-8 py-7 sm:py-9">
+          <p className="text-[12.5px] font-bold tracking-[0.22em] text-sunset-gold">
+            কক্সবাজার
+          </p>
+          <h1 className="mt-1.5 text-[26px] sm:text-4xl font-extrabold text-white leading-tight">
+            সেরা ফটোগ্রাফার খুঁজুন
+          </h1>
+          <p className="mt-2 text-[13.5px] sm:text-[15px] text-white/70">
+            ভেরিফায়েড ফটোগ্রাফার · স্বচ্ছ প্যাকেজ · অগ্রিম ছাড়াই বুকিং
+          </p>
+        </div>
       </div>
 
       {/* ═══ Google-স্টাইল সার্চ বার + অপশন মেনু ═══ */}
@@ -333,8 +415,20 @@ export default function Search() {
         >
           <span aria-hidden="true" className="sp-hero-line" />
           <div className="flex items-center gap-1.5">
-            <span aria-hidden="true" className="shrink-0 w-11 flex items-center justify-center text-white/45">
-              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <span
+              aria-hidden="true"
+              className="shrink-0 w-11 flex items-center justify-center text-white/45"
+            >
+              <svg
+                width="19"
+                height="19"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <circle cx="11" cy="11" r="8" />
                 <line x1="21" y1="21" x2="16.65" y2="16.65" />
               </svg>
@@ -358,8 +452,8 @@ export default function Search() {
                 aria-label="ফিল্টার অপশন"
                 className={`relative flex items-center justify-center w-11 h-11 rounded-full border transition-colors ${
                   filtersOpen || activeFilterCount > 0
-                    ? 'border-sunset-gold/55 bg-sunset-soft text-sunset-gold'
-                    : 'border-white/[0.12] bg-white/[0.05] text-white/60 hover:text-white hover:border-white/25'
+                    ? "border-sunset-gold/55 bg-sunset-soft text-sunset-gold"
+                    : "border-white/[0.12] bg-white/[0.05] text-white/60 hover:text-white hover:border-white/25"
                 }`}
               >
                 <SlidersIcon size={18} />
@@ -377,55 +471,32 @@ export default function Search() {
                     ফিল্টার অপশন
                   </p>
 
-                  <label className="field-label !text-[12.5px]">📍 স্পট</label>
-                  <select
-                    value={spot}
-                    onChange={(e) => setSpot(e.target.value)}
-                    className="glass-select mb-3"
-                  >
-                    <option value="">সব স্পট</option>
-                    {COX_SPOTS.map((s) => (
-                      <option key={s.key} value={s.key}>
-                        {s.nameBn}
-                      </option>
-                    ))}
-                  </select>
-
-                  <label className="field-label !text-[12.5px]">📷 ক্যাটাগরি</label>
-                  <select
-                    value={cat}
-                    onChange={(e) => setCat(e.target.value)}
-                    className="glass-select mb-3"
-                  >
-                    <option value="">সব ক্যাটাগরি</option>
-                    {categoryListToUse.map((c) => (
-                      <option key={c.slug} value={c.slug}>
-                        {c.label}
-                      </option>
-                    ))}
-                  </select>
-
-                  <label className="field-label !text-[12.5px]">💰 বাজেট (৳)</label>
+                  <label className="field-label !text-[12.5px]">
+                    💰 বাজেট (৳)
+                  </label>
                   <BudgetSlider
                     minP={minP}
                     maxP={maxP}
-                    onChange={(min, max) => { setMinP(min); setMaxP(max); }}
+                    onChange={(min, max) => {
+                      setMinP(min);
+                      setMaxP(max);
+                    }}
                   />
                   <div className="h-3" />
 
                   <label className="field-label !text-[12.5px]">⭐ রেটিং</label>
                   <div className="flex flex-wrap gap-2 mb-3">
                     {[
-                      { label: 'সব', val: 0 },
-                      { label: '৩+', val: 3 },
-                      { label: '৪+', val: 4 },
-                      { label: '৪.৫+', val: 4.5 },
+                      { label: "সব", val: 0 },
+                      { label: "৩+", val: 3 },
+                      { label: "৪+", val: 4 },
+                      { label: "৪.৫+", val: 4.5 },
                     ].map((r) => (
                       <button
                         key={r.val}
                         type="button"
                         onClick={() => setMinR(r.val)}
-                        className={minR === r.val ? 'chip-active' : 'chip'}
+                        className={minR === r.val ? "chip-active" : "chip"}
                       >
                         {r.label}
                       </button>
@@ -452,7 +523,10 @@ export default function Search() {
                     >
                       ↺ সব মুছুন
                     </button>
-                    <button type="submit" className="btn-sunset !py-2 !px-6 !text-xs">
+                    <button
+                      type="submit"
+                      className="btn-sunset !py-2 !px-6 !text-xs"
+                    >
                       দেখাও
                     </button>
                   </div>
@@ -470,37 +544,159 @@ export default function Search() {
           </div>
         </form>
 
+        {/* ═══ V36 — স্পট চিপস (গোল্ড পিল + কাউন্ট ব্যাজ) ═══ */}
+        <div
+          className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 -mx-1 px-1 mt-4"
+          role="radiogroup"
+          aria-label="স্পট ফিল্টার"
+        >
+          <button
+            type="button"
+            aria-pressed={spot === ""}
+            onClick={() => setSpot("")}
+            className={
+              spot === ""
+                ? "shrink-0 inline-flex items-center rounded-full px-4 py-2 text-[13px] font-bold bg-sunset-gradient text-[#1A0E06] shadow-[0_4px_14px_rgba(249,115,22,0.35)]"
+                : "chip shrink-0 !py-2 !px-4 !text-[13px]"
+            }
+          >
+            সব স্পট
+          </button>
+          {COX_SPOTS.map((s) => {
+            const active = spot === s.key;
+            const count = spotCounts[s.key] || 0;
+            return (
+              <button
+                key={s.key}
+                type="button"
+                aria-pressed={active}
+                onClick={() => setSpot(active ? "" : s.key)}
+                className={
+                  active
+                    ? "shrink-0 inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-[13px] font-bold bg-sunset-gradient text-[#1A0E06] shadow-[0_4px_14px_rgba(249,115,22,0.35)]"
+                    : "chip shrink-0 !py-2 !px-3.5 !text-[13px]"
+                }
+              >
+                {s.nameBn}
+                {count > 0 && (
+                  <span
+                    className={`min-w-[20px] h-[18px] px-1 rounded-full grid place-items-center text-[11px] font-extrabold ${active ? "bg-black/25 text-[#1A0E06]" : "bg-sunset-gradient text-[#1A0E06]"}`}
+                  >
+                    {toBn(count)}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* ═══ V36 — ক্যাটাগরি চিপস ═══ */}
+        <div
+          className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 -mx-1 px-1 mt-2"
+          role="radiogroup"
+          aria-label="ক্যাটাগরি ফিল্টার"
+        >
+          <button
+            type="button"
+            aria-pressed={cat === ""}
+            onClick={() => setCat("")}
+            className={
+              cat === ""
+                ? "chip-active shrink-0 !py-1.5 !text-[13px]"
+                : "chip shrink-0 !py-1.5 !text-[13px] !text-white/70"
+            }
+          >
+            সব ক্যাটাগরি
+          </button>
+          {categoryListToUse.map((c) => {
+            const active = cat === c.slug;
+            return (
+              <button
+                key={c.slug}
+                type="button"
+                aria-pressed={active}
+                onClick={() => setCat(active ? "" : c.slug)}
+                className={
+                  active
+                    ? "chip-active shrink-0 !py-1.5 !text-[13px]"
+                    : "chip shrink-0 !py-1.5 !text-[13px] !text-white/70"
+                }
+              >
+                {c.label}
+              </button>
+            );
+          })}
+        </div>
+
+        <p className="text-sm text-white/55 mt-3.5 font-medium flex items-center gap-2">
+          <span
+            className="w-1.5 h-1.5 rounded-full bg-sunset-gold inline-block shrink-0"
+            aria-hidden="true"
+          />
+          {toBn(photographers.length)} জন ফটোগ্রাফার পাওয়া গেছে
+        </p>
+
         {/* সক্রিয় ফিল্টার চিপস */}
         {activeFilterCount > 0 && (
           <div className="flex flex-wrap items-center gap-2 mt-3 justify-center">
             {spot && (
-              <button type="button" onClick={() => setSpot('')} className="chip !py-1">
+              <button
+                type="button"
+                onClick={() => setSpot("")}
+                className="chip !py-1"
+              >
                 📍 {SPOT_BY_KEY(spot)?.nameBn || spot} ✕
               </button>
             )}
             {cat && (
-              <button type="button" onClick={() => setCat('')} className="chip !py-1">
+              <button
+                type="button"
+                onClick={() => setCat("")}
+                className="chip !py-1"
+              >
                 📷 {catLabel(cat)} ✕
               </button>
             )}
             {minP && (
-              <button type="button" onClick={() => setMinP('')} className="chip !py-1">
+              <button
+                type="button"
+                onClick={() => setMinP("")}
+                className="chip !py-1"
+              >
                 ↓ ৳{toBn(minP)} থেকে ✕
               </button>
             )}
             {maxP && (
-              <button type="button" onClick={() => setMaxP('')} className="chip !py-1">
+              <button
+                type="button"
+                onClick={() => setMaxP("")}
+                className="chip !py-1"
+              >
                 ↑ ৳{toBn(maxP)} পর্যন্ত ✕
               </button>
             )}
             {minR > 0 && (
-              <button type="button" onClick={() => setMinR(0)} className="chip !py-1">
+              <button
+                type="button"
+                onClick={() => setMinR(0)}
+                className="chip !py-1"
+              >
                 ⭐ {toBn(minR)}+ ✕
               </button>
             )}
-            {sort !== 'rating' && (
-              <button type="button" onClick={() => setSort('rating')} className="chip !py-1">
-                ↕️ {sort === 'price_asc' ? 'দাম কম→বেশি' : sort === 'price_desc' ? 'দাম বেশি→কম' : 'নতুন'} ✕
+            {sort !== "rating" && (
+              <button
+                type="button"
+                onClick={() => setSort("rating")}
+                className="chip !py-1"
+              >
+                ↕️{" "}
+                {sort === "price_asc"
+                  ? "দাম কম→বেশি"
+                  : sort === "price_desc"
+                    ? "দাম বেশি→কম"
+                    : "নতুন"}{" "}
+                ✕
               </button>
             )}
             <button
@@ -512,10 +708,6 @@ export default function Search() {
             </button>
           </div>
         )}
-
-        <p className="text-sm text-white/50 mt-3 font-medium text-center">
-          {toBn(photographers.length)} জন ফটোগ্রাফার পাওয়া গেছে
-        </p>
       </div>
 
       {/* Results */}
@@ -548,7 +740,8 @@ export default function Search() {
               কোনো ফটোগ্রাফার মেলেনি
             </h3>
             <p className="text-white/60 text-sm max-w-sm mx-auto mb-6">
-              আপনার দেওয়া ফিল্টারের সাথে মিলে যায় এমন কোনো প্রফেশনাল পাওয়া যায়নি। ফিল্টার একটু বদলে দেখুন।
+              আপনার দেওয়া ফিল্টারের সাথে মিলে যায় এমন কোনো প্রফেশনাল পাওয়া
+              যায়নি। ফিল্টার একটু বদলে দেখুন।
             </p>
             <button
               type="button"

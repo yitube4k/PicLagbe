@@ -1,44 +1,48 @@
-import React, { useState, useEffect } from 'react';
-import { useSearchParams, useNavigate, Link } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
-import { useAuth } from '../lib/auth';
-import { COX_SPOTS } from '../lib/constants';
+import React, { useState, useEffect } from "react";
+import { useSearchParams, useNavigate, Link } from "react-router-dom";
+import { supabase } from "../lib/supabase";
+import { useAuth } from "../lib/auth";
+import { COX_SPOTS, SPOT_BY_KEY } from "../lib/constants";
+import { toBn } from "../lib/utils";
 
-type AuthMode = 'login' | 'register' | 'photographer' | 'forgot' | 'reset';
+type AuthMode = "login" | "register" | "photographer" | "forgot" | "reset";
 
 export default function Auth() {
   const { session, profile } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const modeParam = searchParams.get('mode') as AuthMode;
-  const [mode, setMode] = useState<AuthMode>(
-    ['login', 'register', 'photographer', 'forgot', 'reset'].includes(modeParam) ? modeParam : 'login'
+  const modeParam = searchParams.get("mode") as AuthMode;
+  const [mode, setMode] = useState(
+    ["login", "register", "photographer", "forgot", "reset"].includes(modeParam)
+      ? modeParam
+      : "login",
   );
 
   // Supabase রিকভারি লিঙ্ক (#access_token=...&type=recovery) এসেছে কি না দেখি
   useEffect(() => {
-    const h = window.location.hash || '';
-    if (h.includes('type=recovery') || h.includes('type%3Drecovery')) {
-      setMode('reset');
+    const h = window.location.hash || "";
+    if (h.includes("type=recovery") || h.includes("type%3Drecovery")) {
+      setMode("reset");
     }
   }, []);
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [fullName, setFullName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [location, setLocation] = useState('লাবণী পয়েন্ট');
-  const [expYears, setExpYears] = useState('2');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [location, setLocation] = useState("লাবণী পয়েন্ট");
+  const [expYears, setExpYears] = useState("2");
+  const [coveredKeys, setCoveredKeys] = useState<string[]>([]);
 
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   useEffect(() => {
-    if (['login', 'register', 'photographer'].includes(modeParam)) {
+    if (["login", "register", "photographer"].includes(modeParam)) {
       setMode(modeParam);
     }
   }, [modeParam]);
@@ -47,9 +51,9 @@ export default function Auth() {
   useEffect(() => {
     if (session && profile) {
       const role = profile.role;
-      if (role === 'admin') navigate('/admin', { replace: true });
-      else if (role === 'photographer') navigate('/studio', { replace: true });
-      else navigate('/dashboard', { replace: true });
+      if (role === "admin") navigate("/admin", { replace: true });
+      else if (role === "photographer") navigate("/studio", { replace: true });
+      else navigate("/dashboard", { replace: true });
     }
   }, [session, profile, navigate]);
 
@@ -57,7 +61,7 @@ export default function Auth() {
     setMode(newMode);
     setErrorMsg(null);
     setSuccessMsg(null);
-    if (['login', 'register', 'photographer'].includes(newMode)) {
+    if (["login", "register", "photographer"].includes(newMode)) {
       setSearchParams({ mode: newMode });
     }
   };
@@ -67,19 +71,21 @@ export default function Auth() {
     setLoading(true);
     setErrorMsg(null);
     try {
-      const redirectTo = `${window.location.origin}${import.meta.env.BASE_URL || '/'}`;
+      const redirectTo = `${window.location.origin}${import.meta.env.BASE_URL || "/"}`;
       const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
+        provider: "google",
         options: { redirectTo },
       });
       if (error) {
-        setErrorMsg('Google দিয়ে প্রবেশ করতে সমস্যা হয়েছে — আবার চেষ্টা করুন।');
+        setErrorMsg(
+          "Google দিয়ে প্রবেশ করতে সমস্যা হয়েছে — আবার চেষ্টা করুন।",
+        );
         setLoading(false);
       }
       // সফল হলে OAuth পেজে রিডাইরেক্ট হবে
     } catch (err) {
-      console.error('Google auth error:', err);
-      setErrorMsg('Google লগইন ব্যর্থ হয়েছে।');
+      console.error("Google auth error:", err);
+      setErrorMsg("Google লগইন ব্যর্থ হয়েছে।");
       setLoading(false);
     }
   };
@@ -91,16 +97,21 @@ export default function Auth() {
     setErrorMsg(null);
     setSuccessMsg(null);
     try {
-      const redirectTo = `${window.location.origin}${import.meta.env.BASE_URL || '/'}auth`;
-      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo });
+      const redirectTo = `${window.location.origin}${import.meta.env.BASE_URL || "/"}auth`;
+      const { error } = await supabase.auth.resetPasswordForEmail(
+        email.trim(),
+        { redirectTo },
+      );
       if (error) {
-        setErrorMsg('রিসেট লিঙ্ক পাঠাতে সমস্যা হয়েছে — ইমেইলটি যাচাই করুন।');
+        setErrorMsg("রিসেট লিঙ্ক পাঠাতে সমস্যা হয়েছে — ইমেইলটি যাচাই করুন।");
       } else {
-        setSuccessMsg('✅ রিসেট লিঙ্ক আপনার ইমেইলে পাঠানো হয়েছে — ইনবক্স (স্প্যামসহ) দেখুন।');
+        setSuccessMsg(
+          "✅ রিসেট লিঙ্ক আপনার ইমেইলে পাঠানো হয়েছে — ইনবক্স (স্প্যামসহ) দেখুন।",
+        );
       }
     } catch (err) {
-      console.error('Forgot password error:', err);
-      setErrorMsg('একটি অপ্রত্যাশিত ত্রুটি ঘটেছে।');
+      console.error("Forgot password error:", err);
+      setErrorMsg("একটি অপ্রত্যাশিত ত্রুটি ঘটেছে।");
     } finally {
       setLoading(false);
     }
@@ -110,11 +121,11 @@ export default function Auth() {
   const handleResetSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (password.length < 6) {
-      setErrorMsg('পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে।');
+      setErrorMsg("পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে।");
       return;
     }
     if (password !== confirmPassword) {
-      setErrorMsg('দুটি পাসওয়ার্ড মিলছে না।');
+      setErrorMsg("দুটি পাসওয়ার্ড মিলছে না।");
       return;
     }
     setLoading(true);
@@ -122,14 +133,18 @@ export default function Auth() {
     try {
       const { error } = await supabase.auth.updateUser({ password });
       if (error) {
-        setErrorMsg('পাসওয়ার্ড রিসেট করা যায়নি — লিঙ্কটি পুরনো হয়ে গেলে আবার "ভুলে গেছেন" চাপুন।');
+        setErrorMsg(
+          'পাসওয়ার্ড রিসেট করা যায়নি — লিঙ্কটি পুরনো হয়ে গেলে আবার "ভুলে গেছেন" চাপুন।',
+        );
       } else {
-        setSuccessMsg('✅ পাসওয়ার্ড রিসেট সফল! ড্যাশবোর্ডে নিয়ে যাওয়া হচ্ছে…');
-        setTimeout(() => navigate('/dashboard'), 1200);
+        setSuccessMsg(
+          "✅ পাসওয়ার্ড রিসেট সফল! ড্যাশবোর্ডে নিয়ে যাওয়া হচ্ছে…",
+        );
+        setTimeout(() => navigate("/dashboard"), 1200);
       }
     } catch (err) {
-      console.error('Reset password error:', err);
-      setErrorMsg('একটি অপ্রত্যাশিত ত্রুটি ঘটেছে।');
+      console.error("Reset password error:", err);
+      setErrorMsg("একটি অপ্রত্যাশিত ত্রুটি ঘটেছে।");
     } finally {
       setLoading(false);
     }
@@ -142,15 +157,15 @@ export default function Auth() {
     setSuccessMsg(null);
 
     try {
-      if (mode === 'login') {
+      if (mode === "login") {
         const { error } = await supabase.auth.signInWithPassword({
           email: email.trim(),
           password,
         });
 
         if (error) {
-          if (error.message.includes('Invalid login credentials')) {
-            setErrorMsg('ইমেইল বা পাসওয়ার্ড ভুল। আবার চেষ্টা করুন।');
+          if (error.message.includes("Invalid login credentials")) {
+            setErrorMsg("ইমেইল বা পাসওয়ার্ড ভুল। আবার চেষ্টা করুন।");
           } else {
             setErrorMsg(error.message);
           }
@@ -159,14 +174,14 @@ export default function Auth() {
         }
       } else {
         // Register or Photographer
-        const isPhotographer = mode === 'photographer';
-        const roleValue = isPhotographer ? 'photographer' : 'customer';
+        const isPhotographer = mode === "photographer";
+        const roleValue = isPhotographer ? "photographer" : "customer";
 
         const { data, error } = await supabase.auth.signUp({
           email: email.trim(),
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}${import.meta.env.BASE_URL || '/'}`,
+            emailRedirectTo: `${window.location.origin}${import.meta.env.BASE_URL || "/"}`,
             data: {
               full_name: fullName.trim(),
               role: roleValue,
@@ -182,41 +197,63 @@ export default function Auth() {
         }
 
         if (isPhotographer && data.user) {
-          const matchedSpot = COX_SPOTS.find((s) => s.nameBn === location) || COX_SPOTS[0];
+          const matchedSpot =
+            COX_SPOTS.find((s) => s.nameBn === location) || COX_SPOTS[0];
           const slug =
             fullName
               .trim()
               .toLowerCase()
-              .replace(/[^\w\s-]/g, '')
-              .replace(/\s+/g, '-') +
-            '-' +
+              .replace(/[^\w\s-]/g, "")
+              .replace(/\s+/g, "-") +
+            "-" +
             Math.floor(100 + Math.random() * 900);
 
-          const { error: photoErr } = await supabase.from('photographers').insert({
-            user_id: data.user.id,
-            slug,
-            display_name: fullName.trim(),
-            full_location: location,
-            home_spot: matchedSpot.key,
-            experience_years: Number(expYears) || 1,
-            starting_price: 4000,
-            profile_status: 'pending',
-          });
+          const allSpots = coveredKeys.length >= COX_SPOTS.length;
+          const full_location = allSpots
+            ? "সম্পূর্ণ কক্সবাজার"
+            : coveredKeys.length
+              ? coveredKeys
+                  .map((k) => SPOT_BY_KEY(k)?.nameBn)
+                  .filter(Boolean)
+                  .join(", ")
+              : location;
+
+          const { error: photoErr } = await supabase
+            .from("photographers")
+            .insert({
+              user_id: data.user.id,
+              slug,
+              display_name: fullName.trim(),
+              full_location,
+              home_spot: matchedSpot.key,
+              experience_years: Number(expYears) || 1,
+              starting_price: 4000,
+              profile_status: "pending",
+              details: {
+                covered_spots: coveredKeys.length
+                  ? coveredKeys
+                  : [matchedSpot.key],
+              },
+            });
 
           if (photoErr) {
-            console.error('Photographer profile creation error:', photoErr);
+            console.error("Photographer profile creation error:", photoErr);
           }
 
-          setSuccessMsg('স্টুডিও অ্যাকাউন্ট সফলভাবে তৈরি হয়েছে! অ্যাডমিন অ্যাপ্রুভালের জন্য অপেক্ষা করুন।');
-          setTimeout(() => navigate('/studio'), 1500);
+          setSuccessMsg(
+            "স্টুডিও অ্যাকাউন্ট সফলভাবে তৈরি হয়েছে! অ্যাডমিন অ্যাপ্রুভালের জন্য অপেক্ষা করুন।",
+          );
+          setTimeout(() => navigate("/studio"), 1500);
         } else {
-          setSuccessMsg('অ্যাকাউন্ট তৈরি সফল! ইমেইল ভেরিফাই করুন অথবা লগইন করুন।');
-          setTimeout(() => navigate('/dashboard'), 1500);
+          setSuccessMsg(
+            "অ্যাকাউন্ট তৈরি সফল! ইমেইল ভেরিফাই করুন অথবা লগইন করুন।",
+          );
+          setTimeout(() => navigate("/dashboard"), 1500);
         }
       }
     } catch (err: any) {
-      console.error('Auth error:', err);
-      setErrorMsg('একটি অপ্রত্যাশিত ত্রুটি ঘটেছে।');
+      console.error("Auth error:", err);
+      setErrorMsg("একটি অপ্রত্যাশিত ত্রুটি ঘটেছে।");
     } finally {
       setLoading(false);
     }
@@ -232,7 +269,16 @@ export default function Auth() {
 
           <div className="relative z-10 space-y-6">
             <div className="w-14 h-14 glass rounded-2xl flex items-center justify-center text-sunset-gold">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                width="28"
+                height="28"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <circle cx="12" cy="12" r="10" />
                 <line x1="14.31" y1="8" x2="20.05" y2="17.94" />
                 <line x1="9.69" y1="8" x2="21.17" y2="8" />
@@ -244,7 +290,8 @@ export default function Auth() {
             </div>
 
             <h2 className="text-3xl font-extrabold text-white leading-tight">
-              কক্সবাজারের <span className="grad-text">#১ ফটোগ্রাফার</span> প্ল্যাটফর্ম
+              কক্সবাজারের <span className="grad-text">#১ ফটোগ্রাফার</span>{" "}
+              প্ল্যাটফর্ম
             </h2>
 
             <div className="space-y-3.5 pt-2">
@@ -264,7 +311,8 @@ export default function Auth() {
 
             <div className="glass-card p-5 rounded-xl2 mt-6">
               <p className="text-xs text-white/70 italic leading-relaxed">
-                “লাবণী পয়েন্টের সূর্যাস্ত আর আমাদের বিয়ের মুহূর্তগুলো চিরস্মরণীয় হয়ে আছে ফটোলাগবে-এর বদৌলতে।”
+                “লাবণী পয়েন্টের সূর্যাস্ত আর আমাদের বিয়ের মুহূর্তগুলো
+                চিরস্মরণীয় হয়ে আছে ফটোলাগবে-এর বদৌলতে।”
               </p>
               <span className="text-[12.5px] text-sunset-gold mt-2 block font-semibold">
                 — তানভীর ও বৃষ্টি, ঢাকা
@@ -276,72 +324,90 @@ export default function Auth() {
         {/* Right Form Panel */}
         <div className="glass-strong rounded-xl3 p-6 sm:p-8 shadow-glass-lg border border-white/[0.15]">
           {/* Tab Switcher (forgot/reset মোডে লুকানো) */}
-          <div className={mode === 'forgot' || mode === 'reset' ? 'hidden' : 'glass rounded-full p-1.5 flex gap-1 mb-6'}>
+          <div
+            className={
+              mode === "forgot" || mode === "reset"
+                ? "hidden"
+                : "glass rounded-full p-1.5 flex gap-1 mb-6"
+            }
+          >
             <button
               type="button"
-              onClick={() => handleModeChange('login')}
-              className={mode === 'login' ? 'chip-active flex-1 justify-center rounded-full py-2 text-xs sm:text-sm' : 'chip flex-1 justify-center !border-transparent text-white/70 hover:text-white py-2 text-xs sm:text-sm'}
+              onClick={() => handleModeChange("login")}
+              className={
+                mode === "login"
+                  ? "chip-active flex-1 justify-center rounded-full py-2 text-xs sm:text-sm"
+                  : "chip flex-1 justify-center !border-transparent text-white/70 hover:text-white py-2 text-xs sm:text-sm"
+              }
             >
               লগইন
             </button>
             <button
               type="button"
-              onClick={() => handleModeChange('register')}
-              className={mode === 'register' ? 'chip-active flex-1 justify-center rounded-full py-2 text-xs sm:text-sm' : 'chip flex-1 justify-center !border-transparent text-white/70 hover:text-white py-2 text-xs sm:text-sm'}
+              onClick={() => handleModeChange("register")}
+              className={
+                mode === "register"
+                  ? "chip-active flex-1 justify-center rounded-full py-2 text-xs sm:text-sm"
+                  : "chip flex-1 justify-center !border-transparent text-white/70 hover:text-white py-2 text-xs sm:text-sm"
+              }
             >
               রেজিস্টার
             </button>
             <button
               type="button"
-              onClick={() => handleModeChange('photographer')}
-              className={mode === 'photographer' ? 'chip-active flex-1 justify-center rounded-full py-2 text-xs sm:text-sm' : 'chip flex-1 justify-center !border-transparent text-white/70 hover:text-white py-2 text-xs sm:text-sm'}
+              onClick={() => handleModeChange("photographer")}
+              className={
+                mode === "photographer"
+                  ? "chip-active flex-1 justify-center rounded-full py-2 text-xs sm:text-sm"
+                  : "chip flex-1 justify-center !border-transparent text-white/70 hover:text-white py-2 text-xs sm:text-sm"
+              }
             >
               ফটোগ্রাফার হন
             </button>
           </div>
 
           <h3 className="text-xl font-bold text-white mb-1">
-            {mode === 'login'
-              ? 'স্বাগতম ফিরে!'
-              : mode === 'register'
-              ? 'অ্যাকাউন্ট খুলুন'
-              : mode === 'forgot'
-              ? 'পাসওয়ার্ড ভুলে গেছেন?'
-              : mode === 'reset'
-              ? 'নতুন পাসওয়ার্ড দিন'
-              : 'আপনার স্টুডিও শুরু করুন'}
+            {mode === "login"
+              ? "স্বাগতম ফিরে!"
+              : mode === "register"
+                ? "অ্যাকাউন্ট খুলুন"
+                : mode === "forgot"
+                  ? "পাসওয়ার্ড ভুলে গেছেন?"
+                  : mode === "reset"
+                    ? "নতুন পাসওয়ার্ড দিন"
+                    : "আপনার স্টুডিও শুরু করুন"}
           </h3>
           <p className="text-xs text-white/50 mb-6">
-            {mode === 'login'
-              ? 'আপনার ইমেইল ও পাসওয়ার্ড দিয়ে লগইন করুন।'
-              : mode === 'register'
-              ? 'ফটোলাগবে কমিউনিটিতে যুক্ত হন।'
-              : mode === 'forgot'
-              ? 'রেজিস্টার করা ইমেইল দিন — রিসেট লিঙ্ক পাঠিয়ে দেব।'
-              : mode === 'reset'
-              ? 'আপনার নতুন পাসওয়ার্ড সেট করুন।'
-              : 'কক্সবাজারে আপনার ফটোগ্রাফি ব্যবসা প্রসারিত করুন।'}
+            {mode === "login"
+              ? "আপনার ইমেইল ও পাসওয়ার্ড দিয়ে লগইন করুন।"
+              : mode === "register"
+                ? "ফটোলাগবে কমিউনিটিতে যুক্ত হন।"
+                : mode === "forgot"
+                  ? "রেজিস্টার করা ইমেইল দিন — রিসেট লিঙ্ক পাঠিয়ে দেব।"
+                  : mode === "reset"
+                    ? "আপনার নতুন পাসওয়ার্ড সেট করুন।"
+                    : "কক্সবাজারে আপনার ফটোগ্রাফি ব্যবসা প্রসারিত করুন।"}
           </p>
 
           <form
             onSubmit={(e) => {
-              if (mode === 'forgot') return handleForgotSubmit(e);
-              if (mode === 'reset') return handleResetSubmit(e);
+              if (mode === "forgot") return handleForgotSubmit(e);
+              if (mode === "reset") return handleResetSubmit(e);
               return handleAuthSubmit(e);
             }}
             className="space-y-4"
           >
-            {(mode === 'forgot' || mode === 'reset') && (
+            {(mode === "forgot" || mode === "reset") && (
               <button
                 type="button"
-                onClick={() => handleModeChange('login')}
+                onClick={() => handleModeChange("login")}
                 className="text-xs text-white/55 hover:text-sunset-gold font-semibold inline-flex items-center gap-1"
               >
                 ← লগইনে ফিরে যান
               </button>
             )}
 
-            {(mode === 'register' || mode === 'photographer') && (
+            {(mode === "register" || mode === "photographer") && (
               <div>
                 <label className="field-label">পূর্ণ নাম</label>
                 <input
@@ -355,48 +421,52 @@ export default function Auth() {
               </div>
             )}
 
-            {mode !== 'reset' && (
-            <div>
-              <label className="field-label">ইমেইল ঠিকানা</label>
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="name@example.com"
-                className="glass-input"
-              />
-            </div>
-            )}
-
-            {mode !== 'forgot' && (
-            <div className="relative">
-              <label className="field-label">{mode === 'reset' ? 'নতুন পাসওয়ার্ড' : 'পাসওয়ার্ড'}</label>
-              <div className="relative">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  required
-                  minLength={6}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="কমপক্ষে ৬ অক্ষর"
-                  className="glass-input pr-12"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((prev) => !prev)}
-                  aria-label="পাসওয়ার্ড দেখান"
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/50 hover:text-white text-xs font-semibold"
-                >
-                  {showPassword ? 'লুকান' : 'দেখুন'}
-                </button>
-              </div>
-            </div>
-            )}
-
-            {mode === 'reset' && (
+            {mode !== "reset" && (
               <div>
-                <label className="field-label">নতুন পাসওয়ার্ড আবার লিখুন</label>
+                <label className="field-label">ইমেইল ঠিকানা</label>
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="name@example.com"
+                  className="glass-input"
+                />
+              </div>
+            )}
+
+            {mode !== "forgot" && (
+              <div className="relative">
+                <label className="field-label">
+                  {mode === "reset" ? "নতুন পাসওয়ার্ড" : "পাসওয়ার্ড"}
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    required
+                    minLength={6}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="কমপক্ষে ৬ অক্ষর"
+                    className="glass-input pr-12"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    aria-label="পাসওয়ার্ড দেখান"
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/50 hover:text-white text-xs font-semibold"
+                  >
+                    {showPassword ? "লুকান" : "দেখুন"}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {mode === "reset" && (
+              <div>
+                <label className="field-label">
+                  নতুন পাসওয়ার্ড আবার লিখুন
+                </label>
                 <input
                   type="password"
                   required
@@ -409,11 +479,11 @@ export default function Auth() {
               </div>
             )}
 
-            {mode === 'login' && (
+            {mode === "login" && (
               <div className="text-right -mt-1">
                 <button
                   type="button"
-                  onClick={() => handleModeChange('forgot')}
+                  onClick={() => handleModeChange("forgot")}
                   className="text-xs font-semibold text-sunset-gold hover:underline"
                 >
                   পাসওয়ার্ড ভুলে গেছেন?
@@ -421,7 +491,7 @@ export default function Auth() {
               </div>
             )}
 
-            {mode === 'photographer' && (
+            {mode === "photographer" && (
               <>
                 <div>
                   <label className="field-label">মোবাইল নম্বর</label>
@@ -435,31 +505,98 @@ export default function Auth() {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="field-label">প্রধান স্পট</label>
-                    <select
-                      value={location}
-                      onChange={(e) => setLocation(e.target.value)}
-                      className="glass-select"
-                    >
-                      {COX_SPOTS.map((s) => (
-                        <option key={s.key} value={s.nameBn}>
-                          {s.nameBn}
-                        </option>
-                      ))}
-                      <option value="অন্যান্য">অন্যান্য</option>
-                    </select>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="field-label">প্রধান স্পট</label>
+                      <select
+                        value={location}
+                        onChange={(e) => setLocation(e.target.value)}
+                        className="glass-select"
+                      >
+                        {COX_SPOTS.map((s) => (
+                          <option key={s.key} value={s.nameBn}>
+                            {s.nameBn}
+                          </option>
+                        ))}
+                        <option value="অন্যান্য">অন্যান্য</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="field-label">অভিজ্ঞতা (বছর)</label>
+                      <input
+                        type="number"
+                        min={1}
+                        value={expYears}
+                        onChange={(e) => setExpYears(e.target.value)}
+                        className="glass-input"
+                      />
+                    </div>
                   </div>
+
                   <div>
-                    <label className="field-label">অভিজ্ঞতা (বছর)</label>
-                    <input
-                      type="number"
-                      min={1}
-                      value={expYears}
-                      onChange={(e) => setExpYears(e.target.value)}
-                      className="glass-input"
-                    />
+                    <label className="field-label">যেসব স্পটে কাজ করেন</label>
+                    <p className="text-[11.5px] text-white/50 mb-2.5">
+                      একাধিক বাছতে পারেন — গ্রাহক এসব স্পটে আপনাকে দেখবে
+                    </p>
+
+                    {/* Master toggle chip */}
+                    <div className="mb-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const allSelected =
+                            coveredKeys.length >= COX_SPOTS.length;
+                          if (allSelected) {
+                            setCoveredKeys([]);
+                          } else {
+                            setCoveredKeys(COX_SPOTS.map((s) => s.key));
+                          }
+                        }}
+                        className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all inline-flex items-center gap-1.5 ${
+                          coveredKeys.length >= COX_SPOTS.length
+                            ? "bg-sunset-gradient text-[#1A0E06] shadow-md shadow-amber-500/20"
+                            : "chip !border-white/20"
+                        }`}
+                      >
+                        {coveredKeys.length >= COX_SPOTS.length && (
+                          <span>✓</span>
+                        )}
+                        <span>
+                          সম্পূর্ণ কক্সবাজার (সব {toBn(COX_SPOTS.length)}টি
+                          স্পট)
+                        </span>
+                      </button>
+                    </div>
+
+                    {/* Individual spot toggle chips */}
+                    <div className="flex flex-wrap gap-1.5 max-h-48 overflow-y-auto no-scrollbar p-1">
+                      {COX_SPOTS.map((s) => {
+                        const isChecked = coveredKeys.includes(s.key);
+                        return (
+                          <button
+                            key={s.key}
+                            type="button"
+                            onClick={() => {
+                              if (isChecked) {
+                                setCoveredKeys(
+                                  coveredKeys.filter((k) => k !== s.key),
+                                );
+                              } else {
+                                setCoveredKeys([...coveredKeys, s.key]);
+                              }
+                            }}
+                            className={`rounded-full px-2.5 py-1 text-xs transition-all border ${
+                              isChecked
+                                ? "border-emerald-400/40 bg-emerald-500/15 text-emerald-300 font-medium"
+                                : "chip !border-white/10 text-white/70 hover:text-white"
+                            }`}
+                          >
+                            📍 {s.nameBn}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
               </>
@@ -483,24 +620,26 @@ export default function Auth() {
               className="btn-primary w-full justify-center py-3 text-base mt-2"
             >
               {loading
-                ? '⏳ অপেক্ষা করুন…'
-                : mode === 'login'
-                ? 'লগইন করুন'
-                : mode === 'register'
-                ? 'রেজিস্টার করুন'
-                : mode === 'forgot'
-                ? 'রিসেট লিঙ্ক পাঠান'
-                : mode === 'reset'
-                ? 'নতুন পাসওয়ার্ড সেট করুন'
-                : 'স্টুডিও আবেদন জমা দিন'}
+                ? "⏳ অপেক্ষা করুন…"
+                : mode === "login"
+                  ? "লগইন করুন"
+                  : mode === "register"
+                    ? "রেজিস্টার করুন"
+                    : mode === "forgot"
+                      ? "রিসেট লিঙ্ক পাঠান"
+                      : mode === "reset"
+                        ? "নতুন পাসওয়ার্ড সেট করুন"
+                        : "স্টুডিও আবেদন জমা দিন"}
             </button>
 
             {/* ═══ Google দিয়ে সাইনআপ/লগইন (login/register-এ দেখাবে) ═══ */}
-            {(mode === 'login' || mode === 'register') && (
+            {(mode === "login" || mode === "register") && (
               <>
                 <div className="flex items-center gap-3 pt-1">
                   <span className="h-px flex-1 bg-white/[0.12]" />
-                  <span className="text-[12.5px] text-white/45 font-semibold">অথবা</span>
+                  <span className="text-[12.5px] text-white/45 font-semibold">
+                    অথবা
+                  </span>
                   <span className="h-px flex-1 bg-white/[0.12]" />
                 </div>
                 <button
@@ -509,13 +648,30 @@ export default function Auth() {
                   disabled={loading}
                   className="w-full inline-flex items-center justify-center gap-3 rounded-[13px] border border-white/15 bg-white/[0.06] py-3 text-sm font-bold text-white hover:bg-white/[0.1] transition-colors"
                 >
-                  <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
-                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.27-4.74 3.27-8.1z" />
-                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84A11 11 0 0 0 12 23z" />
-                    <path fill="#FBBC05" d="M5.84 14.1a6.6 6.6 0 0 1 0-4.2V7.06H2.18a11 11 0 0 0 0 9.88l3.66-2.84z" />
-                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84C6.71 7.31 9.14 5.38 12 5.38z" />
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                  >
+                    <path
+                      fill="#4285F4"
+                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.27-4.74 3.27-8.1z"
+                    />
+                    <path
+                      fill="#34A853"
+                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84A11 11 0 0 0 12 23z"
+                    />
+                    <path
+                      fill="#FBBC05"
+                      d="M5.84 14.1a6.6 6.6 0 0 1 0-4.2V7.06H2.18a11 11 0 0 0 0 9.88l3.66-2.84z"
+                    />
+                    <path
+                      fill="#EA4335"
+                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84C6.71 7.31 9.14 5.38 12 5.38z"
+                    />
                   </svg>
-                  Google দিয়ে {mode === 'login' ? 'লগইন' : 'সাইনআপ'} করুন
+                  Google দিয়ে {mode === "login" ? "লগইন" : "সাইনআপ"} করুন
                 </button>
               </>
             )}
@@ -523,23 +679,23 @@ export default function Auth() {
 
           {/* Footer Switcher */}
           <div className="text-xs text-white/45 text-center mt-6 pt-4 border-t border-white/[0.08]">
-            {mode === 'forgot' || mode === 'reset' ? (
+            {mode === "forgot" || mode === "reset" ? (
               <p>
-                মনে পড়েছে?{' '}
+                মনে পড়েছে?{" "}
                 <button
                   type="button"
-                  onClick={() => handleModeChange('login')}
+                  onClick={() => handleModeChange("login")}
                   className="text-sunset-gold font-semibold hover:underline"
                 >
                   লগইন করুন
                 </button>
               </p>
-            ) : mode === 'login' ? (
+            ) : mode === "login" ? (
               <p>
-                অ্যাকাউন্ট নেই?{' '}
+                অ্যাকাউন্ট নেই?{" "}
                 <button
                   type="button"
-                  onClick={() => handleModeChange('register')}
+                  onClick={() => handleModeChange("register")}
                   className="text-sunset-gold font-semibold hover:underline"
                 >
                   রেজিস্টার করুন
@@ -547,10 +703,10 @@ export default function Auth() {
               </p>
             ) : (
               <p>
-                ইতিমধ্যে অ্যাকাউন্ট আছে?{' '}
+                ইতিমধ্যে অ্যাকাউন্ট আছে?{" "}
                 <button
                   type="button"
-                  onClick={() => handleModeChange('login')}
+                  onClick={() => handleModeChange("login")}
                   className="text-sunset-gold font-semibold hover:underline"
                 >
                   লগইন করুন
