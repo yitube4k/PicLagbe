@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { NavLink, Link, useLocation, useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
-import { useAuth } from '../lib/auth';
-import { SITE } from '../lib/constants';
-import SearchPanel from './SearchPanel';
+import React, { useState, useEffect, useRef } from "react";
+import { NavLink, Link, useLocation, useNavigate } from "react-router-dom";
+import { supabase } from "../lib/supabase";
+import { useAuth } from "../lib/auth";
+import { SITE } from "../lib/constants";
+import GlobalSearchOverlay from "./GlobalSearchOverlay";
 
 interface NavItem {
   label: string;
@@ -13,14 +13,34 @@ interface NavItem {
 
 /* ── অপশন মেনুর SVG আইকনস (homepage-এর nav-এর সাথে ম্যাচড, stroke = currentColor) ── */
 const IcUser = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
     <circle cx="12" cy="7" r="4" />
   </svg>
 );
 
 const IcStudio = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
     <circle cx="12" cy="12" r="10" />
     <line x1="14.31" y1="8" x2="20.05" y2="17.94" />
     <line x1="9.69" y1="8" x2="21.17" y2="8" />
@@ -32,13 +52,33 @@ const IcStudio = () => (
 );
 
 const IcShield = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
   </svg>
 );
 
 const IcLogout = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
     <polyline points="16 17 21 12 16 7" />
     <line x1="21" y1="12" x2="9" y2="12" />
@@ -46,37 +86,74 @@ const IcLogout = () => (
 );
 
 const IcChat = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
     <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
   </svg>
 );
 
 const NAV_ITEMS: NavItem[] = [
   {
-    label: 'হোম',
-    to: '/',
+    label: "হোম",
+    to: "/",
     icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
         <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
         <polyline points="9 22 9 12 15 12 15 22" />
       </svg>
     ),
   },
   {
-    label: 'ফটোগ্রাফার',
-    to: '/photographers',
+    label: "ফটোগ্রাফার",
+    to: "/photographers",
     icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
         <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
         <circle cx="12" cy="13" r="4" />
       </svg>
     ),
   },
   {
-    label: 'ম্যাপ ফাইন্ডার',
-    to: '/finder',
+    label: "ম্যাপ ফাইন্ডার",
+    to: "/finder",
     icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
         <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6" />
         <line x1="8" y1="2" x2="8" y2="18" />
         <line x1="16" y1="6" x2="16" y2="22" />
@@ -84,10 +161,19 @@ const NAV_ITEMS: NavItem[] = [
     ),
   },
   {
-    label: 'কমিউনিটি',
-    to: '/community',
+    label: "কমিউনিটি",
+    to: "/community",
     icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
         <circle cx="9" cy="7" r="4" />
         <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
@@ -96,20 +182,38 @@ const NAV_ITEMS: NavItem[] = [
     ),
   },
   {
-    label: 'ব্লগ',
-    to: '/blog',
+    label: "ব্লগ",
+    to: "/blog",
     icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
         <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
         <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
       </svg>
     ),
   },
   {
-    label: 'কিভাবে কাজ করে',
-    to: '/how-it-works',
+    label: "কিভাবে কাজ করে",
+    to: "/how-it-works",
     icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
         <circle cx="12" cy="12" r="10" />
         <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
         <line x1="12" y1="17" x2="12.01" y2="17" />
@@ -126,46 +230,34 @@ export default function Navbar() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const searchWrapRef = useRef<HTMLDivElement | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
-
-  // সার্চ প্যানেলের বাইরে ক্লিক করলে বন্ধ
-  useEffect(() => {
-    if (!searchOpen) return;
-    const onDown = (e: MouseEvent | TouchEvent) => {
-      if (searchWrapRef.current && !searchWrapRef.current.contains(e.target as Node)) {
-        setSearchOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', onDown);
-    document.addEventListener('touchstart', onDown, { passive: true });
-    return () => {
-      document.removeEventListener('mousedown', onDown);
-      document.removeEventListener('touchstart', onDown);
-    };
-  }, [searchOpen]);
 
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 24);
     };
     handleScroll();
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   // Google-স্টাইল শর্টকাট: "/" চাপলেই সার্চ খুলবে (ইনপুটে টাইপ করা অবস্থায় নয়)
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement | null;
-      const typing = !!t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable);
-      if (e.key === '/' && !typing) {
+      const typing =
+        !!t &&
+        (t.tagName === "INPUT" ||
+          t.tagName === "TEXTAREA" ||
+          t.tagName === "SELECT" ||
+          t.isContentEditable);
+      if (e.key === "/" && !typing) {
         e.preventDefault();
         setSearchOpen(true);
       }
     };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
   }, []);
 
   useEffect(() => {
@@ -181,17 +273,17 @@ export default function Navbar() {
         setMenuOpen(false);
       }
     };
-    document.addEventListener('mousedown', onDown);
-    document.addEventListener('touchstart', onDown, { passive: true });
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("touchstart", onDown, { passive: true });
     return () => {
-      document.removeEventListener('mousedown', onDown);
-      document.removeEventListener('touchstart', onDown);
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("touchstart", onDown);
     };
   }, [menuOpen]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
+      if (e.key === "Escape") {
         setDrawerOpen(false);
         setSearchOpen(false);
         setMenuOpen(false);
@@ -199,15 +291,15 @@ export default function Navbar() {
     };
 
     if (drawerOpen || searchOpen) {
-      document.body.style.overflow = 'hidden';
-      window.addEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = "hidden";
+      window.addEventListener("keydown", handleKeyDown);
     } else {
-      document.body.style.overflow = '';
+      document.body.style.overflow = "";
     }
 
     return () => {
-      document.body.style.overflow = '';
-      window.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = "";
+      window.removeEventListener("keydown", handleKeyDown);
     };
   }, [drawerOpen, searchOpen]);
 
@@ -216,11 +308,11 @@ export default function Navbar() {
     await supabase.auth.signOut();
     setMenuOpen(false);
     setDrawerOpen(false);
-    navigate('/');
+    navigate("/");
   };
 
   const getInitials = (name?: string | null) => {
-    if (!name || !name.trim()) return 'ফ';
+    if (!name || !name.trim()) return "ফ";
     const parts = name.trim().split(/\s+/);
     if (parts.length >= 2) {
       return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
@@ -228,13 +320,12 @@ export default function Navbar() {
     return parts[0].slice(0, 2).toUpperCase();
   };
 
-
   const renderAvatar = () => {
     if (profile?.avatar_url) {
       return (
         <img
           src={profile.avatar_url}
-          alt={profile.full_name || 'প্রোফাইল'}
+          alt={profile.full_name || "প্রোফাইল"}
           className="w-9 h-9 rounded-full ring-2 ring-sunset-gold/40 object-cover shrink-0"
         />
       );
@@ -242,7 +333,7 @@ export default function Navbar() {
     return (
       <div
         className="w-9 h-9 rounded-full ring-2 ring-sunset-gold/40 bg-sunset-gradient flex items-center justify-center text-xs font-extrabold text-[#1A0E06] shrink-0 select-none"
-        title={profile?.full_name || 'প্রোফাইল'}
+        title={profile?.full_name || "প্রোফাইল"}
       >
         {getInitials(profile?.full_name)}
       </div>
@@ -254,8 +345,8 @@ export default function Navbar() {
       <header
         className={`fixed top-0 inset-x-0 z-50 transition-all duration-300 ${
           scrolled
-            ? 'glass-strong !rounded-none shadow-glass-md border-b border-white/[0.08] py-3'
-            : 'bg-transparent py-4'
+            ? "glass-strong !rounded-none shadow-glass-md border-b border-white/[0.08] py-3"
+            : "bg-transparent py-4"
         }`}
       >
         <div className="max-w-7xl mx-auto px-4 flex items-center justify-between gap-2 sm:gap-3">
@@ -278,7 +369,13 @@ export default function Navbar() {
                 className=""
               >
                 <defs>
-                  <linearGradient id="navbar-aperture-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <linearGradient
+                    id="navbar-aperture-grad"
+                    x1="0%"
+                    y1="0%"
+                    x2="100%"
+                    y2="100%"
+                  >
                     <stop offset="0%" stopColor="#fbbf24" />
                     <stop offset="55%" stopColor="#f97316" />
                     <stop offset="100%" stopColor="#e11d48" />
@@ -298,7 +395,7 @@ export default function Navbar() {
                 {SITE.name}
               </span>
               <span className="text-[11.5px] tracking-[0.22em] uppercase text-white/50 font-semibold leading-none mt-0.5">
-                {SITE.nameEn || 'PHOTOLAGBE'}
+                {SITE.nameEn || "PHOTOLAGBE"}
               </span>
             </div>
           </Link>
@@ -312,11 +409,11 @@ export default function Navbar() {
               <NavLink
                 key={item.to}
                 to={item.to}
-                end={item.to === '/'}
+                end={item.to === "/"}
                 className={({ isActive }) =>
                   isActive
-                    ? 'chip-active rounded-full px-4 py-2 text-sm'
-                    : 'text-white/75 hover:bg-white/[0.08] hover:text-white rounded-full px-4 py-2 text-sm font-medium transition-all duration-200'
+                    ? "chip-active rounded-full px-4 py-2 text-sm"
+                    : "text-white/75 hover:bg-white/[0.08] hover:text-white rounded-full px-4 py-2 text-sm font-medium transition-all duration-200"
                 }
               >
                 {item.label}
@@ -326,257 +423,303 @@ export default function Navbar() {
 
           {/* ═══ RIGHT CLUSTER — সার্চ (অপশন মেনুর কাচাকাচি) + চ্যাট + অ্যাভাটার + হ্যামবার্গার ═══ */}
           <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
-          <div ref={searchWrapRef} className="nav-search-wrap">
-            {/* Desktop trigger */}
-            <button
-              type="button"
-              onClick={() => setSearchOpen((v) => !v)}
-              aria-expanded={searchOpen}
-              aria-label="সার্চ খুলুন"
-              className={`hidden md:flex items-center gap-2.5 rounded-full border px-4 min-h-[42px] text-sm font-medium transition-colors ${
-                searchOpen
-                  ? 'border-sunset-gold/60 bg-white/[0.09] text-white'
-                  : 'border-white/[0.12] bg-white/[0.05] text-white/60 hover:text-white hover:border-white/25'
-              }`}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <circle cx="11" cy="11" r="8" />
-                <line x1="21" y1="21" x2="16.65" y2="16.65" />
-              </svg>
-              <span className="hidden xl:inline">কক্সবাজারে খুঁজুন…</span>
-              <kbd className="hidden xl:inline-flex items-center rounded border border-white/15 bg-white/[0.06] px-1.5 py-0.5 text-[11.5px] font-bold text-white/50">
-                /
-              </kbd>
-            </button>
-
-            {/* Mobile trigger */}
-            <button
-              type="button"
-              onClick={() => setSearchOpen((v) => !v)}
-              aria-expanded={searchOpen}
-              aria-label="সার্চ খুলুন"
-              className={`md:hidden rounded-xl2 p-2.5 border transition-colors ${
-                searchOpen
-                  ? 'border-sunset-gold/60 bg-white/[0.09] text-sunset-gold'
-                  : 'border-white/[0.12] bg-white/[0.05] text-white/80'
-              }`}
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <circle cx="11" cy="11" r="8" />
-                <line x1="21" y1="21" x2="16.65" y2="16.65" />
-              </svg>
-            </button>
-
-            {/* Dropdown panel */}
-            {searchOpen && (
-              <div className="nav-search-panel glass-strong !rounded-[18px] p-2 shadow-glass-lg">
-                <p className="text-[12.5px] font-bold uppercase tracking-[0.14em] text-white/45 px-2 pt-1.5 pb-2">
-                  ফটোগ্রাফার খুঁজুন
-                </p>
-                <SearchPanel
-                  autoFocus
-                  onDone={() => setSearchOpen(false)}
-                />
-              </div>
-            )}
-          </div>
-
-          {/* চ্যাট + অ্যাভাটার অপশন মেনু — সার্চের ঠিক পাশেই */}
-          <div className="hidden lg:flex items-center gap-2">
-            {!session ? (
-              <>
-                <Link
-                  to="/auth?mode=login"
-                  className="btn-ghost px-5 py-2.5 text-sm"
+            <div className="nav-search-wrap">
+              {/* Desktop trigger */}
+              <button
+                type="button"
+                onClick={() => setSearchOpen((v) => !v)}
+                aria-expanded={searchOpen}
+                aria-label="সার্চ খুলুন"
+                className={`hidden md:flex items-center gap-2.5 rounded-full border px-4 min-h-[42px] text-sm font-medium transition-colors ${
+                  searchOpen
+                    ? "border-sunset-gold/60 bg-white/[0.09] text-white"
+                    : "border-white/[0.12] bg-white/[0.05] text-white/60 hover:text-white hover:border-white/25"
+                }`}
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
                 >
-                  লগইন
-                </Link>
-                <Link
-                  to="/auth?mode=register"
-                  className="btn-primary px-5 py-2.5 text-sm"
-                >
-                  রেজিস্টার
-                </Link>
-              </>
-            ) : (
-              <div className="flex items-center gap-2">
-                <Link
-                  to="/chat"
-                  aria-label="মেসেজ ইনবক্স"
-                  title="মেসেজ"
-                  className="glass rounded-full w-10 h-10 flex items-center justify-center text-white/80 hover:text-sunset-gold hover:border-sunset-gold/45 transition-all duration-300"
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                  </svg>
-                </Link>
+                  <circle cx="11" cy="11" r="8" />
+                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                </svg>
+                <span className="hidden xl:inline">কক্সবাজারে খুঁজুন…</span>
+                <kbd className="hidden xl:inline-flex items-center rounded border border-white/15 bg-white/[0.06] px-1.5 py-0.5 text-[11.5px] font-bold text-white/50">
+                  /
+                </kbd>
+              </button>
 
-                {/* ═══ অপশন মেনু (অ্যাভাটার ক্লিক) — প্রোফাইল / স্টুডিও / অ্যাডমিন / লগআউট ═══ */}
-                <div ref={menuRef} className="relative">
-                  <button
-                    type="button"
-                    onClick={() => setMenuOpen((v) => !v)}
-                    aria-expanded={menuOpen}
-                    aria-haspopup="menu"
-                    aria-label="অ্যাকাউন্ট মেনু"
-                    className={`rounded-full focus:outline-none focus:ring-2 focus:ring-sunset-coral transition ${menuOpen ? 'ring-2 ring-sunset-gold/60' : ''}`}
+              {/* Mobile trigger */}
+              <button
+                type="button"
+                onClick={() => setSearchOpen((v) => !v)}
+                aria-expanded={searchOpen}
+                aria-label="সার্চ খুলুন"
+                className={`md:hidden rounded-xl2 p-2.5 border transition-colors ${
+                  searchOpen
+                    ? "border-sunset-gold/60 bg-white/[0.09] text-sunset-gold"
+                    : "border-white/[0.12] bg-white/[0.05] text-white/80"
+                }`}
+              >
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <circle cx="11" cy="11" r="8" />
+                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Google-স্টাইল ফুল-স্ক্রিন সার্চ ওভারলে — হেডারের নিচে ড্রপডাউন নয় */}
+            <GlobalSearchOverlay
+              open={searchOpen}
+              onClose={() => setSearchOpen(false)}
+            />
+
+            {/* চ্যাট + অ্যাভাটার অপশন মেনু — সার্চের ঠিক পাশেই */}
+            <div className="hidden lg:flex items-center gap-2">
+              {!session ? (
+                <>
+                  <Link
+                    to="/auth?mode=login"
+                    className="btn-ghost px-5 py-2.5 text-sm"
                   >
-                    {renderAvatar()}
-                  </button>
-
-                  {menuOpen && (
-                    <div
-                      role="menu"
-                      className="absolute right-0 top-12 w-72 glass-strong !rounded-[20px] shadow-glass-lg origin-top-right menu-pop overflow-hidden"
+                    লগইন
+                  </Link>
+                  <Link
+                    to="/auth?mode=register"
+                    className="btn-primary px-5 py-2.5 text-sm"
+                  >
+                    রেজিস্টার
+                  </Link>
+                </>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Link
+                    to="/chat"
+                    aria-label="মেসেজ ইনবক্স"
+                    title="মেসেজ"
+                    className="glass rounded-full w-10 h-10 flex items-center justify-center text-white/80 hover:text-sunset-gold hover:border-sunset-gold/45 transition-all duration-300"
+                  >
+                    <svg
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
                     >
-                      {/* সোনালি গ্রেডিয়েন্ট বর্ডার লাইন (homepage-ম্যাচড) */}
-                      <span aria-hidden="true" className="menu-fx-line !rounded-[20px]" />
+                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                    </svg>
+                  </Link>
 
-                      {/* header: অ্যাভাটার + নাম + ইমেইল + রোল ব্যাজ */}
-                      <div className="flex items-center gap-3 px-4 pt-4 pb-3 bg-white/[0.03]">
-                        {renderAvatar()}
-                        <div className="min-w-0 flex-1">
-                          <span className="text-sm font-bold text-white truncate block">
-                            {profile?.full_name || 'ব্যবহারকারী'}
-                          </span>
-                          <span className="text-[12.5px] text-white/50 truncate block mt-0.5">
-                            {profile?.email || ''}
+                  {/* ═══ অপশন মেনু (অ্যাভাটার ক্লিক) — প্রোফাইল / স্টুডিও / অ্যাডমিন / লগআউট ═══ */}
+                  <div ref={menuRef} className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setMenuOpen((v) => !v)}
+                      aria-expanded={menuOpen}
+                      aria-haspopup="menu"
+                      aria-label="অ্যাকাউন্ট মেনু"
+                      className={`rounded-full focus:outline-none focus:ring-2 focus:ring-sunset-coral transition ${menuOpen ? "ring-2 ring-sunset-gold/60" : ""}`}
+                    >
+                      {renderAvatar()}
+                    </button>
+
+                    {menuOpen && (
+                      <div
+                        role="menu"
+                        className="absolute right-0 top-12 w-72 glass-strong !rounded-[20px] shadow-glass-lg origin-top-right menu-pop overflow-hidden"
+                      >
+                        {/* সোনালি গ্রেডিয়েন্ট বর্ডার লাইন (homepage-ম্যাচড) */}
+                        <span
+                          aria-hidden="true"
+                          className="menu-fx-line !rounded-[20px]"
+                        />
+
+                        {/* header: অ্যাভাটার + নাম + ইমেইল + রোল ব্যাজ */}
+                        <div className="flex items-center gap-3 px-4 pt-4 pb-3 bg-white/[0.03]">
+                          {renderAvatar()}
+                          <div className="min-w-0 flex-1">
+                            <span className="text-sm font-bold text-white truncate block">
+                              {profile?.full_name || "ব্যবহারকারী"}
+                            </span>
+                            <span className="text-[12.5px] text-white/50 truncate block mt-0.5">
+                              {profile?.email || ""}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* রোল ব্যাজ */}
+                        <div className="px-4 pb-3">
+                          <span
+                            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11.5px] font-extrabold uppercase tracking-[0.12em] ${
+                              profile?.role === "admin"
+                                ? "bg-sunset-gradient text-[#1A0E06]"
+                                : profile?.role === "photographer"
+                                  ? "bg-sunset-soft text-sunset-gold border border-sunset-gold/35"
+                                  : "bg-white/[0.08] text-white/70 border border-white/10"
+                            }`}
+                          >
+                            {profile?.role === "admin" ? (
+                              <>
+                                <IcShield /> অ্যাডমিন
+                              </>
+                            ) : profile?.role === "photographer" ? (
+                              <>
+                                <IcStudio /> ফটোগ্রাফার
+                              </>
+                            ) : (
+                              <>
+                                <IcUser /> সাধারণ সদস্য
+                              </>
+                            )}
                           </span>
                         </div>
-                      </div>
 
-                      {/* রোল ব্যাজ */}
-                      <div className="px-4 pb-3">
-                        <span
-                          className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11.5px] font-extrabold uppercase tracking-[0.12em] ${
-                            profile?.role === 'admin'
-                              ? 'bg-sunset-gradient text-[#1A0E06]'
-                              : profile?.role === 'photographer'
-                                ? 'bg-sunset-soft text-sunset-gold border border-sunset-gold/35'
-                                : 'bg-white/[0.08] text-white/70 border border-white/10'
-                          }`}
-                        >
-                          {profile?.role === 'admin' ? (
-                            <><IcShield /> অ্যাডমিন</>
-                          ) : profile?.role === 'photographer' ? (
-                            <><IcStudio /> ফটোগ্রাফার</>
-                          ) : (
-                            <><IcUser /> সাধারণ সদস্য</>
-                          )}
-                        </span>
-                      </div>
+                        <hr className="divider-glow my-0.5" />
 
-                      <hr className="divider-glow my-0.5" />
-
-                      <div className="p-1.5">
-                        <Link
-                          to="/dashboard"
-                          role="menuitem"
-                          className="group flex items-center gap-3 rounded-xl2 px-2.5 py-2.5 text-sm font-medium text-white/85 hover:bg-white/[0.07] hover:text-white transition-colors"
-                        >
-                          <span className="w-8 h-8 rounded-lg bg-white/[0.06] flex items-center justify-center text-white/70 group-hover:bg-sunset-soft group-hover:text-sunset-gold transition-colors shrink-0">
-                            <IcUser />
-                          </span>
-                          <span className="flex-1">
-                            প্রোফাইল ড্যাশবোর্ড
-                            <span className="block text-[12px] text-white/45 font-normal mt-0.5">বুকিং, প্রিয়, রিভিউ ও এডিট</span>
-                          </span>
-                        </Link>
-
-                        {profile?.role === 'photographer' && (
+                        <div className="p-1.5">
                           <Link
-                            to="/studio"
+                            to="/dashboard"
                             role="menuitem"
                             className="group flex items-center gap-3 rounded-xl2 px-2.5 py-2.5 text-sm font-medium text-white/85 hover:bg-white/[0.07] hover:text-white transition-colors"
                           >
                             <span className="w-8 h-8 rounded-lg bg-white/[0.06] flex items-center justify-center text-white/70 group-hover:bg-sunset-soft group-hover:text-sunset-gold transition-colors shrink-0">
-                              <IcStudio />
+                              <IcUser />
                             </span>
                             <span className="flex-1">
-                              মাই স্টুডিও
-                              <span className="block text-[12px] text-white/45 font-normal mt-0.5">পোস্ট, প্যাকেজ, শিডিউল ও বুকিং</span>
+                              প্রোফাইল ড্যাশবোর্ড
+                              <span className="block text-[12px] text-white/45 font-normal mt-0.5">
+                                বুকিং, প্রিয়, রিভিউ ও এডিট
+                              </span>
                             </span>
                           </Link>
-                        )}
 
-                        {profile?.role === 'admin' && (
+                          {profile?.role === "photographer" && (
+                            <Link
+                              to="/studio"
+                              role="menuitem"
+                              className="group flex items-center gap-3 rounded-xl2 px-2.5 py-2.5 text-sm font-medium text-white/85 hover:bg-white/[0.07] hover:text-white transition-colors"
+                            >
+                              <span className="w-8 h-8 rounded-lg bg-white/[0.06] flex items-center justify-center text-white/70 group-hover:bg-sunset-soft group-hover:text-sunset-gold transition-colors shrink-0">
+                                <IcStudio />
+                              </span>
+                              <span className="flex-1">
+                                মাই স্টুডিও
+                                <span className="block text-[12px] text-white/45 font-normal mt-0.5">
+                                  পোস্ট, প্যাকেজ, শিডিউল ও বুকিং
+                                </span>
+                              </span>
+                            </Link>
+                          )}
+
+                          {profile?.role === "admin" && (
+                            <Link
+                              to="/admin"
+                              role="menuitem"
+                              className="group flex items-center gap-3 rounded-xl2 px-2.5 py-2.5 text-sm font-semibold text-sunset-gold hover:bg-white/[0.07] transition-colors"
+                            >
+                              <span className="w-8 h-8 rounded-lg bg-sunset-soft border border-sunset-gold/30 flex items-center justify-center text-sunset-gold transition-colors shrink-0">
+                                <IcShield />
+                              </span>
+                              <span className="flex-1">
+                                অ্যাডমিন প্যানেল
+                                <span className="block text-[12px] text-white/45 font-normal mt-0.5">
+                                  সব কন্ট্রোল, এডিট ও অনুমোদন
+                                </span>
+                              </span>
+                            </Link>
+                          )}
+
                           <Link
-                            to="/admin"
+                            to="/chat"
                             role="menuitem"
-                            className="group flex items-center gap-3 rounded-xl2 px-2.5 py-2.5 text-sm font-semibold text-sunset-gold hover:bg-white/[0.07] transition-colors"
+                            className="group flex items-center gap-3 rounded-xl2 px-2.5 py-2.5 text-sm font-medium text-white/85 hover:bg-white/[0.07] hover:text-white transition-colors"
                           >
-                            <span className="w-8 h-8 rounded-lg bg-sunset-soft border border-sunset-gold/30 flex items-center justify-center text-sunset-gold transition-colors shrink-0">
-                              <IcShield />
+                            <span className="w-8 h-8 rounded-lg bg-white/[0.06] flex items-center justify-center text-white/70 group-hover:bg-sunset-soft group-hover:text-sunset-gold transition-colors shrink-0">
+                              <IcChat />
                             </span>
                             <span className="flex-1">
-                              অ্যাডমিন প্যানেল
-                              <span className="block text-[12px] text-white/45 font-normal mt-0.5">সব কন্ট্রোল, এডিট ও অনুমোদন</span>
+                              মেসেজ ইনবক্স
+                              <span className="block text-[12px] text-white/45 font-normal mt-0.5">
+                                user ↔ ফটোগ্রাফার চ্যাট
+                              </span>
                             </span>
                           </Link>
-                        )}
 
-                        <Link
-                          to="/chat"
-                          role="menuitem"
-                          className="group flex items-center gap-3 rounded-xl2 px-2.5 py-2.5 text-sm font-medium text-white/85 hover:bg-white/[0.07] hover:text-white transition-colors"
-                        >
-                          <span className="w-8 h-8 rounded-lg bg-white/[0.06] flex items-center justify-center text-white/70 group-hover:bg-sunset-soft group-hover:text-sunset-gold transition-colors shrink-0">
-                            <IcChat />
-                          </span>
-                          <span className="flex-1">
-                            মেসেজ ইনবক্স
-                            <span className="block text-[12px] text-white/45 font-normal mt-0.5">user ↔ ফটোগ্রাফার চ্যাট</span>
-                          </span>
-                        </Link>
+                          <hr className="divider-glow my-1" />
 
-                        <hr className="divider-glow my-1" />
-
-                        <button
-                          type="button"
-                          role="menuitem"
-                          onClick={handleLogout}
-                          className="group w-full flex items-center gap-3 rounded-xl2 px-2.5 py-2.5 text-sm font-semibold text-rose-300 hover:bg-rose-500/10 text-left transition-colors"
-                        >
-                          <span className="w-8 h-8 rounded-lg bg-rose-500/10 flex items-center justify-center text-rose-300 group-hover:bg-rose-500/20 transition-colors shrink-0">
-                            <IcLogout />
-                          </span>
-                          লগআউট
-                        </button>
+                          <button
+                            type="button"
+                            role="menuitem"
+                            onClick={handleLogout}
+                            className="group w-full flex items-center gap-3 rounded-xl2 px-2.5 py-2.5 text-sm font-semibold text-rose-300 hover:bg-rose-500/10 text-left transition-colors"
+                          >
+                            <span className="w-8 h-8 rounded-lg bg-rose-500/10 flex items-center justify-center text-rose-300 group-hover:bg-rose-500/20 transition-colors shrink-0">
+                              <IcLogout />
+                            </span>
+                            লগআউট
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
-
-          {/* Mobile Hamburger Trigger */}
-          <button
-            type="button"
-            aria-label={drawerOpen ? 'মেনু বন্ধ করুন' : 'মেনু খুলুন'}
-            aria-expanded={drawerOpen}
-            onClick={() => setDrawerOpen((prev) => !prev)}
-            className="lg:hidden glass rounded-xl2 p-2.5 text-white/90 hover:text-white focus:outline-none focus:ring-2 focus:ring-sunset-coral/50 transition"
-          >
-            <div className="w-6 h-5 relative flex flex-col justify-between items-center">
-              <span
-                className={`w-full h-0.5 bg-current rounded-full transform transition-all duration-300 origin-center ${
-                  drawerOpen ? 'rotate-45 translate-y-[9px] text-sunset-gold' : ''
-                }`}
-              />
-              <span
-                className={`w-full h-0.5 bg-current rounded-full transition-all duration-300 ${
-                  drawerOpen ? 'opacity-0 scale-x-0' : 'opacity-100 scale-x-100'
-                }`}
-              />
-              <span
-                className={`w-full h-0.5 bg-current rounded-full transform transition-all duration-300 origin-center ${
-                  drawerOpen ? '-rotate-45 -translate-y-[9px] text-sunset-gold' : ''
-                }`}
-              />
+              )}
             </div>
-          </button>
-          </div>{/* /right-cluster */}
+
+            {/* Mobile Hamburger Trigger */}
+            <button
+              type="button"
+              aria-label={drawerOpen ? "মেনু বন্ধ করুন" : "মেনু খুলুন"}
+              aria-expanded={drawerOpen}
+              onClick={() => setDrawerOpen((prev) => !prev)}
+              className="lg:hidden glass rounded-xl2 p-2.5 text-white/90 hover:text-white focus:outline-none focus:ring-2 focus:ring-sunset-coral/50 transition"
+            >
+              <div className="w-6 h-5 relative flex flex-col justify-between items-center">
+                <span
+                  className={`w-full h-0.5 bg-current rounded-full transform transition-all duration-300 origin-center ${
+                    drawerOpen
+                      ? "rotate-45 translate-y-[9px] text-sunset-gold"
+                      : ""
+                  }`}
+                />
+                <span
+                  className={`w-full h-0.5 bg-current rounded-full transition-all duration-300 ${
+                    drawerOpen
+                      ? "opacity-0 scale-x-0"
+                      : "opacity-100 scale-x-100"
+                  }`}
+                />
+                <span
+                  className={`w-full h-0.5 bg-current rounded-full transform transition-all duration-300 origin-center ${
+                    drawerOpen
+                      ? "-rotate-45 -translate-y-[9px] text-sunset-gold"
+                      : ""
+                  }`}
+                />
+              </div>
+            </button>
+          </div>
+          {/* /right-cluster */}
         </div>
       </header>
 
@@ -585,8 +728,8 @@ export default function Navbar() {
         aria-hidden={!drawerOpen}
         className={`fixed inset-0 z-40 lg:hidden transition-opacity duration-300 ${
           drawerOpen
-            ? 'opacity-100 pointer-events-auto'
-            : 'opacity-0 pointer-events-none'
+            ? "opacity-100 pointer-events-auto"
+            : "opacity-0 pointer-events-none"
         }`}
       >
         {/* Backdrop */}
@@ -599,9 +742,7 @@ export default function Navbar() {
         <aside
           aria-label="মোবাইল নেভিগেশন মেনু"
           className={`fixed right-4 top-20 w-[280px] glass-strong rounded-xl3 p-6 flex flex-col gap-1.5 transition-all duration-300 transform ${
-            drawerOpen
-              ? 'translate-x-0 opacity-100'
-              : 'translate-x-8 opacity-0'
+            drawerOpen ? "translate-x-0 opacity-100" : "translate-x-8 opacity-0"
           }`}
         >
           <nav className="flex flex-col gap-1.5">
@@ -609,17 +750,19 @@ export default function Navbar() {
               <NavLink
                 key={item.to}
                 to={item.to}
-                end={item.to === '/'}
+                end={item.to === "/"}
                 onClick={() => setDrawerOpen(false)}
                 className={({ isActive }) =>
                   `rounded-xl2 px-4 py-3 flex items-center gap-3 text-sm font-medium transition-all duration-200 ${
                     isActive
-                      ? 'bg-sunset-soft border border-sunset-gold/40 text-sunset-gold font-bold shadow-glass-sm'
-                      : 'text-white/85 hover:bg-white/[0.08] hover:text-white'
+                      ? "bg-sunset-soft border border-sunset-gold/40 text-sunset-gold font-bold shadow-glass-sm"
+                      : "text-white/85 hover:bg-white/[0.08] hover:text-white"
                   }`
                 }
               >
-                <span className="text-sunset-gold/90 shrink-0">{item.icon}</span>
+                <span className="text-sunset-gold/90 shrink-0">
+                  {item.icon}
+                </span>
                 <span>{item.label}</span>
               </NavLink>
             ))}
@@ -651,10 +794,10 @@ export default function Navbar() {
                 {renderAvatar()}
                 <div className="flex flex-col min-w-0">
                   <span className="text-sm font-bold text-white truncate">
-                    {profile?.full_name || 'ব্যবহারকারী'}
+                    {profile?.full_name || "ব্যবহারকারী"}
                   </span>
                   <span className="text-xs text-white/55 truncate">
-                    {profile?.email || ''}
+                    {profile?.email || ""}
                   </span>
                 </div>
               </div>
@@ -664,26 +807,35 @@ export default function Navbar() {
                 onClick={() => setDrawerOpen(false)}
                 className="rounded-xl2 px-4 py-2.5 flex items-center gap-3 text-sm font-medium text-white/85 hover:bg-white/[0.08]"
               >
-                <span className="text-sunset-gold/90 shrink-0"><IcUser /></span> প্রোফাইল ড্যাশবোর্ড
+                <span className="text-sunset-gold/90 shrink-0">
+                  <IcUser />
+                </span>{" "}
+                প্রোফাইল ড্যাশবোর্ড
               </Link>
 
-              {profile?.role === 'photographer' && (
+              {profile?.role === "photographer" && (
                 <Link
                   to="/studio"
                   onClick={() => setDrawerOpen(false)}
                   className="rounded-xl2 px-4 py-2.5 flex items-center gap-3 text-sm font-medium text-white/85 hover:bg-white/[0.08]"
                 >
-                  <span className="text-sunset-gold/90 shrink-0"><IcStudio /></span> মাই স্টুডিও
+                  <span className="text-sunset-gold/90 shrink-0">
+                    <IcStudio />
+                  </span>{" "}
+                  মাই স্টুডিও
                 </Link>
               )}
 
-              {profile?.role === 'admin' && (
+              {profile?.role === "admin" && (
                 <Link
                   to="/admin"
                   onClick={() => setDrawerOpen(false)}
                   className="rounded-xl2 px-4 py-2.5 flex items-center gap-3 text-sm font-semibold text-sunset-gold hover:bg-white/[0.08]"
                 >
-                  <span className="shrink-0"><IcShield /></span> অ্যাডমিন প্যানেল
+                  <span className="shrink-0">
+                    <IcShield />
+                  </span>{" "}
+                  অ্যাডমিন প্যানেল
                 </Link>
               )}
 
@@ -692,7 +844,10 @@ export default function Navbar() {
                 onClick={() => setDrawerOpen(false)}
                 className="rounded-xl2 px-4 py-2.5 flex items-center gap-3 text-sm font-medium text-white/85 hover:bg-white/[0.08]"
               >
-                <span className="text-sunset-gold/90 shrink-0"><IcChat /></span> মেসেজ ইনবক্স
+                <span className="text-sunset-gold/90 shrink-0">
+                  <IcChat />
+                </span>{" "}
+                মেসেজ ইনবক্স
               </Link>
 
               <button
@@ -700,7 +855,10 @@ export default function Navbar() {
                 onClick={handleLogout}
                 className="w-full rounded-xl2 px-4 py-2.5 flex items-center gap-3 text-sm font-semibold text-rose-300 hover:bg-rose-500/10 transition text-left"
               >
-                <span className="shrink-0"><IcLogout /></span> লগআউট
+                <span className="shrink-0">
+                  <IcLogout />
+                </span>{" "}
+                লগআউট
               </button>
             </div>
           )}

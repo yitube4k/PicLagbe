@@ -1519,12 +1519,18 @@
 .cover-cam-btn:active {
   transform: scale(0.92);
 }
+/* ═══ BOOKING FORM — LIGHT THEME (V37: white bg + soft colors + gradient CTA) ═══ */
 .bf2-root {
-  color: #f3ede0;
+  background: #ffffff;
+  color: #1e293b;
+  border: 1px solid #eee6d8;
+  border-radius: 1.25rem;
+  padding: 1rem;
+  box-shadow: 0 12px 34px -16px rgba(15, 23, 42, 0.28);
 }
 .bf2-glass-card {
-  background: rgba(255, 255, 255, 0.035);
-  border: 1px solid rgba(255, 255, 255, 0.09);
+  background: rgba(255, 251, 235, 0.85);
+  border: 1px solid #e2e8f0;
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border-radius: 1rem;
@@ -1543,37 +1549,37 @@
   user-select: none;
 }
 .bf2-step-active {
-  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  background: linear-gradient(135deg, #f59e0b 0%, #f97316 55%, #f43f5e 125%);
   color: #1a0e06;
-  box-shadow: 0 4px 14px rgba(251, 191, 36, 0.25);
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.3);
   border: 1px solid transparent;
 }
 .bf2-step-completed {
-  background: rgba(251, 191, 36, 0.08);
-  border: 1px solid rgba(251, 191, 36, 0.35);
-  color: #fbbf24;
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+  color: #b45309;
   cursor: pointer;
 }
 .bf2-step-completed:hover {
-  background: rgba(251, 191, 36, 0.16);
-  border-color: rgba(251, 191, 36, 0.6);
+  background: #fef3c7;
+  border-color: #f59e0b;
 }
 .bf2-step-upcoming {
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: #a89d88;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: #94a3b8;
   cursor: default;
 }
 .bf2-progress-track {
   width: 100%;
   height: 3px;
-  background: rgba(255, 255, 255, 0.07);
+  background: #e2e8f0;
   border-radius: 9999px;
   overflow: hidden;
 }
 .bf2-progress-bar {
   height: 100%;
-  background: linear-gradient(90deg, #fbbf24 0%, #f97316 100%);
+  background: linear-gradient(135deg, #f59e0b 0%, #f97316 55%, #f43f5e 125%);
   transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   border-radius: 9999px;
 }
@@ -1584,56 +1590,61 @@
   gap: 0.75rem;
   padding: 0.875rem 1rem;
   border-radius: 1rem;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.09);
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 .bf2-pkg-card:hover {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(251, 191, 36, 0.3);
+  background: #fffbeb;
+  border-color: rgba(245, 158, 11, 0.45);
 }
 .bf2-pkg-active {
-  background: rgba(251, 191, 36, 0.06);
-  border-color: rgba(251, 191, 36, 0.7);
+  background: #fffbeb;
+  border-color: #f59e0b;
   box-shadow:
-    0 0 0 1px rgba(251, 191, 36, 0.25),
-    0 8px 24px rgba(0, 0, 0, 0.3);
+    0 0 0 1px rgba(245, 158, 11, 0.35),
+    0 8px 22px -10px rgba(245, 158, 11, 0.45);
 }
 .bf2-badge-popular {
   position: absolute;
   top: -9px;
   right: 14px;
-  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  background: linear-gradient(135deg, #f59e0b 0%, #f97316 55%, #f43f5e 125%);
   color: #1a0e06;
   font-size: 0.6875rem;
   font-weight: 800;
   padding: 0.1rem 0.55rem;
   border-radius: 9999px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.15);
 }
 .bf2-chip {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border-radius: 9999px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.04);
-  color: #f3ede0;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #334155;
   transition: all 0.2s ease;
   user-select: none;
   cursor: pointer;
 }
 .bf2-chip:hover {
-  border-color: rgba(251, 191, 36, 0.4);
-  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(245, 158, 11, 0.5);
+  background: #fffbeb;
 }
 .bf2-chip-active {
-  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%) !important;
+  background: linear-gradient(
+    135deg,
+    #f59e0b 0%,
+    #f97316 55%,
+    #f43f5e 125%
+  ) !important;
   color: #1a0e06 !important;
   border-color: transparent !important;
   font-weight: 700;
-  box-shadow: 0 4px 12px rgba(251, 191, 36, 0.28);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
 }
 .bf2-date-chip {
   flex: 0 0 auto;
@@ -1644,20 +1655,25 @@
   min-width: 4rem;
   padding: 0.5rem 0.625rem;
   border-radius: 0.875rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 .bf2-date-chip:hover {
-  border-color: rgba(251, 191, 36, 0.45);
-  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(245, 158, 11, 0.5);
+  background: #fffbeb;
 }
 .bf2-date-chip-active {
-  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%) !important;
+  background: linear-gradient(
+    135deg,
+    #f59e0b 0%,
+    #f97316 55%,
+    #f43f5e 125%
+  ) !important;
   color: #1a0e06 !important;
   border-color: transparent !important;
-  box-shadow: 0 6px 16px rgba(251, 191, 36, 0.25);
+  box-shadow: 0 6px 16px rgba(245, 158, 11, 0.25);
 }
 .bf2-slot-card {
   display: flex;
@@ -1665,23 +1681,23 @@
   gap: 0.625rem;
   padding: 0.75rem 0.875rem;
   border-radius: 0.875rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 .bf2-slot-card:hover {
-  border-color: rgba(251, 191, 36, 0.4);
-  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(245, 158, 11, 0.45);
+  background: #fffbeb;
 }
 .bf2-slot-card-active {
-  background: rgba(251, 191, 36, 0.09);
-  border-color: #fbbf24;
-  box-shadow: 0 0 0 1px #fbbf24;
+  background: #fffbeb;
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 1px #f59e0b;
 }
 .bf2-review {
-  background: rgba(255, 255, 255, 0.025);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: #fffbeb;
+  border: 1px solid rgba(217, 119, 6, 0.18);
   border-radius: 1rem;
   padding: 1rem;
 }
@@ -1690,16 +1706,16 @@
   bottom: 0;
   z-index: 20;
   margin-top: 1.25rem;
-  background: rgba(20, 16, 12, 0.88);
+  background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid #e2e8f0;
   border-radius: 1rem 1rem 0 0;
   padding: 0.875rem 1rem;
 }
 .bf2-btn-cta {
-  background: linear-gradient(135deg, #fbbf24 0%, #f97316 100%);
-  color: #1a0e06;
+  background: linear-gradient(135deg, #f59e0b 0%, #f97316 55%, #f43f5e 125%);
+  color: #ffffff;
   font-weight: 700;
   border-radius: 0.875rem;
   padding: 0.75rem 1.25rem;
@@ -1708,12 +1724,12 @@
   justify-content: center;
   gap: 0.5rem;
   transition: all 0.2s ease;
-  box-shadow: 0 4px 18px rgba(249, 115, 22, 0.28);
+  box-shadow: 0 6px 20px rgba(249, 115, 22, 0.35);
 }
 .bf2-btn-cta:hover:not(:disabled) {
   opacity: 0.94;
   transform: translateY(-1px);
-  box-shadow: 0 6px 22px rgba(249, 115, 22, 0.38);
+  box-shadow: 0 8px 26px rgba(249, 115, 22, 0.45);
 }
 .bf2-btn-cta:disabled {
   opacity: 0.4;
@@ -1725,12 +1741,12 @@
   width: 4.5rem;
   height: 4.5rem;
   border-radius: 9999px;
-  background: linear-gradient(135deg, #fbbf24 0%, #f97316 100%);
-  color: #1a0e06;
+  background: linear-gradient(135deg, #f59e0b 0%, #f97316 55%, #f43f5e 125%);
+  color: #ffffff;
   display: grid;
   place-items: center;
   margin: 0 auto;
-  box-shadow: 0 8px 28px rgba(251, 191, 36, 0.35);
+  box-shadow: 0 8px 28px rgba(251, 191, 36, 0.4);
   animation: bf2Pop 0.4s cubic-bezier(0.16, 1, 0.3, 1) backwards;
 }
 .bf2-fade-in {
@@ -1762,4 +1778,20 @@
 .bf2-hide-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+.bf2-root .pf-label {
+  color: #64748b;
+}
+.bf2-root .pf-input {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: #1e293b;
+}
+.bf2-root .pf-input::placeholder {
+  color: #94a3b8;
+}
+.bf2-root .pf-input:focus {
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.18);
 }

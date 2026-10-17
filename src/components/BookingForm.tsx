@@ -271,27 +271,27 @@ export default function BookingForm({
             <polyline points="20 6 9 17 4 12" />
           </svg>
         </div>
-        <h3 className="pf-serif text-xl font-bold text-[#f3ede0] mt-4">
+        <h3 className="pf-serif text-xl font-bold text-slate-800 mt-4">
           রিকোয়েস্ট পাঠানো হয়েছে!
         </h3>
-        <p className="text-[13px] text-[#a89d88] leading-relaxed mt-2">
+        <p className="text-[13px] text-slate-500 leading-relaxed mt-2">
           অগ্রিম কাটা হয়নি। ফটোগ্রাফার গ্রহণ করলে আপনার বুকিং নিশ্চিত হয়ে যাবে
           — নোটিফিকেশন পাবেন।
         </p>
 
-        <div className="bf2-review mt-6 text-left text-xs space-y-2 border border-white/10">
-          <div className="flex justify-between items-center text-[#f3ede0]">
-            <span className="text-[#a89d88]">প্যাকেজ</span>
+        <div className="bf2-review mt-6 text-left text-xs space-y-2 border border-slate-200">
+          <div className="flex justify-between items-center text-slate-800">
+            <span className="text-slate-500">প্যাকেজ</span>
             <span className="font-semibold">
               {selectedPackage ? selectedPackage.name : "কাস্টম বুকিং"}
             </span>
           </div>
-          <div className="flex justify-between items-center text-[#f3ede0]">
-            <span className="text-[#a89d88]">তারিখ</span>
+          <div className="flex justify-between items-center text-slate-800">
+            <span className="text-slate-500">তারিখ</span>
             <span>{prettyDate}</span>
           </div>
-          <div className="flex justify-between items-center text-[#f3ede0]">
-            <span className="text-[#a89d88]">স্পট</span>
+          <div className="flex justify-between items-center text-slate-800">
+            <span className="text-slate-500">স্পট</span>
             <span className="truncate max-w-[180px]">{spot}</span>
           </div>
         </div>
@@ -312,7 +312,7 @@ export default function BookingForm({
               setEventDate("");
               setNotes("");
             }}
-            className="w-full py-2.5 text-sm font-semibold text-[#a89d88] hover:text-[#f3ede0] transition-colors"
+            className="w-full py-2.5 text-sm font-semibold text-slate-500 hover:text-slate-800 transition-colors"
           >
             আরেকটি বুকিং
           </button>
@@ -410,29 +410,29 @@ export default function BookingForm({
                         <span
                           aria-hidden="true"
                           className={`mt-1 shrink-0 w-[18px] h-[18px] rounded-full border-2 grid place-items-center transition-colors ${
-                            active ? "border-[#fbbf24]" : "border-white/25"
+                            active ? "border-amber-500" : "border-slate-300"
                           }`}
                         >
                           {active && (
-                            <span className="w-2.5 h-2.5 rounded-full bg-[#fbbf24]" />
+                            <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
                           )}
                         </span>
 
                         {/* টেক্সট ও মূল্য */}
                         <div className="min-w-0 flex-1">
                           <div className="flex items-baseline justify-between gap-2">
-                            <span className="pf-serif text-[15.5px] font-bold text-[#f3ede0] truncate">
+                            <span className="pf-serif text-[15.5px] font-bold text-slate-800 truncate">
                               {pkg.name}
                             </span>
-                            <span className="pf-serif font-bold text-[#fbbf24] whitespace-nowrap text-base">
+                            <span className="pf-serif font-bold text-amber-600 whitespace-nowrap text-base">
                               {taka(pkg.price)}
-                              <span className="text-xs font-semibold text-[#fbbf24]/80">
+                              <span className="text-xs font-semibold text-amber-600/80">
                                 {unitSuffix(pkg.pricing_unit)}
                               </span>
                             </span>
                           </div>
 
-                          <p className="text-[12px] text-[#a89d88] leading-relaxed mt-1">
+                          <p className="text-[12px] text-slate-500 leading-relaxed mt-1">
                             {pkg.pricing_unit === "hour"
                               ? `⏱ ${toBn(pkg.duration_hours || 2)} ঘণ্টা সেশন · ${pkg.description || ""}`
                               : pkg.pricing_unit === "photo"
@@ -443,7 +443,7 @@ export default function BookingForm({
 
                         {/* মিডিয়া থাম্বনেইল */}
                         {pkg.media && pkg.media.length > 0 && (
-                          <div className="relative shrink-0 w-14 h-14 rounded-xl overflow-hidden border border-white/10 bg-white/[0.04]">
+                          <div className="relative shrink-0 w-14 h-14 rounded-xl overflow-hidden border border-slate-200 bg-slate-50">
                             <img
                               src={
                                 pkg.media[0].type === "video"
@@ -483,7 +483,7 @@ export default function BookingForm({
                 </div>
               </fieldset>
             ) : (
-              <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4 text-xs text-[#a89d88] leading-relaxed">
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs text-slate-500 leading-relaxed">
                 কোনো প্যাকেজ নেই — কাস্টম বুকিং হিসেবে রিকোয়েস্ট যাবে, দাম
                 আলোচনা সাপেক্ষ।
               </div>
@@ -491,7 +491,7 @@ export default function BookingForm({
 
             {/* কোয়ান্টিটি স্টেপার (hour বা photo হলে) */}
             {selectedPackage && unitQty && (
-              <div className="p-3.5 rounded-xl border border-white/10 bg-white/[0.02]">
+              <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50">
                 <label
                   className="pf-label block text-xs mb-1.5"
                   htmlFor="bf2-qty-input"
@@ -505,7 +505,7 @@ export default function BookingForm({
                     type="button"
                     onClick={() => setQty((v) => Math.max(1, v - 1))}
                     aria-label="কমান"
-                    className="w-10 h-10 rounded-xl border border-white/15 bg-white/[0.06] text-xl font-bold text-[#f3ede0] hover:border-[#fbbf24]/50 transition grid place-items-center"
+                    className="w-10 h-10 rounded-xl border border-slate-200 bg-slate-50 text-xl font-bold text-slate-800 hover:border-amber-400/60 transition grid place-items-center"
                   >
                     −
                   </button>
@@ -532,11 +532,11 @@ export default function BookingForm({
                       setQty((v) => Math.min(qtyMax(selectedPackage), v + 1))
                     }
                     aria-label="বাড়ান"
-                    className="w-10 h-10 rounded-xl border border-white/15 bg-white/[0.06] text-xl font-bold text-[#f3ede0] hover:border-[#fbbf24]/50 transition grid place-items-center"
+                    className="w-10 h-10 rounded-xl border border-slate-200 bg-slate-50 text-xl font-bold text-slate-800 hover:border-amber-400/60 transition grid place-items-center"
                   >
                     +
                   </button>
-                  <span className="text-xs text-[#a89d88]">
+                  <span className="text-xs text-slate-500">
                     {taka(selectedPackage.price)}
                     {unitSuffix(selectedPackage.pricing_unit)} ×{" "}
                     {qtyLabel(selectedPackage, qty)}
@@ -572,7 +572,7 @@ export default function BookingForm({
                     >
                       <span className="text-xs font-semibold">{d.label}</span>
                       <span
-                        className={`text-[11px] mt-0.5 ${active ? "text-[#1a0e06]/85 font-medium" : "text-[#a89d88]"}`}
+                        className={`text-[11px] mt-0.5 ${active ? "text-[#1a0e06]/85 font-medium" : "text-slate-500"}`}
                       >
                         {d.sub}
                       </span>
@@ -585,7 +585,7 @@ export default function BookingForm({
               <div className="mt-2.5">
                 <label
                   htmlFor="bf2-date-custom"
-                  className="text-xs text-[#a89d88] block mb-1"
+                  className="text-xs text-slate-500 block mb-1"
                 >
                   অন্য তারিখ
                 </label>
@@ -608,7 +608,7 @@ export default function BookingForm({
               </div>
 
               {prettyDate && (
-                <p className="text-xs text-[#fbbf24] mt-2 font-medium flex items-center gap-1.5">
+                <p className="text-xs text-amber-600 mt-2 font-medium flex items-center gap-1.5">
                   <span>🗓️</span>
                   <span>নির্বাচিত: {prettyDate}</span>
                 </p>
@@ -645,10 +645,10 @@ export default function BookingForm({
                         {slot.icon}
                       </span>
                       <div className="min-w-0">
-                        <span className="block text-xs font-bold text-[#f3ede0] leading-tight">
+                        <span className="block text-xs font-bold text-slate-800 leading-tight">
                           {slot.label}
                         </span>
-                        <span className="block text-[11px] text-[#a89d88] leading-tight mt-0.5">
+                        <span className="block text-[11px] text-slate-500 leading-tight mt-0.5">
                           {slot.time}
                         </span>
                       </div>
@@ -706,34 +706,34 @@ export default function BookingForm({
 
             {/* রিভিউ সামারি কার্ড */}
             <div className="bf2-review space-y-2 text-xs">
-              <div className="flex items-center justify-between text-[#a89d88]">
+              <div className="flex items-center justify-between text-slate-500">
                 <span>প্যাকেজ</span>
-                <span className="font-semibold text-[#f3ede0]">
+                <span className="font-semibold text-slate-800">
                   {selectedPackage ? selectedPackage.name : "কাস্টম বুকিং"}
                 </span>
               </div>
-              <div className="flex items-center justify-between text-[#a89d88]">
+              <div className="flex items-center justify-between text-slate-500">
                 <span>তারিখ</span>
-                <span className="text-[#f3ede0]">
+                <span className="text-slate-800">
                   {prettyDate || "নির্বাচিত হয়নি"}
                 </span>
               </div>
-              <div className="flex items-center justify-between text-[#a89d88]">
+              <div className="flex items-center justify-between text-slate-500">
                 <span>সময়</span>
-                <span className="text-[#f3ede0]">
+                <span className="text-slate-800">
                   {selectedSlotObj.icon} {selectedSlotObj.label} (
                   {selectedSlotObj.time})
                 </span>
               </div>
-              <div className="flex items-center justify-between text-[#a89d88]">
+              <div className="flex items-center justify-between text-slate-500">
                 <span>স্পট</span>
-                <span className="text-[#f3ede0] truncate max-w-[190px]">
+                <span className="text-slate-800 truncate max-w-[190px]">
                   {spot}
                 </span>
               </div>
-              <div className="flex items-center justify-between text-[#a89d88] pt-1 border-t border-white/5">
+              <div className="flex items-center justify-between text-slate-500 pt-1 border-t border-slate-100">
                 <span>হিসাব</span>
-                <span className="text-[#f3ede0]">
+                <span className="text-slate-800">
                   {selectedPackage && unitQty
                     ? `${taka(selectedPackage.price)}${unitSuffix(selectedPackage.pricing_unit)} × ${qtyLabel(selectedPackage, qty)}`
                     : selectedPackage
@@ -741,9 +741,9 @@ export default function BookingForm({
                       : "কাস্টম বুকিং"}
                 </span>
               </div>
-              <div className="flex items-center justify-between pt-1 border-t border-white/10">
-                <span className="font-semibold text-[#f3ede0]">মোট</span>
-                <span className="pf-serif font-bold text-base text-[#fbbf24]">
+              <div className="flex items-center justify-between pt-1 border-t border-slate-200">
+                <span className="font-semibold text-slate-800">মোট</span>
+                <span className="pf-serif font-bold text-base text-amber-600">
                   {selectedPackage && unitTotal != null
                     ? taka(unitTotal)
                     : selectedPackage
@@ -751,7 +751,7 @@ export default function BookingForm({
                       : "আলোচনা সাপেক্ষ"}
                 </span>
               </div>
-              <p className="text-[11px] text-[#a89d88] leading-relaxed pt-2 border-t border-white/5 flex items-center gap-1.5">
+              <p className="text-[11px] text-slate-500 leading-relaxed pt-2 border-t border-slate-100 flex items-center gap-1.5">
                 <span aria-hidden="true">🛡️</span>
                 <span>
                   কোনো অগ্রিম পেমেন্ট লাগবে না — ফটোগ্রাফার গ্রহণ করলে কনফার্ম
@@ -767,7 +767,7 @@ export default function BookingForm({
       {errorMsg && (
         <div
           role="alert"
-          className="mt-3 rounded-xl border border-red-500/30 bg-red-950/25 px-3.5 py-2 text-xs font-medium text-red-200"
+          className="mt-3 rounded-xl border border-red-200 bg-red-50 px-3.5 py-2 text-xs font-medium text-red-700"
         >
           {errorMsg}
         </div>
@@ -776,10 +776,10 @@ export default function BookingForm({
       {/* ═══ স্টিকি ফুটার ═══ */}
       <div className="bf2-footer flex items-center justify-between gap-3">
         <div>
-          <span className="block text-[11px] uppercase tracking-wider text-[#a89d88] font-semibold">
+          <span className="block text-[11px] uppercase tracking-wider text-slate-500 font-semibold">
             মোট
           </span>
-          <span className="pf-serif text-base sm:text-lg font-bold text-[#fbbf24] leading-tight block">
+          <span className="pf-serif text-base sm:text-lg font-bold text-amber-600 leading-tight block">
             {selectedPackage && unitTotal != null
               ? taka(unitTotal)
               : selectedPackage

@@ -156,9 +156,6 @@ export default function Search() {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const filterRef = useRef<HTMLDivElement | null>(null);
 
-  /* V36 — স্পট-ভিত্তিক ফটোগ্রাফার সংখ্যা (চিপ ব্যাজ) */
-  const [spotCounts, setSpotCounts] = useState<Record<string, number>>({});
-
   /* V30 — ডিরেক্টরি ItemList JSON-LD: Google-এ "cox bazar photographer" সার্চে তালিকা বুঝতে পারে */
   useJsonLd(
     "photographers-directory",
@@ -192,30 +189,6 @@ export default function Search() {
       }
     }
     loadCategories();
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  // V36 — স্পট ব্যাজের জন্য হালকা কাউন্ট কোয়েরি (আলাদা, ফিল্টার ছাড়া)
-  useEffect(() => {
-    let active = true;
-    async function loadSpotCounts() {
-      const { data, error } = await supabase
-        .from("photographers")
-        .select("id, home_spot")
-        .eq("profile_status", "approved");
-      if (!active) return;
-      if (!error && data) {
-        const counts: Record<string, number> = {};
-        (data as { id: string; home_spot: string | null }[]).forEach((item) => {
-          if (item.home_spot)
-            counts[item.home_spot] = (counts[item.home_spot] || 0) + 1;
-        });
-        setSpotCounts(counts);
-      }
-    }
-    loadSpotCounts();
     return () => {
       active = false;
     };
@@ -384,23 +357,11 @@ export default function Search() {
 
   return (
     <div className="min-h-screen max-w-7xl mx-auto px-4 sm:px-6 pt-24 pb-20">
-      {/* ═══ হিরো ব্যান্ড (V36 — রেফারেন্স স্টাইল) ═══ */}
-      <div className="relative rounded-[24px] overflow-hidden mb-6 border border-white/[0.09]">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#221607] via-[#120f1c] to-[#06070d]" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_85%_20%,rgba(251,191,36,0.16),transparent_50%)] pointer-events-none" />
-        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-sunset-gold/70 to-transparent" />
-        <div className="relative z-10 px-5 sm:px-8 py-7 sm:py-9">
-          <p className="text-[12.5px] font-bold tracking-[0.22em] text-sunset-gold">
-            কক্সবাজার
-          </p>
-          <h1 className="mt-1.5 text-[26px] sm:text-4xl font-extrabold text-white leading-tight">
-            সেরা ফটোগ্রাফার খুঁজুন
-          </h1>
-          <p className="mt-2 text-[13.5px] sm:text-[15px] text-white/70">
-            ভেরিফায়েড ফটোগ্রাফার · স্বচ্ছ প্যাকেজ · অগ্রিম ছাড়াই বুকিং
-          </p>
-        </div>
-      </div>
+      {/* SEO h1 — ভিজ্যুয়াল হিরো নেই, মিনিমাল সার্চ পেজ */}
+      <h1 className="sr-only">
+        কক্সবাজারে সেরা ফটোগ্রাফার খুঁজুন — ভেরিফায়েড ফটোগ্রাফার · স্বচ্ছ
+        প্যাকেজ · অগ্রিম ছাড়াই বুকিং
+      </h1>
 
       {/* ═══ Google-স্টাইল সার্চ বার + অপশন মেনু ═══ */}
       <div className="max-w-3xl mx-auto mb-4">
@@ -470,6 +431,38 @@ export default function Search() {
                   <p className="text-[12.5px] font-bold uppercase tracking-[0.14em] text-white/45 px-1 pb-3">
                     ফিল্টার অপশন
                   </p>
+
+                  <label className="field-label !text-[12.5px]">📍 স্পট</label>
+                  <select
+                    value={spot}
+                    onChange={(e) => setSpot(e.target.value)}
+                    aria-label="শুটিং স্পট নির্বাচন করুন"
+                    className="glass-select mb-3"
+                  >
+                    <option value="">সব স্পট</option>
+                    {COX_SPOTS.map((s) => (
+                      <option key={s.key} value={s.key}>
+                        {s.nameBn}
+                      </option>
+                    ))}
+                  </select>
+
+                  <label className="field-label !text-[12.5px]">
+                    📷 ক্যাটাগরি
+                  </label>
+                  <select
+                    value={cat}
+                    onChange={(e) => setCat(e.target.value)}
+                    aria-label="ক্যাটাগরি নির্বাচন করুন"
+                    className="glass-select mb-3"
+                  >
+                    <option value="">সব ক্যাটাগরি</option>
+                    {categoryListToUse.map((c) => (
+                      <option key={c.slug} value={c.slug}>
+                        {c.label}
+                      </option>
+                    ))}
+                  </select>
 
                   <label className="field-label !text-[12.5px]">
                     💰 বাজেট (৳)
@@ -543,90 +536,6 @@ export default function Search() {
             </button>
           </div>
         </form>
-
-        {/* ═══ V36 — স্পট চিপস (গোল্ড পিল + কাউন্ট ব্যাজ) ═══ */}
-        <div
-          className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 -mx-1 px-1 mt-4"
-          role="radiogroup"
-          aria-label="স্পট ফিল্টার"
-        >
-          <button
-            type="button"
-            aria-pressed={spot === ""}
-            onClick={() => setSpot("")}
-            className={
-              spot === ""
-                ? "shrink-0 inline-flex items-center rounded-full px-4 py-2 text-[13px] font-bold bg-sunset-gradient text-[#1A0E06] shadow-[0_4px_14px_rgba(249,115,22,0.35)]"
-                : "chip shrink-0 !py-2 !px-4 !text-[13px]"
-            }
-          >
-            সব স্পট
-          </button>
-          {COX_SPOTS.map((s) => {
-            const active = spot === s.key;
-            const count = spotCounts[s.key] || 0;
-            return (
-              <button
-                key={s.key}
-                type="button"
-                aria-pressed={active}
-                onClick={() => setSpot(active ? "" : s.key)}
-                className={
-                  active
-                    ? "shrink-0 inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-[13px] font-bold bg-sunset-gradient text-[#1A0E06] shadow-[0_4px_14px_rgba(249,115,22,0.35)]"
-                    : "chip shrink-0 !py-2 !px-3.5 !text-[13px]"
-                }
-              >
-                {s.nameBn}
-                {count > 0 && (
-                  <span
-                    className={`min-w-[20px] h-[18px] px-1 rounded-full grid place-items-center text-[11px] font-extrabold ${active ? "bg-black/25 text-[#1A0E06]" : "bg-sunset-gradient text-[#1A0E06]"}`}
-                  >
-                    {toBn(count)}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* ═══ V36 — ক্যাটাগরি চিপস ═══ */}
-        <div
-          className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 -mx-1 px-1 mt-2"
-          role="radiogroup"
-          aria-label="ক্যাটাগরি ফিল্টার"
-        >
-          <button
-            type="button"
-            aria-pressed={cat === ""}
-            onClick={() => setCat("")}
-            className={
-              cat === ""
-                ? "chip-active shrink-0 !py-1.5 !text-[13px]"
-                : "chip shrink-0 !py-1.5 !text-[13px] !text-white/70"
-            }
-          >
-            সব ক্যাটাগরি
-          </button>
-          {categoryListToUse.map((c) => {
-            const active = cat === c.slug;
-            return (
-              <button
-                key={c.slug}
-                type="button"
-                aria-pressed={active}
-                onClick={() => setCat(active ? "" : c.slug)}
-                className={
-                  active
-                    ? "chip-active shrink-0 !py-1.5 !text-[13px]"
-                    : "chip shrink-0 !py-1.5 !text-[13px] !text-white/70"
-                }
-              >
-                {c.label}
-              </button>
-            );
-          })}
-        </div>
 
         <p className="text-sm text-white/55 mt-3.5 font-medium flex items-center gap-2">
           <span
